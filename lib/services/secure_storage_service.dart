@@ -3,17 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/account.dart';
 
-// [已更新]
-// 核心改动：
-// 1. 移除了单Cookie的管理方法 (save/get/delete Cookie)，因为现在由 `AuthProvider` 统一管理。
-// 2. `saveAccounts` 方法现在是公开的，以便 `AuthProvider` 可以调用。
-
 final secureStorageServiceProvider = Provider((ref) => SecureStorageService());
 
 class SecureStorageService {
   final _storage = const FlutterSecureStorage();
   
   static const _accountsKey = 'accounts_list';
+  static const _activeAccountIdKey = 'active_account_id';
 
   Future<List<Account>> getAccounts() async {
     try {
@@ -36,6 +32,28 @@ class SecureStorageService {
       await _storage.write(key: _accountsKey, value: jsonString);
     } catch (e) {
       // handle error
+    }
+  }
+  Future<String?> readActiveAccountId() async {
+    try {
+      return await _storage.read(key: _activeAccountIdKey);
+    } catch (e) {
+      print("Error reading active account ID: $e");
+      return null;
+    }
+  }
+  Future<void> saveActiveAccountId(String id) async {
+    try {
+      await _storage.write(key: _activeAccountIdKey, value: id);
+    } catch (e) {
+      print("Error saving active account ID: $e");
+    }
+  }
+  Future<void> deleteActiveAccountId() async {
+    try {
+      await _storage.delete(key: _activeAccountIdKey);
+    } catch (e) {
+      print("Error deleting active account ID: $e");
     }
   }
 }

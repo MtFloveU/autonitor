@@ -35,6 +35,7 @@ dependencies:
   flutter_secure_storage: any  # 安全加密存储
   flutter_inappwebview: ^6.0.0      # 浏览器视图
   http: ^1.2.1                    # 网络请求
+  dio: ^5.4.3                         # 网络请求增强
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

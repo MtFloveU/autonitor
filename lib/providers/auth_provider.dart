@@ -2,72 +2,142 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/account.dart';
 import '../services/secure_storage_service.dart';
 import '../services/twitter_api_service.dart';
+// 移除了未使用的 dart:convert 导入
 
-// [已更新]
-// 核心改动：
-// 1. 将 `activeAccountProvider` 升级为 StateNotifierProvider。
-// 2. `ActiveAccountNotifier` 现在 "监听" `accountsProvider` 的变化，并自动处理活动账号被删除的情况。
-// 3. 移除了 `AccountsNotifier` 中的循环依赖。
-
-// --- Provider定义 ---
+// --- Provider 定义 ---
 
 // accountsProvider 保持不变
-final accountsProvider = StateNotifierProvider<AccountsNotifier, List<Account>>((ref) {
-  return AccountsNotifier(ref);
-});
+final accountsProvider = StateNotifierProvider<AccountsNotifier, List<Account>>(
+  (ref) {
+    return AccountsNotifier(ref);
+  },
+);
 
-// --- 新的 ActiveAccountNotifier ---
+// --- ActiveAccountNotifier ---
 class ActiveAccountNotifier extends StateNotifier<Account?> {
   final Ref _ref;
+  late final SecureStorageService _storageService;
+
   ActiveAccountNotifier(this._ref) : super(null) {
-    // 立即尝试设置初始状态
-    _initialize();
+    _storageService = _ref.read(secureStorageServiceProvider);
+    _initializeActiveAccount();
   }
 
-  // 1. 初始化时，从账号列表中加载第一个
-  void _initialize() {
+  Future<void> _initializeActiveAccount() async {
+    final activeId = await _storageService.readActiveAccountId();
     final accounts = _ref.read(accountsProvider);
-    state = accounts.isNotEmpty ? accounts.first : null;
-  }
-
-  // 2. 提供一个公共方法来设置活动账号
-  void setActive(Account? account) {
-    state = account;
-  }
-
-  // 3. 关键逻辑：当账号列表更新时，检查当前活动账号是否被删除
-  void updateFromList(List<Account> newList) {
-    if (state == null) {
-      // 如果之前没有活动账号，则设为新列表的第一个
-      state = newList.isNotEmpty ? newList.first : null;
+    print(
+      "ActiveAccountNotifier: Initializing... Loaded active ID: $activeId. Current accounts: ${accounts.length}",
+    );
+    if (activeId != null && accounts.isNotEmpty) {
+      try {
+        final initialAccount = accounts.firstWhere((acc) => acc.id == activeId);
+        state = initialAccount;
+        print(
+          "ActiveAccountNotifier: Initial active account set to ID ${state?.id}.",
+        );
+      } catch (e) {
+        print(
+          "ActiveAccountNotifier: Stored active ID $activeId not found in accounts list. Resetting.",
+        );
+        // 使用假设的正确方法名
+        await _storageService.deleteActiveAccountId();
+        if (accounts.isNotEmpty) {
+          state = accounts.first;
+          // 使用假设的正确方法名
+          await _storageService.saveActiveAccountId(state!.id);
+          print(
+            "ActiveAccountNotifier: Reset active account to first account ID ${state?.id}.",
+          );
+        } else {
+          state = null;
+          print("ActiveAccountNotifier: No accounts available after reset.");
+        }
+      }
+    } else if (accounts.isNotEmpty) {
+      state = accounts.first;
+      // 使用假设的正确方法名
+      await _storageService.saveActiveAccountId(state!.id);
+      print(
+        "ActiveAccountNotifier: No active ID stored, setting first account ID ${state?.id} as active.",
+      );
     } else {
-      // 如果之前有活动账号，检查它是否还在新列表中
+      state = null;
+      print(
+        "ActiveAccountNotifier: No accounts available, active account remains null.",
+      );
+    }
+  }
+
+  Future<void> setActive(Account? account) async {
+    state = account;
+    if (account != null) {
+      // 使用假设的正确方法名
+      await _storageService.saveActiveAccountId(account.id);
+      print(
+        "ActiveAccountNotifier: Set active account ID: ${account.id} and persisted.",
+      );
+    } else {
+      // 使用假设的正确方法名
+      await _storageService.deleteActiveAccountId();
+      print("ActiveAccountNotifier: Cleared active account ID and persisted.");
+    }
+  }
+
+  Future<void> updateFromList(List<Account> newList) async {
+    print(
+      "ActiveAccountNotifier: Account list updated. Current active ID: ${state?.id}. New list size: ${newList.length}",
+    );
+    if (state == null) {
+      if (newList.isNotEmpty) {
+        await setActive(newList.first);
+        print(
+          "ActiveAccountNotifier: No previous active account, set first of new list (${state?.id}) as active.",
+        );
+      } else {
+        print(
+          "ActiveAccountNotifier: No previous active account and new list is empty.",
+        );
+      }
+    } else {
       final bool stillExists = newList.any((acc) => acc.id == state!.id);
       if (!stillExists) {
-        // 它被删除了！将活动账号重置为新列表的第一个
-        state = newList.isNotEmpty ? newList.first : null;
+        print(
+          "ActiveAccountNotifier: Active account ID ${state!.id} no longer exists in the updated list.",
+        );
+        await setActive(newList.isNotEmpty ? newList.first : null);
+        print(
+          "ActiveAccountNotifier: Reset active account to ${state?.id ?? 'null'}.",
+        );
+      } else {
+        print(
+          "ActiveAccountNotifier: Active account ID ${state!.id} still exists. No change needed.",
+        );
+        final updatedAccountInstance = newList.firstWhere(
+          (acc) => acc.id == state!.id,
+        );
+        if (state != updatedAccountInstance) {
+          state = updatedAccountInstance;
+          print(
+            "ActiveAccountNotifier: Updated active account instance for ID ${state!.id}.",
+          );
+        }
       }
-      // 如果它仍然存在，我们什么都不做，保持它被选中
     }
   }
 }
 
-// --- 将 activeAccountProvider 升级为 StateNotifierProvider ---
-final activeAccountProvider = StateNotifierProvider<ActiveAccountNotifier, Account?>((ref) {
-  final notifier = ActiveAccountNotifier(ref);
+// activeAccountProvider 保持不变
+final activeAccountProvider =
+    StateNotifierProvider<ActiveAccountNotifier, Account?>((ref) {
+      final notifier = ActiveAccountNotifier(ref);
+      ref.listen(accountsProvider, (previousList, newList) {
+        notifier.updateFromList(newList);
+      });
+      return notifier;
+    });
 
-  // *** 关键 ***
-  // "监听" accountsProvider。当列表变化时，
-  // 自动调用我们的 updateFromList 方法。
-  ref.listen(accountsProvider, (previousList, newList) {
-    notifier.updateFromList(newList);
-  });
-  
-  return notifier;
-});
-
-
-// --- State Notifier ---
+// --- AccountsNotifier ---
 
 class AccountsNotifier extends StateNotifier<List<Account>> {
   final Ref _ref;
@@ -81,53 +151,94 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
   }
 
   Future<void> loadAccounts() async {
-    state = await _storageService.getAccounts();
+    state = await _storageService.getAccounts(); // Assuming getAccounts exists
+    print("AccountsNotifier: Loaded ${state.length} accounts.");
+    // Notify ActiveAccountNotifier after loading
+    _ref.read(activeAccountProvider.notifier).updateFromList(state);
   }
 
   Future<void> addAccount(String cookie) async {
-    final profile = await _apiService.getUserProfile(cookie);
-    if (profile == null) {
-      throw Exception("提供的Cookie无效或已过期。");
-    }
-
     final twid = _parseTwidFromCookie(cookie);
     if (twid == null) {
       throw Exception('无法从Cookie中解析出twid');
     }
 
-    final newAccount = Account(id: twid, cookie: cookie);
+    String? name;
+    String? screenName;
+    String? avatarUrl;
 
+    try {
+      final Map<String, dynamic> userProfileJson = await _apiService
+          .getUserByRestId(twid, cookie);
+
+      final result = userProfileJson['data']?['user']?['result'];
+
+      if (result != null &&
+          result is Map<String, dynamic> &&
+          result['__typename'] == 'User') {
+        final legacy = result['legacy'];
+        if (legacy != null && legacy is Map<String, dynamic>) {
+          name = legacy['name'] as String?;
+          screenName = legacy['screen_name'] as String?;
+          avatarUrl = legacy['profile_image_url_https'] as String?;
+          print(
+            "addAccount: Profile fetched - Name: $name, ScreenName: $screenName, Avatar: $avatarUrl",
+          );
+        } else {
+          print("addAccount: API 返回成功，但 legacy 数据缺失或格式不正确。");
+        }
+      } else {
+        final typeName = result?['__typename'];
+        final reason = result?['reason'];
+        print(
+          "addAccount: API 返回成功，但用户结果类型不是 'User' (可能是 '$typeName', 原因: '$reason')。",
+        );
+        throw Exception("无法获取有效的用户信息 (可能不存在或被限制)。");
+      }
+    } catch (e) {
+      print("addAccount: 调用 API 或解析 Profile 时出错: $e");
+      rethrow;
+    }
+
+    // --- 使用正确的命名参数调用 Account 构造函数 ---
+    final newAccount = Account(
+      id: twid,
+      cookie: cookie,
+      name: name, // 确保 Account 构造函数有 'name'
+      screenName: screenName, // 确保 Account 构造函数有 'screenName'
+      avatarUrl: avatarUrl, // 确保 Account 构造函数有 'avatarUrl'
+    );
+
+    // --- 将这部分代码移回方法内部 ---
     final exists = state.any((acc) => acc.id == newAccount.id);
+    List<Account> newList;
     if (exists) {
-      state = [
+      newList = [
         for (final acc in state)
           if (acc.id == newAccount.id) newAccount else acc,
       ];
+      print("addAccount: Updated existing account for ID: $twid");
     } else {
-      state = [...state, newAccount];
+      newList = [...state, newAccount];
+      print("addAccount: Added new account for ID: $twid");
     }
-
-    await _storageService.saveAccounts(state);
-    
-    // --- 修改：使用 .setActive() 方法 ---
-    _ref.read(activeAccountProvider.notifier).setActive(newAccount);
-  }
-
-  // --- 修改：移除 removeAccount 中的循环依赖 ---
-  Future<void> removeAccount(String id) async {
-    // 1. (移除) final currentActive = _ref.read(activeAccountProvider);
-
-    // 2. 创建新列表
-    final newList = state.where((acc) => acc.id != id).toList();
-    
-    // 3. 更新自己的状态
     state = newList;
 
-    // 4. 保存到存储
+    // Assuming saveAccounts exists and uses the correct state
     await _storageService.saveAccounts(state);
+    print("addAccount: Saved accounts list to secure storage.");
 
-    // 5. (移除) if (currentActive?.id == id) { ... }
-    //    (activeAccountProvider 的 .listen() 会自动处理这个)
+    await _ref.read(activeAccountProvider.notifier).setActive(newAccount);
+    print("addAccount: Set account ID $twid as active.");
+    // --- 移动的代码块结束 ---
+  } // <--- addAccount 方法结束
+
+  Future<void> removeAccount(String id) async {
+    final newList = state.where((acc) => acc.id != id).toList();
+    state = newList;
+    // Assuming saveAccounts exists
+    await _storageService.saveAccounts(state);
+    print("AccountsNotifier: Removed account ID $id and saved.");
   }
 
   String? _parseTwidFromCookie(String cookie) {
@@ -135,12 +246,29 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
       final parts = cookie.split(';');
       final twidPart = parts.firstWhere(
         (part) => part.trim().startsWith('twid='),
+        orElse: () => '',
       );
-      final valuePart = twidPart.split('=')[1];
-      final decodedValue = Uri.decodeComponent(valuePart);
-      final id = decodedValue.split('=')[1];
-      return id;
-    } catch (e) {
+      if (twidPart.isNotEmpty) {
+      var valuePart = twidPart.split('=')[1].trim();
+
+      // URL 解码
+      valuePart = Uri.decodeComponent(valuePart);
+
+      // 兼容 u=xxxx 或 u_xxxx
+      if (valuePart.startsWith('u=')) {
+        final id = valuePart.substring(2);
+        return id.isNotEmpty ? id : null;
+      } else if (valuePart.startsWith('u_')) {
+        final id = valuePart.substring(2);
+        return id.isNotEmpty ? id : null;
+      } else {
+        print("解析 twid 失败: twid value ($valuePart) 不以 'u=' 或 'u_' 开头");
+        return null;
+      }
+    }
+    return null;
+  } catch (e) {
+      print("Error parsing twid from cookie: $e");
       return null;
     }
   }
