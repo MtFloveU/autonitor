@@ -1,16 +1,35 @@
+import 'dart:math';
+
+import 'package:autonitor/models/twitter_user.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:autonitor/core/data_processor.dart';
 import 'package:autonitor/models/cache_data.dart';
 import 'package:autonitor/providers/auth_provider.dart';
 import 'package:autonitor/ui/user_list_page.dart';
+import '../l10n/app_localizations.dart';
 
-// [已更新]
-// 核心改动：
-// 1. 在顶部信息栏右侧，恢复了“切换账号”的IconButton。
-// 2. 新增了 `_showAccountSwitcher` 方法，用于弹出账号选择对话框。
-// 3. 在页面右下角，新增了一个FloatingActionButton，用于触发“运行分析”操作。
-// 4. “运行分析”会调用 `ref.refresh(cacheProvider)`，这是Riverpod中重新执行Provider逻辑的标准方式。
+// --- (Providers... 保持不变) ---
+final userListProvider =
+    FutureProvider.family.autoDispose<List<TwitterUser>, String>((ref, category) async {
+  final dataProcessor = ref.watch(dataProcessorProvider);
+  if (dataProcessor == null) {
+    print("userListProvider: DataProcessor is null for category '$category'");
+    return []; 
+  }
+  print("userListProvider: Calling getUsers for category '$category'");
+  try {
+    final users = await dataProcessor.getUsers(category);
+    print(
+        "userListProvider: getUsers completed for category '$category'. Found ${users.length} users.");
+    return users;
+  } catch (e, stacktrace) {
+    print(
+        "userListProvider: !!! ERROR fetching users for category '$category': $e !!!");
+    print("userListProvider: Stacktrace: $stacktrace");
+    throw Exception('$e'); 
+  }
+});
 
 final dataProcessorProvider = Provider.autoDispose<DataProcessor?>((ref) {
   final activeAccount = ref.watch(activeAccountProvider);
@@ -21,21 +40,23 @@ final dataProcessorProvider = Provider.autoDispose<DataProcessor?>((ref) {
 final cacheProvider = FutureProvider.autoDispose<CacheData?>((ref) async {
   final dataProcessor = ref.watch(dataProcessorProvider);
   if (dataProcessor == null) return null;
-  
-  // 启动时，先尝试加载现有缓存
+
   final initialCache = await dataProcessor.getCacheData();
   if (initialCache != null) return initialCache;
-  
-  // 如果没有缓存，则自动运行一次分析
+
   await dataProcessor.runProcess();
   return await dataProcessor.getCacheData();
 });
+// --- (Providers 结束) ---
+
 
 class HomePage extends ConsumerWidget {
-  const HomePage({super.key});
+  final VoidCallback onNavigateToAccounts;
 
-  /// [新增] 弹出账号切换对话框
+  const HomePage({super.key, required this.onNavigateToAccounts});
+
   void _showAccountSwitcher(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final allAccounts = ref.read(accountsProvider);
     final activeAccount = ref.read(activeAccountProvider);
 
@@ -47,19 +68,23 @@ class HomePage extends ConsumerWidget {
           children: [
             Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Text("切换账号", style: Theme.of(context).textTheme.titleLarge),
+              child:
+                  Text(l10n.switch_account, style: Theme.of(context).textTheme.titleLarge),
             ),
             ...allAccounts.map((account) {
               return ListTile(
                 leading: Icon(
-                  account.id == activeAccount?.id ? Icons.check_circle : Icons.person_outline,
-                  color: account.id == activeAccount?.id ? Colors.green : null,
+                  account.id == activeAccount?.id
+                      ? Icons.check_circle
+                      : Icons.person_outline,
+                  color:
+                      account.id == activeAccount?.id ? Colors.green : null,
                 ),
                 title: Text("ID: ${account.id}"),
                 onTap: () {
-                  // 更新活动账号
-                  ref.read(activeAccountProvider.notifier).state = account;
-                  Navigator.pop(context); // 关闭对话框
+                  // --- 修改：使用 .setActive() 方法 ---
+                  ref.read(activeAccountProvider.notifier).setActive(account);
+                  Navigator.pop(context);
                 },
               );
             }),
@@ -69,87 +94,79 @@ class HomePage extends ConsumerWidget {
     );
   }
 
-  Future<void> _navigateToUserList(BuildContext context, WidgetRef ref, String category) async {
-    final dataProcessor = ref.read(dataProcessorProvider);
-    if (dataProcessor == null) return;
+  Future<void> _navigateToUserList(
+      BuildContext context, WidgetRef ref, String categoryKey) async {
+    print('--- HomePage: Navigating to UserListPage for category key: $categoryKey ---');
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
-
-    try {
-      final users = await dataProcessor.getUsers(category);
-      if (context.mounted) {
-        Navigator.pop(context); 
-        if (users.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('$category 列表当前为空')),
-          );
-          return;
-        }
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => UserListPage(title: category, users: users),
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('获取列表失败: $e')),
-        );
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final activeAccount = ref.watch(activeAccountProvider);
-
-    if (activeAccount == null) {
-      return _buildNoAccountState(context);
-    }
-    
-    return Scaffold( // [新增] 添加Scaffold以容纳FloatingActionButton
-      body: _buildAccountView(context, ref),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          // 显示加载指示器
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (_) => const Center(child: CircularProgressIndicator()),
-          );
-          // 重新运行分析
-          await ref.read(dataProcessorProvider)?.runProcess();
-          // 刷新UI
-          ref.invalidate(cacheProvider);
-          if (context.mounted) {
-            Navigator.pop(context); // 关闭加载指示器
-          }
-        },
-        label: const Text("运行分析"),
-        icon: const Icon(Icons.sync),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => UserListPage(title: categoryKey),
       ),
     );
   }
 
-  Widget _buildNoAccountState(BuildContext context) {
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final activeAccount = ref.watch(activeAccountProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Autonitor'),
+      ),
+      body: activeAccount == null
+          ? _buildNoAccountState(context, onNavigateToAccounts)
+          : _buildAccountView(context, ref),
+      
+      floatingActionButton: activeAccount == null
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: () async {
+                final currentContext = context;
+                showDialog(
+                  context: currentContext, 
+                  barrierDismissible: false,
+                  builder: (_) => const Center(child: CircularProgressIndicator()),
+                );
+                await ref.read(dataProcessorProvider)?.runProcess();
+                ref.invalidate(cacheProvider);
+                if (currentContext.mounted) {
+                  Navigator.pop(currentContext);
+                }
+              },
+              label: Text(l10n.run),
+              icon: const Icon(Icons.play_arrow),
+            ),
+    );
+  }
+
+  Widget _buildNoAccountState(BuildContext context, VoidCallback onNavigate) {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.person_off_outlined, size: 64, color: Colors.grey.shade400),
+            Icon(Icons.group_outlined,
+                size: 64, color: Colors.grey.shade400),
             const SizedBox(height: 24),
-            Text("没有活动的账号", style: Theme.of(context).textTheme.headlineSmall),
+            Text(l10n.login_first, style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 8),
-            const Text("请前往 'Accounts' 页面添加或选择一个账号。", textAlign: TextAlign.center),
+            Text(l10n.login_first_description, textAlign: TextAlign.center),
+            const SizedBox(height: 24), 
+            ElevatedButton.icon(
+              icon: const Icon(Icons.login),
+              label: Text(l10n.accounts),
+              onPressed: onNavigate,
+              style: ElevatedButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                textStyle: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
           ],
         ),
       ),
@@ -188,103 +205,168 @@ class HomePage extends ConsumerWidget {
     );
   }
 
-  Widget _buildDataDisplay(BuildContext context, CacheData cache, WidgetRef ref) {
+  Widget _buildDataDisplay(
+      BuildContext context, CacheData cache, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+
     return RefreshIndicator(
       onRefresh: () async => ref.invalidate(cacheProvider),
       child: ListView(
         padding: const EdgeInsets.all(16.0),
         children: <Widget>[
-           Row(
-            children: [
-              const CircleAvatar(radius: 30, child: Icon(Icons.person, size: 30)),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(cache.accountName, style: Theme.of(context).textTheme.titleLarge),
-                    Text("ID: ${cache.accountId}", style: Theme.of(context).textTheme.bodyMedium),
-                  ],
+          Card(
+            clipBehavior: Clip.antiAlias, 
+            margin: EdgeInsets.zero,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                  child: Row(
+                    children: [
+                      const CircleAvatar(
+                          radius: 24, child: Icon(Icons.person, size: 24)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(cache.accountName,
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),maxLines: 1,
+                                overflow: TextOverflow.ellipsis,),
+                            Text("@${cache.accountName}",
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),maxLines: 1,
+                                overflow: TextOverflow.ellipsis,),
+                            Text("ID: ${cache.accountId}", 
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),maxLines: 1,
+                                overflow: TextOverflow.ellipsis,),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.swap_horiz),
+                        tooltip: l10n.switch_account,
+                        onPressed: () => _showAccountSwitcher(context, ref),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              // [已恢复] 切换账号按钮
-              IconButton(
-                icon: const Icon(Icons.swap_horiz),
-                tooltip: "切换账号",
-                onPressed: () => _showAccountSwitcher(context, ref),
-              ),
-            ],
+                const Divider(height: 1, indent: 0, endIndent: 0),
+                IntrinsicHeight(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () =>
+                              _navigateToUserList(context, ref, 'following'),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12.0),
+                            child: Column(
+                              children: [
+                                Text(
+                                  cache.followingCount.toString(),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  l10n.following,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const VerticalDivider(width: 1),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () =>
+                              _navigateToUserList(context, ref, 'followers'),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12.0),
+                            child: Column(
+                              children: [
+                                Text(
+                                  cache.followersCount.toString(),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  l10n.followers,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              ],
+            ),
           ),
-          const SizedBox(height: 32),
-          Text('概览', style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(child: _buildOverviewCard(context, cache.followersCount.toString(), '关注者', () => _navigateToUserList(context, ref, '关注者'))),
-              const SizedBox(width: 16),
-              Expanded(child: _buildOverviewCard(context, cache.followingCount.toString(), '正在关注', () => _navigateToUserList(context, ref, '正在关注'))),
-            ],
-          ),
-          const Divider(height: 48),
-          Text('详情', style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24), 
           Card(
             margin: EdgeInsets.zero,
             child: Column(
               children: [
-                _buildDetailListItem(context, ref, Icons.person_remove_outlined, '普通取关', cache.unfollowedCount),
-                _buildDetailListItem(context, ref, Icons.group_off_outlined, '互关双取', cache.mutualUnfollowedCount),
-                _buildDetailListItem(context, ref, Icons.person_off_outlined, '互关单取', cache.singleUnfollowedCount),
-                _buildDetailListItem(context, ref, Icons.lock_outline, '冻结', cache.frozenCount),
-                _buildDetailListItem(context, ref, Icons.no_accounts_outlined, '注销', cache.deactivatedCount),
-                _buildDetailListItem(context, ref, Icons.person_add_alt_1_outlined, '重新关注', cache.refollowedCount),
-                _buildDetailListItem(context, ref, Icons.person_add, '新增关注', cache.newFollowersCount, showDivider: false),
+                _buildDetailListItem(context, ref, 'normal_unfollowed', Icons.person_remove_outlined,
+                    l10n.normal_unfollowed, cache.unfollowedCount),
+                _buildDetailListItem(context, ref, 'mutual_unfollowed', Icons.group_off_rounded,
+                    l10n.mutual_unfollowed, cache.mutualUnfollowedCount),
+                _buildDetailListItem(context, ref, 'oneway_unfollowed', Icons.group_off_outlined,
+                    l10n.oneway_unfollowed, cache.singleUnfollowedCount),
+                _buildDetailListItem(
+                    context, ref, 'suspended', Icons.lock_outline, l10n.suspended, cache.frozenCount),
+                _buildDetailListItem(context, ref, 'deactivated', Icons.no_accounts_outlined,
+                    l10n.deactivated, cache.deactivatedCount),
+                _buildDetailListItem(context, ref, 'be_followed_back', Icons.group_add_outlined,
+                    l10n.be_followed_back, cache.refollowedCount),
+                _buildDetailListItem(
+                    context,
+                    ref,
+                    'new_followers_following',
+                    Icons.person_add_alt_1_outlined,
+                    l10n.new_followers_following,
+                    cache.newFollowersCount,
+                    showDivider: false),
               ],
             ),
           ),
-          const SizedBox(height: 80), // 为悬浮按钮留出空间
+          const SizedBox(height: 80), 
         ],
       ),
     );
   }
-  
-  Widget _buildOverviewCard(BuildContext context, String value, String label, VoidCallback onTap) {
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 2,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              Text(value, style: Theme.of(context).textTheme.headlineMedium),
-              const SizedBox(height: 4),
-              Text(label),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
-  Widget _buildDetailListItem(BuildContext context, WidgetRef ref, IconData icon, String label, int count, {bool showDivider = true}) {
+  Widget _buildDetailListItem(BuildContext context, WidgetRef ref,
+      String categoryKey, IconData icon, String label, int count,
+      {bool showDivider = true}) {
     return InkWell(
-      onTap: () => _navigateToUserList(context, ref, label),
+      onTap: () => _navigateToUserList(context, ref, categoryKey),
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
             child: Row(
               children: [
                 Icon(icon, color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 16),
-                Expanded(child: Text(label, style: Theme.of(context).textTheme.titleMedium)),
-                Text(count.toString(), style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.secondary,
-                )),
+                Expanded(
+                    child: Text(label,
+                        style: Theme.of(context).textTheme.titleMedium)),
+                Text(count.toString(),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.secondary,
+                        )),
                 const SizedBox(width: 8),
                 const Icon(Icons.chevron_right, color: Colors.grey),
               ],

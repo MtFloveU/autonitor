@@ -32,13 +32,18 @@ dependencies:
     sdk: flutter
   dynamic_color: ^1.2.2
   flutter_riverpod: ^2.5.1         # 状态管理
-  flutter_secure_storage: ^9.2.2  # 安全加密存储
+  flutter_secure_storage: any  # 安全加密存储
   flutter_inappwebview: ^6.0.0      # 浏览器视图
   http: ^1.2.1                    # 网络请求
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  url_launcher: ^6.3.2
+  shared_preferences: ^2.5.3
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:
@@ -64,7 +69,7 @@ flutter_launcher_icons:
   ios: true
   # 你的原始图标文件的路径
   image_path: "assets/icon/icon.png"
-  adaptive_icon_foreground: "assets/icon/icon_1024.png"
+  adaptive_icon_foreground: "assets/icon/icon_f1024.png"
   adaptive_icon_background: "#1A237E"
   # 安卓最低SDK版本，与你的项目保持一致
   #min_sdk_android: 19
@@ -75,6 +80,9 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # --- 添加：启用本地化代码生成 ---
+  generate: true
 
   # To add assets to your application, add an assets section, like this:
   # assets:

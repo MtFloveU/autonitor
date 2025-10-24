@@ -1,16 +1,26 @@
 import 'package:flutter/material.dart';
-
-// [已更新]
-// 核心改动：
-// 1. 移除了Scaffold和AppBar，使其成为一个纯粹的内容面板。
+import '../l10n/app_localizations.dart'; 
 class CommitsPage extends StatelessWidget {
   const CommitsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Commits Page - Coming Soon'),
+    final l10n = AppLocalizations.of(context)!;
+    
+    return Scaffold(
+      // 3. 添加 AppBar
+      appBar: AppBar(
+        title: Text(l10n.data),
+      ),
+      body: const Center(
+        child: Text('Data Page - Coming Soon'),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // TODO: 在这里添加点击搜索按钮的逻辑
+        },
+        child: const Icon(Icons.search),
+      ),
     );
   }
 }
-

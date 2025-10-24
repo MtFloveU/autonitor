@@ -8,12 +8,26 @@ class TwitterUser {
   final String name;
   final String id;
   final String restId;
+  final String joinTime;
+  final String? bio;
+  final String? location;
+  final String? bannerUrl;
+  final String? link;
+  final int followingCount;
+  final int followersCount;
 
   const TwitterUser({
     required this.avatarUrl,
     required this.name,
     required this.id,
     required this.restId,
+    required this.joinTime,
+    required this.bio,
+    required this.location,
+    required this.bannerUrl,
+    required this.link,
+    required this.followersCount,
+    required this.followingCount,
   });
 
   // 从Map(JSON)创建TwitterUser实例
@@ -23,6 +37,13 @@ class TwitterUser {
       name: json['name'] ?? 'Unknown Name',
       id: json['id'] ?? 'Unknown ID',
       restId: json['restId'] ?? '',
+      bio: json['bio'],
+      location: json['location'],
+      joinTime: json['joinTime'],
+      bannerUrl: json['bannerUrl'],
+      link: json['link'],
+      followersCount: json['followersCount'] ?? 0,
+      followingCount: json['followingCount'] ?? 0,
     );
   }
 
@@ -33,6 +54,10 @@ class TwitterUser {
       'name': name,
       'id': id,
       'restId': restId,
+      'bio': bio,
+      'location': location,
+      'joinTime': joinTime,
+      'bannerUrl': bannerUrl,
     };
   }
 }

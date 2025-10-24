@@ -1,0 +1,63 @@
+{
+  "@@locale": "zh",
+  "language": "语言",
+  "@language": {
+    "description": "语言设置的标签"
+  },
+  "app_title": "Autonitor",
+  "settings": "设置",
+  "home": "首页",
+  "data": "数据",
+  "accounts": "账号",
+  "switchAccount": "切换账号",
+  "followers": "关注者",
+  "following": "正在关注",
+  "new_account": "添加新账号",
+  "view_cookie": "查看 Cookie",
+  "close": "关闭",
+  "view_on_twitter": "在 Twitter 上查看",
+  "metadata": "元数据",
+  "tweets": "推文",
+  "media_count": "媒体数量",
+  "likes": "点赞数量",
+  "listed_count": "被收录列表",
+  "identity": "身份相关",
+  "back": "返回",
+  "history": "历史",
+  "suspended": "被冻结",
+  "deactivated": "注销",
+  "normal_unfollowed": "普通取关",
+  "be_followed_back": "被回关",
+  "mutual_unfollowed": "互关双取",
+  "oneway_unfollowed": "互关单取",
+  "new_followers_following": "新增关注",
+  "empty_list_message": "列表为空",
+  "switch_account": "切换账号",
+  "run": "运行",
+  "choose_login_method": "选择登录方式",
+  "browser_login": "浏览器登录",
+  "manual_cookie": "输入Cookie",
+  "joined": "加入于",
+  "im_logged_in": "我已登录",
+  "cancel": "取消",
+  "ok": "确定",
+  "account_added_successfully": "账号添加成功！",
+  "saving_account": "正在保存账号...",
+  "cookie": "Cookie",
+  "no_cookie_found": "未能找到 cookie",
+  "no_auth_token_found": "未能找到 auth_token",
+  "found_auth_token_last_check": "在上次检查中找到了 Auth Token",
+  "general": "通用",
+  "login_first": "需要登录",
+  "login_first_description": "请至少添加一个账号以继续",
+  "log_in": "登录",
+  "delete": "删除",
+  "confirm_delete_account": "您确定要删除账号 {accountId} 吗？此操作无法撤销。",
+    "@confirm_delete_account": {
+    "placeholders": {
+      "accountId": {
+        "description": "The ID of the account to be deleted"
+      }
+    }
+  }
+}

@@ -13,7 +13,6 @@ class DataProcessor {
   /// 运行核心分析流程
   Future<void> runProcess() async {
     // 模拟耗时操作，例如API请求和数据比较
-    await Future.delayed(const Duration(seconds: 2));
     final latestUsers = _fetchLatestUserData();
     _generateCache(latestUsers);
   }
@@ -23,28 +22,34 @@ class DataProcessor {
     // 为每个账号使用独立的缓存文件
     final cacheJson = _fileSystem['cache_${account.id}.json'];
     if (cacheJson != null) {
-      return CacheData.fromJson(jsonDecode(cacheJson));
+      try {
+         return CacheData.fromJson(jsonDecode(cacheJson));
+      } catch (e) {
+         // 在真实应用中处理错误，例如删除无效缓存
+         print("Error decoding cache data: $e");
+         return null;
+      }
     }
     return null;
   }
   
-  /// [新增] 获取特定分类的用户列表
-  /// 在真实应用中，这里会根据`category`读取不同的数据文件或执行不同的计算
+  /// 获取特定分类的用户列表
   Future<List<TwitterUser>> getUsers(String category) async {
-    print("DataProcessor: Fetching users for category '$category'");
-    await Future.delayed(const Duration(milliseconds: 300)); // 模拟异步IO
-
     // 根据分类返回不同的模拟数据列表
-    if (category == '关注者') {
+    await Future.delayed(const Duration(seconds: 1));
+    if (category == 'followers') {
       return _fetchLatestUserData().values.toList();
     }
-    if (category == '普通取关') {
+    if (category == 'normal_unfollowed') {
        return [
-        const TwitterUser(id: "@unfollowed1", name: "Unfollowed User 1", restId: "u1", avatarUrl: ""),
-        const TwitterUser(id: "@unfollowed2", name: "Unfollowed User 2", restId: "u2", avatarUrl: ""),
+        // 使用 const 构造函数，并确保所有字段都提供了值或 null
+        const TwitterUser(id: "unfollowed1", name: "Unfollowed User 1", restId: "u1", avatarUrl: "", joinTime: 'Wed Apr 12 05:43:13 +0000 2023', bio: 'unfollowed 1', location: 'unfo1', bannerUrl: null, link: null, followersCount: 1200, followingCount: 100),
+        const TwitterUser(id: "unfollowed2", name: "Unfollowed User 2", restId: "u2", avatarUrl: "", joinTime: 'Wed Apr 12 05:43:14 +0000 2023', bio: 'unfollowed 2', location: 'unfo2', bannerUrl: null, link: null, followersCount: 1200, followingCount: 100),
       ];
     }
-    
+    if (category == 'following') {
+        return []; // 明确返回空列表
+    }
     // 对于其他未实现的分类，返回空列表
     return [];
   }
@@ -59,7 +64,7 @@ class DataProcessor {
       accountId: account.id,
       lastUpdateTime: DateTime.now().toIso8601String(),
       followersCount: latestState.length,
-      followingCount: 150, // 模拟数据
+      followingCount: 0, // 模拟数据
       unfollowedCount: 12,
       mutualUnfollowedCount: 5,
       singleUnfollowedCount: 7,
@@ -70,15 +75,20 @@ class DataProcessor {
     );
 
     // 将缓存数据写入模拟文件系统
-    _fileSystem['cache_${account.id}.json'] = jsonEncode(cacheContent.toJson());
+    try {
+      _fileSystem['cache_${account.id}.json'] = jsonEncode(cacheContent.toJson());
+    } catch (e) {
+       print("Error encoding cache data: $e");
+    }
   }
 
   /// 模拟从API获取最新的用户数据
   Map<String, TwitterUser> _fetchLatestUserData() {
     return {
-      "user1": const TwitterUser(id: "@user1", name: "User One (Updated)", restId: "1", avatarUrl: ""),
-      "user2": const TwitterUser(id: "@user2", name: "User Two", restId: "2", avatarUrl: ""),
-      "user4": const TwitterUser(id: "@user4", name: "User Four", restId: "4", avatarUrl: ""),
+      // 使用 const 构造函数，并确保所有字段都提供了值或 null
+      "user1": const TwitterUser(id: "user1", name: "User One (upd)", restId: "1234567890", bio: "Hello everyone, this is User 1 checking in. I'm here and ready to participate in the discussion.", location: "User 1 Location", joinTime: "Wed Apr 12 05:43:13 +0000 2023", avatarUrl: "", bannerUrl: null, link: 'https://example.com', followersCount: 1200, followingCount: 100),
+      "user2": const TwitterUser(id: "user2", name: "User Two", restId: "2", bio: "This is user 2", location: "User 2 Location", joinTime: "Wed Apr 12 05:43:14 +0000 2023", avatarUrl: "", bannerUrl: null, link: null, followersCount: 1200, followingCount: 100),
+      "user4": const TwitterUser(id: "user4", name: "User Four", restId: "4", bio: "This is user 4", location: "User 4 Location", joinTime: "Wed Apr 12 05:43:15 +0000 2023", avatarUrl: "", bannerUrl: null, link: null, followersCount: 1200, followingCount: 100),
     };
   }
 }

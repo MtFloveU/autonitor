@@ -1,0 +1,63 @@
+{
+  "@@locale": "en",
+  "language": "Language",
+  "@language": {
+    "description": "Label for the language setting"
+  },
+  "app_title": "Autonitor",
+  "settings": "Settings",
+  "home": "Home",
+  "data": "Data",
+  "accounts": "Accounts",
+  "switchAccount": "Switch Account",
+  "followers": "Followers",
+  "following": "Following",
+  "new_account": "Add a new account",
+  "view_cookie": "View Cookie",
+  "close": "Close",
+  "view_on_twitter": "View on Twitter",
+  "metadata": "Metadata",
+  "tweets": "Tweets",
+  "media_count": "Media Count",
+  "likes": "Likes",
+  "listed_count": "Listed Count",
+  "identity": "Identity-related",
+  "back": "Back",
+  "history": "History",
+  "suspended": "Suspended",
+  "deactivated": "Deactivated",
+  "normal_unfollowed": "Normal Unfollowed",
+  "be_followed_back": "Be Followed Back",
+  "mutual_unfollowed": "Mutual Unfollowed",
+  "oneway_unfollowed": "One-way Unfollowed",
+  "new_followers_following": "New Followers & Following",
+  "empty_list_message": "The list is empty",
+  "switch_account": "Switch Account",
+  "run": "Run",
+  "choose_login_method": "Choose Login Method",
+  "browser_login": "Login via Browser",
+  "manual_cookie": "Manual Cookie Input",
+  "joined": "Joined",
+  "im_logged_in": "I'm logged in",
+  "cancel": "Cancel",
+  "ok": "OK",
+  "account_added_successfully": "Account added successfully!",
+  "saving_account": "Saving account...",
+  "cookie": "Cookie",
+  "no_cookie_found": "No cookie found",
+  "no_auth_token_found": "No auth_token found",
+  "found_auth_token_last_check": "Auth Token found in last check",
+  "general": "General",
+  "login_first": "Log in Needed",
+  "login_first_description": "Add at least one account to continue",
+  "log_in": "Log In",
+  "delete": "Delete",
+  "confirm_delete_account": "Are you sure you want to delete account {accountId}? This action cannot be undone.",
+    "@confirm_delete_account": {
+    "placeholders": {
+      "accountId": {
+        "description": "The ID of the account to be deleted"
+      }
+    }
+  }
+}
