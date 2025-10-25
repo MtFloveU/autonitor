@@ -1,4 +1,5 @@
-import 'dart:math'; // 导入 math 库以使用 max 函数
+import 'dart:math';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -50,7 +51,16 @@ class UserDetailPage extends StatelessWidget {
               AspectRatio(
                 aspectRatio: bannerAspectRatio,
                 child: (user.bannerUrl ?? '').isNotEmpty
-                    ? Image.network(user.bannerUrl!, fit: BoxFit.cover)
+                    ? CachedNetworkImage(
+                        imageUrl: user.bannerUrl!,
+                        fit: BoxFit.cover,
+                        // 添加一个占位符，保持灰色背景
+                        placeholder: (context, url) =>
+                            Container(color: Colors.grey.shade300),
+                        // 加载失败时也显示灰色背景
+                        errorWidget: (context, url, error) =>
+                            Container(color: Colors.grey.shade300),
+                      )
                     : Container(color: Colors.grey.shade300),
               ),
               Positioned(
@@ -64,7 +74,7 @@ class UserDetailPage extends StatelessWidget {
                     child: CircleAvatar(
                       radius: 42,
                       backgroundImage: user.avatarUrl.isNotEmpty
-                          ? NetworkImage(user.avatarUrl)
+                          ? CachedNetworkImageProvider(user.avatarUrl)
                           : null,
                       child: user.avatarUrl.isEmpty
                           ? const Icon(Icons.person, size: 40)

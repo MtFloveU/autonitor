@@ -216,7 +216,30 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
           followersCount = legacy['followers_count'] as int? ?? 0;
           followingCount =
               legacy['friends_count'] as int? ?? 0; // API 使用 'friends_count'
-          link = legacy['url'] as String?; // 这可能是 t.co 链接
+          final String? tcoUrl = legacy['url'] as String?;
+          String? finalLink = tcoUrl; // 默认回退到 t.co 链接
+
+          try {
+            final entities = legacy['entities'] as Map<String, dynamic>?;
+            final urlBlock = entities?['url'] as Map<String, dynamic>?;
+            final urlsList = urlBlock?['urls'] as List<dynamic>?;
+
+            if (tcoUrl != null && urlsList != null) {
+              // 遍历列表，查找 t.co 链接匹配的块
+              for (final item in urlsList) {
+                final urlMap = item as Map<String, dynamic>?;
+                if (urlMap != null && urlMap['url'] == tcoUrl) {
+                  // 找到了！使用 expanded_url
+                  finalLink = urlMap['expanded_url'] as String?;
+                  break; // 停止搜索
+                }
+              }
+            }
+          } catch (e) {
+            // 发生解析错误，finalLink 将保持为 tcoUrl，这正是我们想要的回退行为
+          }
+
+          link = finalLink;
 
           // [修正] 'bannerUrl' 来自 legacy
           bannerUrl = legacy['profile_banner_url'] as String?;
