@@ -9,8 +9,8 @@ class TwitterApiService {
 
   TwitterApiService() : _dio = Dio() {
     // 在这里可以为 Dio 设置一些基础配置，比如超时时间
-    _dio.options.connectTimeout = const Duration(seconds: 10);
-    _dio.options.receiveTimeout = const Duration(seconds: 10);
+    //_dio.options.connectTimeout = const Duration(seconds: 10);
+    //_dio.options.receiveTimeout = const Duration(seconds: 10);
   }
 
   /// 从 Cookie 字符串中解析 'ct0' CSRF token。

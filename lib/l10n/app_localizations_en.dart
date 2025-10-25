@@ -114,7 +114,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get joined => 'Joined';
 
   @override
-  String get im_logged_in => 'I\'m logged in';
+  String get im_logged_in => 'I\'ve logged in';
 
   @override
   String get cancel => 'Cancel';

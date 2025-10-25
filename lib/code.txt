@@ -90,7 +90,7 @@ class DataProcessor {
   Map<String, TwitterUser> _fetchLatestUserData() {
     return {
       // 使用 const 构造函数，并确保所有字段都提供了值或 null
-      "user1": const TwitterUser(id: "user1", name: "User One (upd)", restId: "1234567890", bio: "This is user 1!!!", location: "User 1 Location", joinTime: "Wed Apr 12 05:43:13 +0000 2023", avatarUrl: "", bannerUrl: null, link: 'https://example.com', followersCount: 1200, followingCount: 100),
+      "user1": const TwitterUser(id: "user1", name: "User One (upd)", restId: "1234567890", bio: "Hello everyone, this is User 1 checking in. I'm here and ready to participate in the discussion.", location: "User 1 Location", joinTime: "Wed Apr 12 05:43:13 +0000 2023", avatarUrl: "", bannerUrl: null, link: 'https://example.com', followersCount: 1200, followingCount: 100),
       "user2": const TwitterUser(id: "user2", name: "User Two", restId: "2", bio: "This is user 2", location: "User 2 Location", joinTime: "Wed Apr 12 05:43:14 +0000 2023", avatarUrl: "", bannerUrl: null, link: null, followersCount: 1200, followingCount: 100),
       "user4": const TwitterUser(id: "user4", name: "User Four", restId: "4", bio: "This is user 4", location: "User 4 Location", joinTime: "Wed Apr 12 05:43:15 +0000 2023", avatarUrl: "", bannerUrl: null, link: null, followersCount: 1200, followingCount: 100),
     };
@@ -140,7 +140,7 @@ class DataProcessor {
   "browser_login": "Login via Browser",
   "manual_cookie": "Manual Cookie Input",
   "joined": "Joined",
-  "im_logged_in": "I'm logged in",
+  "im_logged_in": "I've logged in",
   "cancel": "Cancel",
   "ok": "OK",
   "account_added_successfully": "Account added successfully!",
@@ -148,7 +148,20 @@ class DataProcessor {
   "cookie": "Cookie",
   "no_cookie_found": "No cookie found",
   "no_auth_token_found": "No auth_token found",
-  "found_auth_token_last_check": "Auth Token found in last check"
+  "found_auth_token_last_check": "Auth Token found in last check",
+  "general": "General",
+  "login_first": "Log in Needed",
+  "login_first_description": "Add at least one account to continue",
+  "log_in": "Log In",
+  "delete": "Delete",
+  "confirm_delete_account": "Are you sure you want to delete account {accountId}? This action cannot be undone.",
+    "@confirm_delete_account": {
+    "placeholders": {
+      "accountId": {
+        "description": "The ID of the account to be deleted"
+      }
+    }
+  }
 }
 
 ### FILE: ./l10n/app_localizations.dart
@@ -466,7 +479,7 @@ abstract class AppLocalizations {
   /// No description provided for @im_logged_in.
   ///
   /// In en, this message translates to:
-  /// **'I\'m logged in'**
+  /// **'I\'ve logged in'**
   String get im_logged_in;
 
   /// No description provided for @cancel.
@@ -516,6 +529,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Auth Token found in last check'**
   String get found_auth_token_last_check;
+
+  /// No description provided for @general.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get general;
+
+  /// No description provided for @login_first.
+  ///
+  /// In en, this message translates to:
+  /// **'Log in Needed'**
+  String get login_first;
+
+  /// No description provided for @login_first_description.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one account to continue'**
+  String get login_first_description;
+
+  /// No description provided for @log_in.
+  ///
+  /// In en, this message translates to:
+  /// **'Log In'**
+  String get log_in;
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @confirm_delete_account.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete account {accountId}? This action cannot be undone.'**
+  String confirm_delete_account(Object accountId);
 }
 
 class _AppLocalizationsDelegate
@@ -682,7 +731,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get joined => 'Joined';
 
   @override
-  String get im_logged_in => 'I\'m logged in';
+  String get im_logged_in => 'I\'ve logged in';
 
   @override
   String get cancel => 'Cancel';
@@ -707,6 +756,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get found_auth_token_last_check => 'Auth Token found in last check';
+
+  @override
+  String get general => 'General';
+
+  @override
+  String get login_first => 'Log in Needed';
+
+  @override
+  String get login_first_description => 'Add at least one account to continue';
+
+  @override
+  String get log_in => 'Log In';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String confirm_delete_account(Object accountId) {
+    return 'Are you sure you want to delete account $accountId? This action cannot be undone.';
+  }
 }
 
 
@@ -722,7 +791,7 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
-  String get language => '语言/Language';
+  String get language => '语言';
 
   @override
   String get app_title => 'Autonitor';
@@ -852,6 +921,26 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get found_auth_token_last_check => '在上次检查中找到了 Auth Token';
+
+  @override
+  String get general => '通用';
+
+  @override
+  String get login_first => '需要登录';
+
+  @override
+  String get login_first_description => '请至少添加一个账号以继续';
+
+  @override
+  String get log_in => '登录';
+
+  @override
+  String get delete => '删除';
+
+  @override
+  String confirm_delete_account(Object accountId) {
+    return '您确定要删除账号 $accountId 吗？此操作无法撤销。';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -859,7 +948,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   AppLocalizationsZhTw() : super('zh_TW');
 
   @override
-  String get language => '語言/Language';
+  String get language => '語言';
 
   @override
   String get app_title => 'Autonitor';
@@ -989,13 +1078,33 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get found_auth_token_last_check => '在上次檢查中找到了 Auth Token';
+
+  @override
+  String get general => '通用';
+
+  @override
+  String get login_first => '需要登入';
+
+  @override
+  String get login_first_description => '請至少添加一個帳戶以繼續';
+
+  @override
+  String get log_in => '登入';
+
+  @override
+  String get delete => '刪除';
+
+  @override
+  String confirm_delete_account(Object accountId) {
+    return '您確定要刪除賬戶 $accountId 嗎？此操作無法撤銷。';
+  }
 }
 
 
 ### FILE: ./l10n/app_zh.arb
 {
   "@@locale": "zh",
-  "language": "语言/Language",
+  "language": "语言",
   "@language": {
     "description": "语言设置的标签"
   },
@@ -1041,13 +1150,26 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   "cookie": "Cookie",
   "no_cookie_found": "未能找到 cookie",
   "no_auth_token_found": "未能找到 auth_token",
-  "found_auth_token_last_check": "在上次检查中找到了 Auth Token"
+  "found_auth_token_last_check": "在上次检查中找到了 Auth Token",
+  "general": "通用",
+  "login_first": "需要登录",
+  "login_first_description": "请至少添加一个账号以继续",
+  "log_in": "登录",
+  "delete": "删除",
+  "confirm_delete_account": "您确定要删除账号 {accountId} 吗？此操作无法撤销。",
+    "@confirm_delete_account": {
+    "placeholders": {
+      "accountId": {
+        "description": "The ID of the account to be deleted"
+      }
+    }
+  }
 }
 
 ### FILE: ./l10n/app_zh_TW.arb
 {
   "@@locale": "zh_TW",
-  "language": "語言/Language", 
+  "language": "語言", 
   "@language": {
     "description": "語言設定的標籤"
   },
@@ -1093,7 +1215,20 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   "cookie": "Cookie",
   "no_cookie_found": "未能找到 cookie",
   "no_auth_token_found": "未能找到 auth_token",
-  "found_auth_token_last_check": "在上次檢查中找到了 Auth Token"
+  "found_auth_token_last_check": "在上次檢查中找到了 Auth Token",
+  "general": "通用",
+  "login_first": "需要登入",
+  "login_first_description": "請至少添加一個帳戶以繼續",
+  "log_in": "登入",
+  "delete": "刪除",
+  "confirm_delete_account": "您確定要刪除賬戶 {accountId} 嗎？此操作無法撤銷。",
+  "@confirm_delete_account": {
+    "placeholders": {
+      "accountId": {
+        "description": "The ID of the account to be deleted"
+      }
+    }
+  }
 }
 
 ### FILE: ./main.dart
@@ -1175,31 +1310,71 @@ class MyApp extends ConsumerWidget {
 
 
 ### FILE: ./models/account.dart
-// [已更新]
-// 核心改动：
-// 1. 移除了不再需要的 `dart:convert` 导入。
-class Account {
-  final String id;
-  final String cookie;
-
-  Account({required this.id, required this.cookie});
-
-  factory Account.fromJson(Map<String, dynamic> json) {
-    return Account(
-      id: json['id'],
-      cookie: json['cookie'],
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'cookie': cookie,
-    };
-  }
-}
-
-
+    class Account {
+      /// The unique Twitter User ID (Rest ID / twid).
+      final String id;
+      /// The full cookie string required for authentication.
+      final String cookie;
+      /// The user's display name (e.g., "Elon Musk"). Fetched from API.
+      final String? name;
+      /// The user's screen name / handle (e.g., "elonmusk"). Fetched from API.
+      final String? screenName;
+      /// The URL for the user's profile image. Fetched from API.
+      final String? avatarUrl;
+    
+      Account({
+        required this.id,
+        required this.cookie,
+        this.name,
+        this.screenName,
+        this.avatarUrl,
+      });
+    
+      /// Creates an Account instance from a JSON map.
+      factory Account.fromJson(Map<String, dynamic> json) {
+        return Account(
+          id: json['id'] as String? ?? '', // Provide default empty string
+          cookie: json['cookie'] as String? ?? '', // Provide default empty string
+          name: json['name'] as String?,
+          screenName: json['screenName'] as String?,
+          avatarUrl: json['avatarUrl'] as String?,
+        );
+      }
+    
+      /// Converts the Account instance to a JSON map.
+      Map<String, dynamic> toJson() {
+        return {
+          'id': id,
+          'cookie': cookie,
+          'name': name,
+          'screenName': screenName,
+          'avatarUrl': avatarUrl,
+        };
+      }
+    
+      // Optional: Add copyWith for easier updates
+      Account copyWith({
+        String? id,
+        String? cookie,
+        String? name,
+        String? screenName,
+        String? avatarUrl,
+      }) {
+        return Account(
+          id: id ?? this.id,
+          cookie: cookie ?? this.cookie,
+          name: name ?? this.name,
+          screenName: screenName ?? this.screenName,
+          avatarUrl: avatarUrl ?? this.avatarUrl,
+        );
+      }
+    
+      // Optional: Override toString for better debugging
+      @override
+      String toString() {
+        return 'Account(id: $id, name: $name, screenName: $screenName, avatarUrl: $avatarUrl, cookie: ${cookie.length > 10 ? cookie.substring(0, 10) + '...' : cookie})';
+      }
+    }
 
 ### FILE: ./models/app_settings.dart
 import 'package:flutter/material.dart';
@@ -1384,33 +1559,142 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/account.dart';
 import '../services/secure_storage_service.dart';
 import '../services/twitter_api_service.dart';
+// 移除了未使用的 dart:convert 导入
 
-// [已更新]
-// 核心改动：
-// 1. 创建了两个独立的Provider：
-//    - `accountsProvider`：管理所有已保存账号的列表。
-//    - `activeAccountProvider`：管理当前被选中的活动账号。
-// 2. `AccountsNotifier` 成为管理账号列表的核心，包含加载、添加、移除等方法。
-// 3. 登录逻辑现在被封装在 `addAccount` 方法中。
+// --- Provider 定义 ---
 
-// --- Provider定义 ---
+// accountsProvider 保持不变
+final accountsProvider = StateNotifierProvider<AccountsNotifier, List<Account>>(
+  (ref) {
+    return AccountsNotifier(ref);
+  },
+);
 
-// Provider for the list of all saved accounts
-final accountsProvider = StateNotifierProvider<AccountsNotifier, List<Account>>((ref) {
-  return AccountsNotifier(ref);
-});
+// --- ActiveAccountNotifier ---
+class ActiveAccountNotifier extends StateNotifier<Account?> {
+  final Ref _ref;
+  late final SecureStorageService _storageService;
 
-// Provider for the currently active account
-final activeAccountProvider = StateProvider<Account?>((ref) {
-  // 当应用启动时，尝试从存储中加载第一个账号作为默认活动账号
-  final accounts = ref.watch(accountsProvider);
-  if (accounts.isNotEmpty) {
-    return accounts.first;
+  ActiveAccountNotifier(this._ref) : super(null) {
+    _storageService = _ref.read(secureStorageServiceProvider);
+    _initializeActiveAccount();
   }
-  return null;
-});
 
-// --- State Notifier ---
+  Future<void> _initializeActiveAccount() async {
+    final activeId = await _storageService.readActiveAccountId();
+    final accounts = _ref.read(accountsProvider);
+    print(
+      "ActiveAccountNotifier: Initializing... Loaded active ID: $activeId. Current accounts: ${accounts.length}",
+    );
+    if (activeId != null && accounts.isNotEmpty) {
+      try {
+        final initialAccount = accounts.firstWhere((acc) => acc.id == activeId);
+        state = initialAccount;
+        print(
+          "ActiveAccountNotifier: Initial active account set to ID ${state?.id}.",
+        );
+      } catch (e) {
+        print(
+          "ActiveAccountNotifier: Stored active ID $activeId not found in accounts list. Resetting.",
+        );
+        // 使用假设的正确方法名
+        await _storageService.deleteActiveAccountId();
+        if (accounts.isNotEmpty) {
+          state = accounts.first;
+          // 使用假设的正确方法名
+          await _storageService.saveActiveAccountId(state!.id);
+          print(
+            "ActiveAccountNotifier: Reset active account to first account ID ${state?.id}.",
+          );
+        } else {
+          state = null;
+          print("ActiveAccountNotifier: No accounts available after reset.");
+        }
+      }
+    } else if (accounts.isNotEmpty) {
+      state = accounts.first;
+      // 使用假设的正确方法名
+      await _storageService.saveActiveAccountId(state!.id);
+      print(
+        "ActiveAccountNotifier: No active ID stored, setting first account ID ${state?.id} as active.",
+      );
+    } else {
+      state = null;
+      print(
+        "ActiveAccountNotifier: No accounts available, active account remains null.",
+      );
+    }
+  }
+
+  Future<void> setActive(Account? account) async {
+    state = account;
+    if (account != null) {
+      // 使用假设的正确方法名
+      await _storageService.saveActiveAccountId(account.id);
+      print(
+        "ActiveAccountNotifier: Set active account ID: ${account.id} and persisted.",
+      );
+    } else {
+      // 使用假设的正确方法名
+      await _storageService.deleteActiveAccountId();
+      print("ActiveAccountNotifier: Cleared active account ID and persisted.");
+    }
+  }
+
+  Future<void> updateFromList(List<Account> newList) async {
+    print(
+      "ActiveAccountNotifier: Account list updated. Current active ID: ${state?.id}. New list size: ${newList.length}",
+    );
+    if (state == null) {
+      if (newList.isNotEmpty) {
+        await setActive(newList.first);
+        print(
+          "ActiveAccountNotifier: No previous active account, set first of new list (${state?.id}) as active.",
+        );
+      } else {
+        print(
+          "ActiveAccountNotifier: No previous active account and new list is empty.",
+        );
+      }
+    } else {
+      final bool stillExists = newList.any((acc) => acc.id == state!.id);
+      if (!stillExists) {
+        print(
+          "ActiveAccountNotifier: Active account ID ${state!.id} no longer exists in the updated list.",
+        );
+        await setActive(newList.isNotEmpty ? newList.first : null);
+        print(
+          "ActiveAccountNotifier: Reset active account to ${state?.id ?? 'null'}.",
+        );
+      } else {
+        print(
+          "ActiveAccountNotifier: Active account ID ${state!.id} still exists. No change needed.",
+        );
+        final updatedAccountInstance = newList.firstWhere(
+          (acc) => acc.id == state!.id,
+        );
+        if (state != updatedAccountInstance) {
+          state = updatedAccountInstance;
+          print(
+            "ActiveAccountNotifier: Updated active account instance for ID ${state!.id}.",
+          );
+        }
+      }
+    }
+  }
+}
+
+// activeAccountProvider 保持不变
+final activeAccountProvider =
+    StateNotifierProvider<ActiveAccountNotifier, Account?>((ref) {
+      final notifier = ActiveAccountNotifier(ref);
+      ref.listen(accountsProvider, (previousList, newList) {
+        notifier.updateFromList(newList);
+      });
+      return notifier;
+    });
+
+// --- AccountsNotifier ---
 
 class AccountsNotifier extends StateNotifier<List<Account>> {
   final Ref _ref;
@@ -1420,69 +1704,132 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
   AccountsNotifier(this._ref) : super([]) {
     _storageService = _ref.read(secureStorageServiceProvider);
     _apiService = _ref.read(twitterApiServiceProvider);
-    // Notifier创建时，立即从安全存储加载账号列表
     loadAccounts();
   }
 
   Future<void> loadAccounts() async {
-    state = await _storageService.getAccounts();
+    state = await _storageService.getAccounts(); // Assuming getAccounts exists
+    print("AccountsNotifier: Loaded ${state.length} accounts.");
+    // Notify ActiveAccountNotifier after loading
+    _ref.read(activeAccountProvider.notifier).updateFromList(state);
   }
 
   Future<void> addAccount(String cookie) async {
-    // 验证Cookie有效性
-    final profile = await _apiService.getUserProfile(cookie);
-    if (profile == null) {
-      throw Exception("提供的Cookie无效或已过期。");
-    }
-
-    // 从Cookie字符串中解析出 `twid` 作为唯一ID
     final twid = _parseTwidFromCookie(cookie);
     if (twid == null) {
       throw Exception('无法从Cookie中解析出twid');
     }
 
-    final newAccount = Account(id: twid, cookie: cookie);
+    String? name;
+    String? screenName;
+    String? avatarUrl;
 
-    // 更新状态（不可变地）
-    // 检查是否已存在相同ID的账号
+    try {
+      final Map<String, dynamic> userProfileJson = await _apiService
+          .getUserByRestId(twid, cookie);
+
+      final result = userProfileJson['data']?['user']?['result'];
+
+      if (result != null &&
+          result is Map<String, dynamic> &&
+          result['__typename'] == 'User') {
+        final core = result['core'];
+        if (core != null && core is Map<String, dynamic>) {
+          name = core['name'] as String?;
+          screenName = core['screen_name'] as String?;
+          avatarUrl = (result['avatar']['image_url'] as String?)?.replaceFirst('_normal', '_400x400');
+          print(
+            "addAccount: Profile fetched - Name: $name, ScreenName: $screenName, Avatar: $avatarUrl",
+          );
+        } else {
+          print("addAccount: API 返回成功，但 core 数据缺失或格式不正确。");
+        }
+      } else {
+        final typeName = result?['__typename'];
+        final reason = result?['reason'];
+        print(
+          "addAccount: API 返回成功，但用户结果类型不是 'User' (可能是 '$typeName', 原因: '$reason')。",
+        );
+        throw Exception("无法获取有效的用户信息 (可能不存在或被限制)。");
+      }
+    } catch (e) {
+      print("addAccount: 调用 API 或解析 Profile 时出错: $e");
+      rethrow;
+    }
+
+    // --- 使用正确的命名参数调用 Account 构造函数 ---
+    final newAccount = Account(
+      id: twid,
+      cookie: cookie,
+      name: name, // 确保 Account 构造函数有 'name'
+      screenName: screenName, // 确保 Account 构造函数有 'screenName'
+      avatarUrl: avatarUrl, // 确保 Account 构造函数有 'avatarUrl'
+    );
+
+    // --- 将这部分代码移回方法内部 ---
     final exists = state.any((acc) => acc.id == newAccount.id);
+    List<Account> newList;
     if (exists) {
-      // 如果存在，则替换它
-      state = [
+      newList = [
         for (final acc in state)
           if (acc.id == newAccount.id) newAccount else acc,
       ];
+      print("addAccount: Updated existing account for ID: $twid");
     } else {
-      // 如果不存在，则添加到列表
-      state = [...state, newAccount];
+      newList = [...state, newAccount];
+      print("addAccount: Added new account for ID: $twid");
     }
+    state = newList;
 
-    // 将更新后的完整列表保存到安全存储
+    // Assuming saveAccounts exists and uses the correct state
     await _storageService.saveAccounts(state);
-    
-    // 将新添加的账号设为当前活动账号
-    _ref.read(activeAccountProvider.notifier).state = newAccount;
+    print("addAccount: Saved accounts list to secure storage.");
+
+    await _ref.read(activeAccountProvider.notifier).setActive(newAccount);
+    print("addAccount: Set account ID $twid as active.");
+    // --- 移动的代码块结束 ---
+  } // <--- addAccount 方法结束
+
+  Future<void> removeAccount(String id) async {
+    final newList = state.where((acc) => acc.id != id).toList();
+    state = newList;
+    // Assuming saveAccounts exists
+    await _storageService.saveAccounts(state);
+    print("AccountsNotifier: Removed account ID $id and saved.");
   }
 
-  // (将来可以实现)
-  Future<void> removeAccount(String id) async {
-    // ...
-  }
-  
   String? _parseTwidFromCookie(String cookie) {
     try {
       final parts = cookie.split(';');
-      final twidPart = parts.firstWhere((part) => part.trim().startsWith('twid='));
-      final valuePart = twidPart.split('=')[1];
-      final decodedValue = Uri.decodeComponent(valuePart);
-      final id = decodedValue.split('=')[1];
-      return id;
-    } catch (e) {
+      final twidPart = parts.firstWhere(
+        (part) => part.trim().startsWith('twid='),
+        orElse: () => '',
+      );
+      if (twidPart.isNotEmpty) {
+      var valuePart = twidPart.split('=')[1].trim();
+
+      // URL 解码
+      valuePart = Uri.decodeComponent(valuePart);
+
+      // 兼容 u=xxxx 或 u_xxxx
+      if (valuePart.startsWith('u=')) {
+        final id = valuePart.substring(2);
+        return id.isNotEmpty ? id : null;
+      } else if (valuePart.startsWith('u_')) {
+        final id = valuePart.substring(2);
+        return id.isNotEmpty ? id : null;
+      } else {
+        print("解析 twid 失败: twid value ($valuePart) 不以 'u=' 或 'u_' 开头");
+        return null;
+      }
+    }
+    return null;
+  } catch (e) {
+      print("Error parsing twid from cookie: $e");
       return null;
     }
   }
 }
-
 
 
 ### FILE: ./providers/settings_provider.dart
@@ -1556,17 +1903,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/account.dart';
 
-// [已更新]
-// 核心改动：
-// 1. 移除了单Cookie的管理方法 (save/get/delete Cookie)，因为现在由 `AuthProvider` 统一管理。
-// 2. `saveAccounts` 方法现在是公开的，以便 `AuthProvider` 可以调用。
-
 final secureStorageServiceProvider = Provider((ref) => SecureStorageService());
 
 class SecureStorageService {
   final _storage = const FlutterSecureStorage();
   
   static const _accountsKey = 'accounts_list';
+  static const _activeAccountIdKey = 'active_account_id';
 
   Future<List<Account>> getAccounts() async {
     try {
@@ -1589,6 +1932,28 @@ class SecureStorageService {
       await _storage.write(key: _accountsKey, value: jsonString);
     } catch (e) {
       // handle error
+    }
+  }
+  Future<String?> readActiveAccountId() async {
+    try {
+      return await _storage.read(key: _activeAccountIdKey);
+    } catch (e) {
+      print("Error reading active account ID: $e");
+      return null;
+    }
+  }
+  Future<void> saveActiveAccountId(String id) async {
+    try {
+      await _storage.write(key: _activeAccountIdKey, value: id);
+    } catch (e) {
+      print("Error saving active account ID: $e");
+    }
+  }
+  Future<void> deleteActiveAccountId() async {
+    try {
+      await _storage.delete(key: _activeAccountIdKey);
+    } catch (e) {
+      print("Error deleting active account ID: $e");
     }
   }
 }
@@ -1640,36 +2005,135 @@ class SettingsService {
 }
 
 ### FILE: ./services/twitter_api_service.dart
+import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// [已更新]
-// 核心改动：
-// 1. 移除了网络请求逻辑，不再对Cookie进行有效性验证。
 final twitterApiServiceProvider = Provider((ref) => TwitterApiService());
 
 class TwitterApiService {
-  // 这个URL现在是未使用的，但我们保留它以备将来参考。
-  final String _userProfileUrl = 'https://api.x.com/1.1/account/verify_credentials.json';
+  final Dio _dio;
 
-  /// [已修改] 此函数不再进行网络验证。
-  /// 它会立即返回一个空的、非null的Map，以绕过AuthProvider中的验证检查。
-  Future<Map<String, dynamic>?> getUserProfile(String cookie) async {
-    // 之前这里会发送一个HTTP请求来验证Cookie。
-    // 现在，我们跳过这一步，直接返回一个模拟的成功结果。
-    // 这意味着任何格式正确的Cookie（只要能解析出twid）都将被视为有效。
-    print("注意：Cookie有效性验证已被禁用。");
-    return {}; // 返回一个非空的Map来模拟一个成功的API响应
+  TwitterApiService() : _dio = Dio() {
+    // 在这里可以为 Dio 设置一些基础配置，比如超时时间
+    //_dio.options.connectTimeout = const Duration(seconds: 10);
+    //_dio.options.receiveTimeout = const Duration(seconds: 10);
+  }
+
+  /// 从 Cookie 字符串中解析 'ct0' CSRF token。
+  String? _parseCsrfToken(String cookie) {
+    try {
+      final parts = cookie.split(';');
+      final csrfPart = parts.firstWhere(
+        (part) => part.trim().startsWith('ct0='),
+        orElse: () => '',
+      );
+      if (csrfPart.isNotEmpty) {
+        final token = csrfPart.split('=')[1].trim();
+        return token.isNotEmpty ? token : null;
+      }
+    } catch (e) {
+      print("解析 ct0 token 失败: $e");
+    }
+    return null;
+  }
+
+  /// 通过 Rest ID (twid) 获取用户 Profile 信息
+  ///
+  /// 成功时返回解码后的 JSON Map，失败时抛出异常。
+  Future<Map<String, dynamic>> getUserByRestId(
+    String userId,
+    String cookie,
+  ) async {
+    final csrfToken = _parseCsrfToken(cookie);
+    if (csrfToken == null) {
+      throw Exception("无法从 Cookie 中解析出 x-csrf-token (ct0)");
+    }
+
+    // 1. 准备 Query Parameters
+    final variables = {
+      "userId": userId,
+      // "withSafetyModeUserFields": true // 可以根据需要添加
+    };
+
+    final features = {
+      "hidden_profile_subscriptions_enabled": true,
+      "responsive_web_graphql_exclude_directive_enabled": true,
+      "verified_phone_label_enabled": false,
+      "highlights_tweets_tab_ui_enabled": true,
+      "creator_subscriptions_tweet_preview_api_enabled": true,
+      "responsive_web_graphql_skip_user_profile_image_extensions_enabled":
+          false,
+      "responsive_web_graphql_timeline_navigation_enabled": true,
+      "rweb_tipjar_consumption_enabled": false,
+      "subscriptions_feature_can_gift_premium": false,
+      "payments_enabled": false,
+      "responsive_web_twitter_article_notes_tab_enabled": false,
+      "profile_label_improvements_pcf_label_in_post_enabled": false,
+      "responsive_web_profile_redirect_enabled": false,
+      // ... 可以从您提供的 URL 中复制更多 feature flags
+    };
+
+    final queryParameters = {
+      'variables': jsonEncode(variables),
+      'features': jsonEncode(features),
+    };
+
+    // 2. 准备 Headers
+    final headers = {
+      'authorization':
+          'Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA',
+      'x-csrf-token': csrfToken,
+      'Cookie': cookie,
+      // --- 从您命令中复制的其他 Headers ---
+      'x-twitter-active-user': 'yes',
+      'x-twitter-auth-type': 'OAuth2Session',
+      'x-twitter-client-language': 'en',
+      // --- 推荐添加的浏览器 Headers ---
+      'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+      'Referer': 'https://x.com/',
+    };
+
+    // 3. 定义 URL
+    const String url =
+        'https://x.com/i/api/graphql/q9yeu7UlEs2YVx_-Z8Ps7Q/UserByRestId';
+
+    try {
+      // 4. 发送 GET 请求
+      final response = await _dio.get(
+        url,
+        queryParameters: queryParameters,
+        options: Options(headers: headers),
+      );
+
+      // 5. 检查响应并返回数据
+      if (response.statusCode == 200 && response.data != null) {
+        print(response.data);
+        return response.data as Map<String, dynamic>;
+      } else {
+        throw Exception('获取用户信息失败: Status ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      print("Dio Error on getUserByRestId: ${e.response?.data}");
+      throw Exception('网络请求失败: ${e.message}');
+    } catch (e) {
+      // 捕获其他未知错误
+      print("Unknown error on getUserByRestId: $e");
+      throw Exception('发生未知错误');
+    }
   }
 }
 
 
-
 ### FILE: ./ui/accounts_page.dart
 import 'package:autonitor/ui/auth/webview_login_page.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
 import '../l10n/app_localizations.dart';
+import '../models/account.dart';
 
 // [已更新]
 // 核心改动：
@@ -1707,6 +2171,42 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
     }
   }
 
+  Future<void> _confirmAndDelete(Account account) async {
+    final l10n = AppLocalizations.of(context)!;
+
+    // 弹出确认对话框
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        // --- 恢复：使用您提供的 l10n key ---
+        title: Text(l10n.delete),
+        // --- 恢复：使用您提供的 l10n key ---
+        content: Text(l10n.confirm_delete_account(account.id)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancel), // 使用 "取消"
+          ),
+          // 为破坏性操作使用红色按钮
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            // --- 恢复：使用您提供的 l10n key ---
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+
+    // 如果用户确认了，则调用 provider
+    if (confirmed == true && context.mounted) {
+      ref.read(accountsProvider.notifier).removeAccount(account.id);
+    }
+  }
+  // --- ↑↑↑ 新方法添加完毕 ↑↑↑ ---
+
   Future<String?> _showLoginOptions(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return showDialog<String>(
@@ -1734,10 +2234,7 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(l10n.manual_cookie),
-        content: TextField(
-          controller: controller,
-          maxLines: 5,
-        ),
+        content: TextField(controller: controller, maxLines: 5),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -1754,18 +2251,42 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
 
   Future<void> _handleLogin(String cookie) async {
     final l10n = AppLocalizations.of(context)!;
+    // --- 1. 在 try 之前获取 theme ---
+    final theme = Theme.of(context);
+
     setState(() => _isLoading = true);
+
     try {
       await ref.read(accountsProvider.notifier).addAccount(cookie);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.account_added_successfully), backgroundColor: Colors.green),
+          SnackBar(
+            // --- 2. 修改成功 SnackBar ---
+            content: Text(
+              l10n.account_added_successfully,
+              // 使用 'onPrimaryContainer' 颜色，它保证在 'primaryContainer' 上清晰可见
+              style: TextStyle(color: theme.colorScheme.onPrimaryContainer),
+            ),
+            // 使用 'primaryContainer' 作为背景色
+            // 它在亮色模式下是浅色，在暗色模式下是深色
+            backgroundColor: theme.colorScheme.primaryContainer,
+          ),
         );
       }
-    } catch (e) {
+    } catch (e, s) {
+      // 捕获错误 (e) 和堆栈 (s)
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("$e"), backgroundColor: Colors.red),
+          SnackBar(
+            // --- 3. 修改错误 SnackBar ---
+            content: Text(
+              "$e",
+              // 使用 'onError' 颜色，它保证在 'error' 色上清晰可见
+              style: TextStyle(color: theme.colorScheme.onError),
+            ),
+            // 使用 'error' 颜色，它会自动适应深浅色模式
+            backgroundColor: theme.colorScheme.error,
+          ),
         );
       }
     } finally {
@@ -1781,74 +2302,154 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
     final accounts = ref.watch(accountsProvider);
     final activeAccount = ref.watch(activeAccountProvider);
 
-    return Stack(
-      children: [
-        ListView.builder(
-          itemCount: accounts.length + 1, // +1 for the add button
-          itemBuilder: (context, index) {
-            if (index == 0) {
+    // 1. 返回一个 Scaffold
+    return Scaffold(
+      // 2. 添加 AppBar，并使用 l10n 获取标题
+      appBar: AppBar(title: Text(l10n.accounts)),
+      // 3. body 是之前返回的 Stack
+      body: Stack(
+        children: [
+          ListView.builder(
+            itemCount: accounts.length + 1, // +1 for the add button
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                return Card(
+                  margin: const EdgeInsets.all(8.0),
+                  child: ListTile(
+                    leading: const Icon(Icons.add_circle_outline),
+                    title: Text(l10n.new_account),
+                    onTap: () => _navigateAndAddAccount(context),
+                  ),
+                );
+              }
+              final account = accounts[index - 1];
+              final bool isActive = activeAccount?.id == account.id;
+
               return Card(
-                margin: const EdgeInsets.all(8.0),
+                margin: const EdgeInsets.symmetric(
+                  horizontal: 8.0,
+                  vertical: 4.0,
+                ),
+                color: null,
                 child: ListTile(
-                  leading: const Icon(Icons.add_circle_outline),
-                  title: Text(l10n.new_account),
-                  onTap: () => _navigateAndAddAccount(context),
+                  leading: CircleAvatar(
+                    radius: 24,
+                    backgroundColor: Colors.transparent,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        const Icon(Icons.person, size: 24),
+                        if (account.avatarUrl != null &&
+                            account.avatarUrl!.isNotEmpty)
+                          ClipOval(
+                            child: CachedNetworkImage(
+                              imageUrl: account.avatarUrl!,
+                              fit: BoxFit.cover,
+                              width: 48,
+                              height: 48,
+                              fadeInDuration: const Duration(milliseconds: 300),
+                              fadeOutDuration: const Duration(
+                                milliseconds: 100,
+                              ),
+                              errorWidget: (context, url, error) =>
+                                  const SizedBox(),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+
+                  title: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        account.name ?? 'Unknown Name',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        "@${account.screenName ?? account.id ?? '...'}",
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      Text(
+                        "ID: ${account.id ?? '...'}",
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min, // 保证 Row 不会溢出
+                    children: [
+                      // 1. "查看 Cookie" 按钮
+                      IconButton(
+                        icon: const Icon(Icons.cookie_outlined), // 饼干图标
+                        tooltip: l10n.view_cookie, // "view_cookie" 作为描述
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              content: SingleChildScrollView(
+                                child: SelectableText(account.cookie),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  // --- 恢复：使用 l10n.ok ---
+                                  child: Text(l10n.ok),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                      // 2. "删除" 按钮
+                      IconButton(
+                        icon: Icon(
+                          Icons.delete_outline,
+                          // 添加红色以示警告
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                        // --- 恢复：使用硬编码的 tooltip ---
+                        tooltip: l10n.delete,
+                        onPressed: () {
+                          // 调用我们刚创建的确认方法
+                          _confirmAndDelete(account);
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               );
-            }
-            final account = accounts[index - 1];
-            final bool isActive = activeAccount?.id == account.id;
-
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-              color: isActive ? Theme.of(context).colorScheme.primaryContainer : null,
-              child: ListTile(
-                title: Text("ID: ${account.id}"),
-                trailing: TextButton(
-                  child: Text(l10n.view_cookie),
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        content: SingleChildScrollView(
-                          child: SelectableText(account.cookie),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: Text(l10n.close),
-                          )
-                        ],
-                      ),
-                    );
-                  },
+            },
+          ),
+          if (_isLoading)
+            Container(
+              color: Colors.black.withOpacity(0.5),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text(
+                      l10n.saving_account,
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                    ),
+                  ],
                 ),
-                onTap: () {
-                  ref.read(activeAccountProvider.notifier).state = account;
-                },
-              ),
-            );
-          },
-        ),
-        if (_isLoading)
-          Container(
-            color: Colors.black.withOpacity(0.5),
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text(l10n.saving_account, style: TextStyle(color: Colors.white, fontSize: 16)),
-                ],
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }
-
 
 
 ### FILE: ./ui/auth/package.flutter/material.dart
@@ -1885,25 +2486,21 @@ class _WebViewLoginPageState extends State<WebViewLoginPage> {
     try {
       final WebUri targetUrl = WebUri("https://x.com");
 
-      // --- 修改开始 ---
       List<Cookie> gotCookies; // 将 gotCookies 提到 try 块之前
 
       try {
         // 尝试获取 cookie
         gotCookies = await _cookieManager.getCookies(url: targetUrl);
-      } catch (e) {
-        // 捕获特定的 StateError，并将其视为空 cookie 列表
-        if (e is StateError && e.message == 'No element') {
-          gotCookies = []; // 手动设置为空列表
-        } else {
-          // 如果是其他错误，则重新抛出，由外层 catch 处理
-          rethrow;
-        }
+      } catch (e, s) { // --- 修改点 1：捕获所有 Error 和 Exception ---
+        // [已修改] 捕获 *所有* 异常和错误 (StateError, PlatformException, Error, etc.)
+        // 只要 getCookies 失败，就视为空列表，让后续逻辑处理 "No cookie found" 提示。
+        debugPrint("Error during getCookies, treating as empty list: $e\n$s");
+        gotCookies = []; // 手动设置为空列表
       }
-      // --- 修改结束 ---
 
       // 先关闭加载圈
       if (!mounted) return;
+      // 这一行现在是安全的，因为内部的catch会捕获所有错误
       Navigator.pop(context);
 
       // 检查 cookie 是否存在 (现在的 gotCookies 可能是 [] 了)
@@ -1964,7 +2561,8 @@ class _WebViewLoginPageState extends State<WebViewLoginPage> {
       if (isConfirmed == true && mounted) {
         Navigator.pop(context, finalCookieString);
       }
-    } catch (e) {
+    } catch (e, s) { // --- 修改点 2：捕获所有 Error 和 Exception ---
+      debugPrint("Unhandled error in _onLoginComplete: $e\n$s");
       if (mounted) Navigator.pop(context); // 关闭加载圈
       if (mounted) {
         // 其他未预料到的错误仍会在这里显示
@@ -2008,18 +2606,24 @@ class _WebViewLoginPageState extends State<WebViewLoginPage> {
 }
 
 
+
 ### FILE: ./ui/commits_page.dart
 import 'package:flutter/material.dart';
-
-// --- 恢复 Scaffold 和 FloatingActionButton ---
+import '../l10n/app_localizations.dart'; 
 class CommitsPage extends StatelessWidget {
   const CommitsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    
     return Scaffold(
+      // 3. 添加 AppBar
+      appBar: AppBar(
+        title: Text(l10n.data),
+      ),
       body: const Center(
-        child: Text('Commits Page - Coming Soon'),
+        child: Text('Data Page - Coming Soon'),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -2030,8 +2634,6 @@ class CommitsPage extends StatelessWidget {
     );
   }
 }
-
-
 
 ### FILE: ./ui/home_page.dart
 import 'dart:math';
@@ -2044,33 +2646,33 @@ import 'package:autonitor/models/cache_data.dart';
 import 'package:autonitor/providers/auth_provider.dart';
 import 'package:autonitor/ui/user_list_page.dart';
 import '../l10n/app_localizations.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
-// --- 新增 Provider ---
-final userListProvider =
-    FutureProvider.family.autoDispose<List<TwitterUser>, String>((ref, category) async {
-  // 1. 获取 DataProcessor 实例
+// --- (Providers... 保持不变) ---
+final userListProvider = FutureProvider.family.autoDispose<List<TwitterUser>, String>((
+  ref,
+  category,
+) async {
   final dataProcessor = ref.watch(dataProcessorProvider);
   if (dataProcessor == null) {
     print("userListProvider: DataProcessor is null for category '$category'");
-    return []; // 返回空列表
+    return [];
   }
-
-  // 2. 调用 getUsers 方法获取用户列表
   print("userListProvider: Calling getUsers for category '$category'");
   try {
     final users = await dataProcessor.getUsers(category);
     print(
-        "userListProvider: getUsers completed for category '$category'. Found ${users.length} users.");
+      "userListProvider: getUsers completed for category '$category'. Found ${users.length} users.",
+    );
     return users;
   } catch (e, stacktrace) {
     print(
-        "userListProvider: !!! ERROR fetching users for category '$category': $e !!!");
+      "userListProvider: !!! ERROR fetching users for category '$category': $e !!!",
+    );
     print("userListProvider: Stacktrace: $stacktrace");
-    throw Exception('$e'); // 抛出错误
+    throw Exception('$e');
   }
 });
-// --- Provider 添加结束 ---
-
 
 final dataProcessorProvider = Provider.autoDispose<DataProcessor?>((ref) {
   final activeAccount = ref.watch(activeAccountProvider);
@@ -2088,9 +2690,12 @@ final cacheProvider = FutureProvider.autoDispose<CacheData?>((ref) async {
   await dataProcessor.runProcess();
   return await dataProcessor.getCacheData();
 });
+// --- (Providers 结束) ---
 
 class HomePage extends ConsumerWidget {
-  const HomePage({super.key});
+  final VoidCallback onNavigateToAccounts;
+
+  const HomePage({super.key, required this.onNavigateToAccounts});
 
   void _showAccountSwitcher(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
@@ -2105,21 +2710,107 @@ class HomePage extends ConsumerWidget {
           children: [
             Padding(
               padding: const EdgeInsets.all(16.0),
-              child:
-                  Text(l10n.switch_account, style: Theme.of(context).textTheme.titleLarge),
+              child: Text(
+                l10n.switch_account,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
             ),
             ...allAccounts.map((account) {
               return ListTile(
-                leading: Icon(
-                  account.id == activeAccount?.id
-                      ? Icons.check_circle
-                      : Icons.person_outline,
-                  color:
-                      account.id == activeAccount?.id ? Colors.green : null,
+                // 左侧：圆形头像（占位 Icon + 网络图片淡入）并在头像右下角显示绿色勾
+                leading: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // 底层占位 icon（始终显示）
+                      Container(
+                        alignment: Alignment.center,
+                        child: const Icon(Icons.person, size: 24),
+                      ),
+
+                      // 网络头像（若有），使用 imageBuilder 保证 cover 效果
+                      if (account.avatarUrl != null &&
+                          account.avatarUrl!.isNotEmpty)
+                        ClipOval(
+                          child: CachedNetworkImage(
+                            imageUrl: account.avatarUrl!,
+                            fadeInDuration: const Duration(milliseconds: 300),
+                            placeholder: (context, url) =>
+                                const SizedBox.shrink(),
+                            errorWidget: (context, url, error) =>
+                                const SizedBox.shrink(),
+                            imageBuilder: (context, imageProvider) {
+                              return Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  image: DecorationImage(
+                                    image: imageProvider,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+
+                      // 右下角小绿勾（当 account 为 active 时显示）
+                      if (account.id == activeAccount?.id)
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            width: 18,
+                            height: 18,
+                            decoration: BoxDecoration(
+                              color: Colors.white, // 白色小底让勾在深色头像上可见
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.check_circle,
+                              color: Colors.green,
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-                title: Text("ID: ${account.id}"),
+
+                // 中间：name / @screenName / ID 垂直排列（和主页一致）
+                title: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      account.name ?? 'Unknown Name',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      "@${account.screenName ?? account.id ?? '...'}",
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    Text(
+                      "ID: ${account.id ?? '...'}",
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+
+                // 右侧：不显示按钮（保留空白）
+                trailing: null,
+
+                // 点击仍然切换账号并关闭 bottom sheet（保持原有行为）
                 onTap: () {
-                  ref.read(activeAccountProvider.notifier).state = account;
+                  ref.read(activeAccountProvider.notifier).setActive(account);
                   Navigator.pop(context);
                 },
               );
@@ -2130,69 +2821,84 @@ class HomePage extends ConsumerWidget {
     );
   }
 
-  // --- 修改：移除加载逻辑，只负责跳转（categoryKey 为固定英文 key） ---
   Future<void> _navigateToUserList(
-      BuildContext context, WidgetRef ref, String categoryKey) async {
-    print('--- HomePage: Navigating to UserListPage for category key: $categoryKey ---');
+    BuildContext context,
+    WidgetRef ref,
+    String categoryKey,
+  ) async {
+    print(
+      '--- HomePage: Navigating to UserListPage for category key: $categoryKey ---',
+    );
 
-    // 直接跳转，不再等待数据加载
     Navigator.push(
       context,
-      MaterialPageRoute(
-        // 只传递 categoryKey（注意 UserListPage 需使用该 key 查询 Provider）
-        builder: (_) => UserListPage(title: categoryKey),
-      ),
+      MaterialPageRoute(builder: (_) => UserListPage(title: categoryKey)),
     );
   }
-
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final activeAccount = ref.watch(activeAccountProvider);
 
-    if (activeAccount == null) {
-      return _buildNoAccountState(context);
-    }
-
     return Scaffold(
-      body: _buildAccountView(context, ref),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          // 确保在 async gap 之前获取 context
-          final currentContext = context;
-          showDialog(
-            context: currentContext, // 使用保存的 context
-            barrierDismissible: false,
-            builder: (_) => const Center(child: CircularProgressIndicator()),
-          );
-          await ref.read(dataProcessorProvider)?.runProcess();
-          // Invalidate 可能会触发重建，也使用 currentContext
-          ref.invalidate(cacheProvider);
-          if (currentContext.mounted) {
-            Navigator.pop(currentContext);
-          }
-        },
-        label: Text(l10n.run),
-        icon: const Icon(Icons.play_arrow),
-      ),
+      appBar: AppBar(title: const Text('Autonitor')),
+      body: activeAccount == null
+          ? _buildNoAccountState(context, onNavigateToAccounts)
+          : _buildAccountView(context, ref),
+
+      floatingActionButton: activeAccount == null
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: () async {
+                final currentContext = context;
+                showDialog(
+                  context: currentContext,
+                  barrierDismissible: false,
+                  builder: (_) =>
+                      const Center(child: CircularProgressIndicator()),
+                );
+                await ref.read(dataProcessorProvider)?.runProcess();
+                ref.invalidate(cacheProvider);
+                if (currentContext.mounted) {
+                  Navigator.pop(currentContext);
+                }
+              },
+              label: Text(l10n.run),
+              icon: const Icon(Icons.play_arrow),
+            ),
     );
   }
 
-  Widget _buildNoAccountState(BuildContext context) {
+  Widget _buildNoAccountState(BuildContext context, VoidCallback onNavigate) {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.person_off_outlined,
-                size: 64, color: Colors.grey.shade400),
+            Icon(Icons.group_outlined, size: 64, color: Colors.grey.shade400),
             const SizedBox(height: 24),
-            Text("没有活动的账号", style: Theme.of(context).textTheme.headlineSmall),
+            Text(
+              l10n.login_first,
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
             const SizedBox(height: 8),
-            const Text("请前往 'Accounts' 页面添加或选择一个账号。",
-                textAlign: TextAlign.center),
+            Text(l10n.login_first_description, textAlign: TextAlign.center),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.login),
+              label: Text(l10n.log_in),
+              onPressed: onNavigate,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                textStyle: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
           ],
         ),
       ),
@@ -2225,16 +2931,19 @@ class HomePage extends ConsumerWidget {
             icon: const Icon(Icons.sync),
             onPressed: () => ref.invalidate(cacheProvider),
             label: const Text("立即运行分析"),
-          )
+          ),
         ],
       ),
     );
   }
 
   Widget _buildDataDisplay(
-      BuildContext context, CacheData cache, WidgetRef ref) {
-    // 在此处获取 l10n，用于所有显示文本（但不要把它当作 category key）
+    BuildContext context,
+    CacheData cache,
+    WidgetRef ref,
+  ) {
     final l10n = AppLocalizations.of(context)!;
+    final activeAccount = ref.watch(activeAccountProvider);
 
     return RefreshIndicator(
       onRefresh: () async => ref.invalidate(cacheProvider),
@@ -2242,31 +2951,69 @@ class HomePage extends ConsumerWidget {
         padding: const EdgeInsets.all(16.0),
         children: <Widget>[
           Card(
-            clipBehavior: Clip.antiAlias, // 使InkWell的水波纹效果被限制在卡片圆角内
+            clipBehavior: Clip.antiAlias,
             margin: EdgeInsets.zero,
             child: Column(
               children: [
-                // 用户信息部分
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
                   child: Row(
                     children: [
-                      const CircleAvatar(
-                          radius: 24, child: Icon(Icons.person, size: 24)),
+                      CircleAvatar(
+                        radius: 24,
+                        backgroundColor: Colors.transparent, // 去掉灰底，让Icon能显示
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            const Icon(Icons.person, size: 24),
+                            if (activeAccount?.avatarUrl != null &&
+                                activeAccount!.avatarUrl!.isNotEmpty)
+                              ClipOval(
+                                child: CachedNetworkImage(
+                                  imageUrl: activeAccount.avatarUrl!,
+                                  fit: BoxFit.cover,
+                                  width: 48,
+                                  height: 48,
+                                  fadeInDuration: const Duration(
+                                    milliseconds: 300,
+                                  ),
+                                  fadeOutDuration: const Duration(
+                                    milliseconds: 100,
+                                  ),
+                                  errorWidget: (context, url, error) =>
+                                      const SizedBox(),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(cache.accountName,
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),maxLines: 1,
-                                overflow: TextOverflow.ellipsis,),
-                            Text("@${cache.accountName}",
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),maxLines: 1,
-                                overflow: TextOverflow.ellipsis,),
-                            Text("ID: ${cache.accountId}", // 修改了这里以显示 accountId
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),maxLines: 1,
-                                overflow: TextOverflow.ellipsis,),
+                            Text(
+                              activeAccount?.name ??
+                                  'Unknown Name', // 使用 name, 提供 fallback
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              "@${activeAccount?.screenName ?? activeAccount?.id ?? '...'}", // 使用 screenName, fallback to id
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(color: Colors.grey.shade600),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              "ID: ${activeAccount?.id ?? '...'}", // 使用 id (RestId)
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: Colors.grey.shade600),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ],
                         ),
                       ),
@@ -2279,13 +3026,11 @@ class HomePage extends ConsumerWidget {
                   ),
                 ),
                 const Divider(height: 1, indent: 0, endIndent: 0),
-                // 关注/粉丝 统计部分
                 IntrinsicHeight(
                   child: Row(
                     children: [
                       Expanded(
                         child: InkWell(
-                          // 逻辑上仍然传固定 key （不受语言影响）
                           onTap: () =>
                               _navigateToUserList(context, ref, 'following'),
                           child: Padding(
@@ -2294,13 +3039,10 @@ class HomePage extends ConsumerWidget {
                               children: [
                                 Text(
                                   cache.followingCount.toString(),
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
+                                  style: Theme.of(context).textTheme.titleMedium
                                       ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
                                 const SizedBox(height: 2),
-                                // 显示使用 l10n（可随语言改变）
                                 Text(
                                   l10n.following,
                                   style: Theme.of(context).textTheme.bodySmall,
@@ -2321,9 +3063,7 @@ class HomePage extends ConsumerWidget {
                               children: [
                                 Text(
                                   cache.followersCount.toString(),
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
+                                  style: Theme.of(context).textTheme.titleMedium
                                       ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
                                 const SizedBox(height: 2),
@@ -2338,68 +3078,116 @@ class HomePage extends ConsumerWidget {
                       ),
                     ],
                   ),
-                )
+                ),
               ],
             ),
           ),
-          const SizedBox(height: 24), // 卡片和下方列表的间距
+          const SizedBox(height: 24),
           Card(
             margin: EdgeInsets.zero,
             child: Column(
               children: [
-                // 注意：第一个参数是 categoryKey（逻辑用），label 使用 l10n 字符串（显示用）
-                _buildDetailListItem(context, ref, 'normal_unfollowed', Icons.person_remove_outlined,
-                    l10n.normal_unfollowed, cache.unfollowedCount),
-                _buildDetailListItem(context, ref, 'mutual_unfollowed', Icons.group_off_rounded,
-                    l10n.mutual_unfollowed, cache.mutualUnfollowedCount),
-                _buildDetailListItem(context, ref, 'oneway_unfollowed', Icons.group_off_outlined,
-                    l10n.oneway_unfollowed, cache.singleUnfollowedCount),
                 _buildDetailListItem(
-                    context, ref, 'suspended', Icons.lock_outline, l10n.suspended, cache.frozenCount),
-                _buildDetailListItem(context, ref, 'deactivated', Icons.no_accounts_outlined,
-                    l10n.deactivated, cache.deactivatedCount),
-                _buildDetailListItem(context, ref, 'be_followed_back', Icons.group_add_outlined,
-                    l10n.be_followed_back, cache.refollowedCount),
+                  context,
+                  ref,
+                  'normal_unfollowed',
+                  Icons.person_remove_outlined,
+                  l10n.normal_unfollowed,
+                  cache.unfollowedCount,
+                ),
                 _buildDetailListItem(
-                    context,
-                    ref,
-                    'new_followers_following',
-                    Icons.person_add_alt_1_outlined,
-                    l10n.new_followers_following,
-                    cache.newFollowersCount,
-                    showDivider: false),
+                  context,
+                  ref,
+                  'mutual_unfollowed',
+                  Icons.group_off_rounded,
+                  l10n.mutual_unfollowed,
+                  cache.mutualUnfollowedCount,
+                ),
+                _buildDetailListItem(
+                  context,
+                  ref,
+                  'oneway_unfollowed',
+                  Icons.group_off_outlined,
+                  l10n.oneway_unfollowed,
+                  cache.singleUnfollowedCount,
+                ),
+                _buildDetailListItem(
+                  context,
+                  ref,
+                  'suspended',
+                  Icons.lock_outline,
+                  l10n.suspended,
+                  cache.frozenCount,
+                ),
+                _buildDetailListItem(
+                  context,
+                  ref,
+                  'deactivated',
+                  Icons.no_accounts_outlined,
+                  l10n.deactivated,
+                  cache.deactivatedCount,
+                ),
+                _buildDetailListItem(
+                  context,
+                  ref,
+                  'be_followed_back',
+                  Icons.group_add_outlined,
+                  l10n.be_followed_back,
+                  cache.refollowedCount,
+                ),
+                _buildDetailListItem(
+                  context,
+                  ref,
+                  'new_followers_following',
+                  Icons.person_add_alt_1_outlined,
+                  l10n.new_followers_following,
+                  cache.newFollowersCount,
+                  showDivider: false,
+                ),
               ],
             ),
           ),
-          const SizedBox(height: 80), // 为悬浮按钮留出空间
+          const SizedBox(height: 80),
         ],
       ),
     );
   }
 
-  /// 现在同时传入 categoryKey（用于逻辑）和 label（用于 UI 显示）
-  Widget _buildDetailListItem(BuildContext context, WidgetRef ref,
-      String categoryKey, IconData icon, String label, int count,
-      {bool showDivider = true}) {
+  Widget _buildDetailListItem(
+    BuildContext context,
+    WidgetRef ref,
+    String categoryKey,
+    IconData icon,
+    String label,
+    int count, {
+    bool showDivider = true,
+  }) {
     return InkWell(
       onTap: () => _navigateToUserList(context, ref, categoryKey),
       child: Column(
         children: [
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 12.0,
+            ),
             child: Row(
               children: [
                 Icon(icon, color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 16),
                 Expanded(
-                    child: Text(label,
-                        style: Theme.of(context).textTheme.titleMedium)),
-                Text(count.toString(),
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.secondary,
-                        )),
+                  child: Text(
+                    label,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                Text(
+                  count.toString(),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
+                ),
                 const SizedBox(width: 8),
                 const Icon(Icons.chevron_right, color: Colors.grey),
               ],
@@ -2431,14 +3219,6 @@ class MainScaffold extends StatefulWidget {
 class _MainScaffoldState extends State<MainScaffold> {
   int _selectedIndex = 0;
 
-  // --- 修改：只包含 Widget 实例，不在 build 方法外判断 Visibility ---
-  static const List<Widget> _widgetOptions = <Widget>[
-    HomePage(),
-    CommitsPage(), // 保留 CommitsPage 实例
-    AccountsPage(),
-    SettingsPage(),
-  ];
-
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -2448,27 +3228,26 @@ class _MainScaffoldState extends State<MainScaffold> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    // --- 修改：在这里动态构建带 Visibility 的页面列表 ---
+
+    final List<Widget> pages = <Widget>[
+      HomePage(onNavigateToAccounts: () => _onItemTapped(2)),
+      CommitsPage(),
+      AccountsPage(),
+      SettingsPage(),
+    ];
+
     final List<Widget> pagesWithVisibility = <Widget>[
-      _widgetOptions[0], // HomePage 总是可见
+      pages[0], // HomePage
       Visibility(
-        visible: _selectedIndex == 1, // CommitsPage 只在 index 为 1 时构建
-        maintainState: false,         // 不可见时从树中移除
-        child: _widgetOptions[1],     // CommitsPage 实例
+        visible: _selectedIndex == 1,
+        maintainState: false,
+        child: pages[1], // CommitsPage
       ),
-      _widgetOptions[2], // AccountsPage 总是可见
-      _widgetOptions[3], // SettingsPage 总是可见
+      pages[2], // AccountsPage
+      pages[3], // SettingsPage
     ];
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Autonitor'),
-      ),
-      // --- 修改：IndexedStack 使用带 Visibility 的列表 ---
-      // 注意：直接在 IndexedStack 中使用 Visibility(maintainState: false)
-      // 可能会导致切换回来时页面状态丢失。如果需要保持状态，
-      // 可能需要更复杂的方案，比如 Offstage 或手动管理状态。
-      // 但为了解决 Hero 问题，这是最直接的方法。
       body: IndexedStack(
         index: _selectedIndex,
         children: pagesWithVisibility,
@@ -2509,6 +3288,7 @@ class _MainScaffoldState extends State<MainScaffold> {
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/settings_provider.dart';
+import '../l10n/app_localizations.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -2520,91 +3300,106 @@ class SettingsPage extends ConsumerStatefulWidget {
 class _SettingsPageState extends ConsumerState<SettingsPage> {
   @override
   Widget build(BuildContext context) {
-    // 监听 settingsProvider 的状态
+    // 1. 获取 l10n (您可能需要导入 'l10n/app_localizations.dart')
+    final l10n = AppLocalizations.of(context)!;
+
+    // 2. 监听 settingsProvider
     final settingsValue = ref.watch(settingsProvider);
 
-    return settingsValue.when(
-      // 加载中状态：显示一个加载指示器
-      loading: () => const Center(child: CircularProgressIndicator()),
-      // 错误状态：显示错误信息
-      error: (error, stackTrace) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text('加载设置失败: $error'),
+    // 3. 返回一个 Scaffold
+    return Scaffold(
+      // 4. 添加 AppBar
+      appBar: AppBar(title: Text(l10n.settings)),
+      // 5. body 是之前的 .when() 逻辑
+      body: settingsValue.when(
+        // 加载中状态：显示一个加载指示器
+        loading: () => const Center(child: CircularProgressIndicator()),
+        // 错误状态：显示错误信息
+        error: (error, stackTrace) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text('加载设置失败: $error'),
+          ),
         ),
-      ),
-      // 数据加载成功状态
-      data: (settings) {
-        // 构建设置列表 UI
-        return ListView(
-          children: [
-            Padding(
-              padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Text(
-                'General',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
+        // 数据加载成功状态
+        data: (settings) {
+          // 构建设置列表 UI
+          return ListView(
+            children: [
+              Padding(
+                padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Text(
+                  l10n.general,
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
               ),
-            ),
-            ListTile(
-              title: Text("Language"),
-              leading: Icon(Icons.language),
-              trailing: DropdownButton<String>(
-                // 1. 当前选中的值：从 Provider 读取
-                value: settings.locale?.toLanguageTag() ?? 'Auto',
+              ListTile(
+                title: Text(l10n.language),
+                leading: Icon(Icons.language),
+                trailing: DropdownButton<String>(
+                  // 1. 当前选中的值：从 Provider 读取
+                  value: settings.locale?.toLanguageTag() ?? 'Auto',
 
-                // 2. 下拉菜单的选项：创建一个包含所有可选语言的列表
-                items: const [
-                  DropdownMenuItem<String>(value: 'Auto', child: Text('Auto')),
-                  DropdownMenuItem<String>(value: 'en', child: Text('English')),
-                  DropdownMenuItem<String>(
-                    value: 'zh-CN',
-                    child: Text('中文（中国）'),
-                  ), // value 是 'zh-CN'
-                  DropdownMenuItem<String>(
-                    value: 'zh-TW',
-                    child: Text('中文（台灣）'),
-                  ), // value 是 'zh-TW'
-                ],
-                // 3. 当用户选择了新选项时的回调函数
-                onChanged: (String? newValue) {
-                  if (newValue != null) {
-                    Locale? newLocale; // 声明 newLocale
-                    if (newValue == 'Auto') {
-                      newLocale = null; // Auto 对应 null Locale
-                    } else if (newValue == 'en') {
-                      newLocale = const Locale('en');
-                    } else if (newValue == 'zh-CN') {
-                      newLocale = const Locale(
-                        'zh',
-                        'CN',
-                      ); // 创建 Locale('zh', 'CN')
-                    } else if (newValue == 'zh-TW') {
-                      newLocale = const Locale(
-                        'zh',
-                        'TW',
-                      ); // 创建 Locale('zh', 'TW')
+                  // 2. 下拉菜单的选项：创建一个包含所有可选语言的列表
+                  items: const [
+                    DropdownMenuItem<String>(
+                      value: 'Auto',
+                      child: Text('Auto'),
+                    ),
+                    DropdownMenuItem<String>(
+                      value: 'en',
+                      child: Text('English'),
+                    ),
+                    DropdownMenuItem<String>(
+                      value: 'zh-CN',
+                      child: Text('中文（中国）'),
+                    ), // value 是 'zh-CN'
+                    DropdownMenuItem<String>(
+                      value: 'zh-TW',
+                      child: Text('中文（台灣）'),
+                    ), // value 是 'zh-TW'
+                  ],
+
+                  // 3. 当用户选择了新选项时的回调函数
+                  onChanged: (String? newValue) {
+                    if (newValue != null) {
+                      Locale? newLocale; // 声明 newLocale
+                      if (newValue == 'Auto') {
+                        newLocale = null; // Auto 对应 null Locale
+                      } else if (newValue == 'en') {
+                        newLocale = const Locale('en');
+                      } else if (newValue == 'zh-CN') {
+                        newLocale = const Locale(
+                          'zh',
+                          'CN',
+                        ); // 创建 Locale('zh', 'CN')
+                      } else if (newValue == 'zh-TW') {
+                        newLocale = const Locale('zh', 'TW');
+                      }
+
+                      // 调用 updateLocale 传入 Locale?
+                      ref
+                          .read(settingsProvider.notifier)
+                          .updateLocale(newLocale);
+                      // 更新提示文本（查找显示名称）
+                      String displaySelected = 'Auto';
+                      // Default
+                      if (newValue == 'en') displaySelected = 'English';
+                      if (newValue == 'zh-CN') displaySelected = '中文（中国）';
+                      if (newValue == 'zh-TW') displaySelected = '中文（台灣）';
                     }
+                  },
 
-                    // 调用 updateLocale 传入 Locale? 对象
-                    ref.read(settingsProvider.notifier).updateLocale(newLocale);
-
-                    // 更新提示文本（查找显示名称）
-                    String displaySelected = 'Auto'; // Default
-                    if (newValue == 'en') displaySelected = 'English';
-                    if (newValue == 'zh-CN') displaySelected = '中文（中国）';
-                    if (newValue == 'zh-TW') displaySelected = '中文（台灣）';
-                  }
-                },
-
-                // 4. (可选) 移除下拉按钮下划线，让它更简洁
-                underline: Container(),
+                  // 4. (可选) 移除下拉按钮下划线，让它更简洁
+                  underline: Container(),
+                ),
+                // 从加载的设置中获取语言并显示
               ),
-              // 从加载的设置中获取语言并显示
-            ),
-            // 未来可以在这里添加其他设置项...
-          ],
-        );
-      },
+              // 未来可以在这里添加其他设置项...
+            ],
+          );
+        },
+      ),
     );
   }
 }
@@ -3060,10 +3855,10 @@ import 'user_detail_page.dart';
 class UserListPage extends ConsumerWidget {
   final String title;
   // --- 修改：移除 users 参数 ---
-  // final List<TwitterUser> users; 
+  // final List<TwitterUser> users;
 
   // --- 修改：构造函数只接收 title ---
-  const UserListPage({super.key, required this.title}); 
+  const UserListPage({super.key, required this.title});
 
   @override
   // --- 修改：添加 WidgetRef ref ---
@@ -3073,9 +3868,7 @@ class UserListPage extends ConsumerWidget {
     final userListAsyncValue = ref.watch(userListProvider(title));
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-      ),
+      appBar: AppBar(title: Text(title)),
       // --- 修改：使用 AsyncValue.when 处理状态 ---
       body: userListAsyncValue.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -3085,7 +3878,8 @@ class UserListPage extends ConsumerWidget {
             child: Text('$error'),
           ),
         ),
-        data: (users) { // 注意这里的 users 是从 data 中获取的
+        data: (users) {
+          // 注意这里的 users 是从 data 中获取的
           if (users.isEmpty) {
             return Center(child: Text(l10n.empty_list_message));
           }
@@ -3101,20 +3895,32 @@ class UserListPage extends ConsumerWidget {
                     backgroundImage: user.avatarUrl.isNotEmpty
                         ? NetworkImage(user.avatarUrl)
                         : null,
-                    child:
-                        user.avatarUrl.isEmpty ? const Icon(Icons.person) : null,
+                    child: user.avatarUrl.isEmpty
+                        ? const Icon(Icons.person)
+                        : null,
                   ),
                 ),
                 title: Text(user.name),
-                subtitle: Text(user.id),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("@${user.id}"),
+                    Text(
+                      user.bio ?? '',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () {
-                   Navigator.push(
-                     context,
-                     MaterialPageRoute(
-                       builder: (context) => UserDetailPage(user: user),
-                     ),
-                   );
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => UserDetailPage(user: user),
+                    ),
+                  );
                 },
               );
             },
@@ -3124,6 +3930,5 @@ class UserListPage extends ConsumerWidget {
     );
   }
 }
-
 
 

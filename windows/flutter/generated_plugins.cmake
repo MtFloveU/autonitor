@@ -6,6 +6,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   dynamic_color
   flutter_inappwebview_windows
   flutter_secure_storage_windows
+  sqlite3_flutter_libs
   url_launcher_windows
 )
 

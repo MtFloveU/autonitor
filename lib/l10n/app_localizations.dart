@@ -312,7 +312,7 @@ abstract class AppLocalizations {
   /// No description provided for @im_logged_in.
   ///
   /// In en, this message translates to:
-  /// **'I\'m logged in'**
+  /// **'I\'ve logged in'**
   String get im_logged_in;
 
   /// No description provided for @cancel.

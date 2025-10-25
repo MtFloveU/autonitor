@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/account.dart';
 import '../services/secure_storage_service.dart';
 import '../services/twitter_api_service.dart';
-// 移除了未使用的 dart:convert 导入
+import 'dart:convert';
 
 // --- Provider 定义 ---
 
@@ -166,6 +166,17 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
     String? name;
     String? screenName;
     String? avatarUrl;
+    String? bannerUrl;
+    String? bio;
+    String? location;
+    String? link;
+    String? joinTime;
+    int followersCount = 0;
+    int followingCount = 0;
+    int statusesCount = 0;
+    int mediaCount = 0;
+    int favouritesCount = 0;
+    int listedCount = 0;
 
     try {
       final Map<String, dynamic> userProfileJson = await _apiService
@@ -173,27 +184,55 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
 
       final result = userProfileJson['data']?['user']?['result'];
 
+      // ... 在 addAccount 方法内部 ...
       if (result != null &&
           result is Map<String, dynamic> &&
           result['__typename'] == 'User') {
+        // --- 修正后的解析逻辑 ---
+
+        final core = result['core'];
         final legacy = result['legacy'];
-        if (legacy != null && legacy is Map<String, dynamic>) {
-          name = legacy['name'] as String?;
-          screenName = legacy['screen_name'] as String?;
-          avatarUrl = legacy['profile_image_url_https'] as String?;
+
+        if (core != null && core is Map<String, dynamic>) {
+          name = core['name'] as String?;
+          screenName = core['screen_name'] as String?;
+          avatarUrl = (result['avatar']['image_url'] as String?)?.replaceFirst(
+            '_normal',
+            '_400x400',
+          );
+
+          // 'joinTime' 来自 core
+          joinTime = core['created_at'] as String?;
+
           print(
             "addAccount: Profile fetched - Name: $name, ScreenName: $screenName, Avatar: $avatarUrl",
           );
         } else {
-          print("addAccount: API 返回成功，但 legacy 数据缺失或格式不正确。");
+          print("addAccount: API 返回成功，但 core 数据缺失或格式不正确。");
         }
+
+        if (legacy != null && legacy is Map<String, dynamic>) {
+          bio = legacy['description'] as String?;
+          followersCount = legacy['followers_count'] as int? ?? 0;
+          followingCount =
+              legacy['friends_count'] as int? ?? 0; // API 使用 'friends_count'
+          link = legacy['url'] as String?; // 这可能是 t.co 链接
+
+          // [修正] 'bannerUrl' 来自 legacy
+          bannerUrl = legacy['profile_banner_url'] as String?;
+          statusesCount = legacy['statuses_count'] as int? ?? 0;
+          mediaCount = legacy['media_count'] as int? ?? 0;
+          favouritesCount = legacy['favourites_count'] as int? ?? 0;
+          listedCount = legacy['listed_count'] as int? ?? 0;
+        }
+
+        // [修正] 'location' 是一个嵌套对象
+        final locationMap = result['location'] as Map<String, dynamic>?;
+        location = locationMap?['location'] as String?;
+
+        // --- 修正结束 ---
       } else {
-        final typeName = result?['__typename'];
-        final reason = result?['reason'];
-        print(
-          "addAccount: API 返回成功，但用户结果类型不是 'User' (可能是 '$typeName', 原因: '$reason')。",
-        );
-        throw Exception("无法获取有效的用户信息 (可能不存在或被限制)。");
+        print("addAccount: API 返回成功，但 result 数据缺失或格式不正确。");
       }
     } catch (e) {
       print("addAccount: 调用 API 或解析 Profile 时出错: $e");
@@ -207,6 +246,17 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
       name: name, // 确保 Account 构造函数有 'name'
       screenName: screenName, // 确保 Account 构造函数有 'screenName'
       avatarUrl: avatarUrl, // 确保 Account 构造函数有 'avatarUrl'
+      bannerUrl: bannerUrl,
+      bio: bio,
+      location: location,
+      link: link,
+      joinTime: joinTime,
+      followersCount: followersCount,
+      followingCount: followingCount,
+      statusesCount: statusesCount,
+      mediaCount: mediaCount,
+      favouritesCount: favouritesCount,
+      listedCount: listedCount,
     );
 
     // --- 将这部分代码移回方法内部 ---
@@ -249,25 +299,25 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
         orElse: () => '',
       );
       if (twidPart.isNotEmpty) {
-      var valuePart = twidPart.split('=')[1].trim();
+        var valuePart = twidPart.split('=')[1].trim();
 
-      // URL 解码
-      valuePart = Uri.decodeComponent(valuePart);
+        // URL 解码
+        valuePart = Uri.decodeComponent(valuePart);
 
-      // 兼容 u=xxxx 或 u_xxxx
-      if (valuePart.startsWith('u=')) {
-        final id = valuePart.substring(2);
-        return id.isNotEmpty ? id : null;
-      } else if (valuePart.startsWith('u_')) {
-        final id = valuePart.substring(2);
-        return id.isNotEmpty ? id : null;
-      } else {
-        print("解析 twid 失败: twid value ($valuePart) 不以 'u=' 或 'u_' 开头");
-        return null;
+        // 兼容 u=xxxx 或 u_xxxx
+        if (valuePart.startsWith('u=')) {
+          final id = valuePart.substring(2);
+          return id.isNotEmpty ? id : null;
+        } else if (valuePart.startsWith('u_')) {
+          final id = valuePart.substring(2);
+          return id.isNotEmpty ? id : null;
+        } else {
+          print("解析 twid 失败: twid value ($valuePart) 不以 'u=' 或 'u_' 开头");
+          return null;
+        }
       }
-    }
-    return null;
-  } catch (e) {
+      return null;
+    } catch (e) {
       print("Error parsing twid from cookie: $e");
       return null;
     }

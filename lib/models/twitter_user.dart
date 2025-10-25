@@ -15,6 +15,10 @@ class TwitterUser {
   final String? link;
   final int followingCount;
   final int followersCount;
+  final int statusesCount;
+  final int mediaCount;
+  final int favouritesCount;
+  final int listedCount;
 
   const TwitterUser({
     required this.avatarUrl,
@@ -28,6 +32,10 @@ class TwitterUser {
     required this.link,
     required this.followersCount,
     required this.followingCount,
+    required this.statusesCount,
+    required this.mediaCount,
+    required this.favouritesCount,
+    required this.listedCount,
   });
 
   // 从Map(JSON)创建TwitterUser实例
@@ -44,6 +52,10 @@ class TwitterUser {
       link: json['link'],
       followersCount: json['followersCount'] ?? 0,
       followingCount: json['followingCount'] ?? 0,
+      statusesCount: json['statusesCount'] ?? 0,
+      mediaCount: json['mediaCount'] ?? 0,
+      favouritesCount: json['favouritesCount'] ?? 0,
+      listedCount: json['listedCount'] ?? 0,
     );
   }
 
@@ -58,7 +70,10 @@ class TwitterUser {
       'location': location,
       'joinTime': joinTime,
       'bannerUrl': bannerUrl,
+      'statusesCount': statusesCount,
+      'mediaCount': mediaCount,
+      'favouritesCount': favouritesCount,
+      'listedCount': listedCount,
     };
   }
 }
-

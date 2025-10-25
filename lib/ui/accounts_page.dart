@@ -1,4 +1,5 @@
 import 'package:autonitor/ui/auth/webview_login_page.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
@@ -200,11 +201,59 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                   horizontal: 8.0,
                   vertical: 4.0,
                 ),
-                color: isActive
-                    ? Theme.of(context).colorScheme.primaryContainer
-                    : null,
+                color: null,
                 child: ListTile(
-                  title: Text("ID: ${account.id}"),
+                  leading: CircleAvatar(
+                    radius: 24,
+                    backgroundColor: Colors.transparent,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        const Icon(Icons.person, size: 24),
+                        if (account.avatarUrl != null &&
+                            account.avatarUrl!.isNotEmpty)
+                          ClipOval(
+                            child: CachedNetworkImage(
+                              imageUrl: account.avatarUrl!,
+                              fit: BoxFit.cover,
+                              width: 48,
+                              height: 48,
+                              fadeInDuration: const Duration(milliseconds: 300),
+                              fadeOutDuration: const Duration(
+                                milliseconds: 100,
+                              ),
+                              errorWidget: (context, url, error) =>
+                                  const SizedBox(),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+
+                  title: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        account.name ?? 'Unknown Name',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        "@${account.screenName ?? account.id ?? '...'}",
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      Text(
+                        "ID: ${account.id ?? '...'}",
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min, // 保证 Row 不会溢出
                     children: [
@@ -238,7 +287,7 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                           color: Theme.of(context).colorScheme.error,
                         ),
                         // --- 恢复：使用硬编码的 tooltip ---
-                        tooltip: "删除账号",
+                        tooltip: l10n.delete,
                         onPressed: () {
                           // 调用我们刚创建的确认方法
                           _confirmAndDelete(account);
@@ -246,10 +295,6 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                       ),
                     ],
                   ),
-                  onTap: () {
-                    // --- 保持逻辑修复：使用 .setActive() ---
-                    ref.read(activeAccountProvider.notifier).setActive(account);
-                  },
                 ),
               );
             },
@@ -276,4 +321,3 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
     );
   }
 }
-

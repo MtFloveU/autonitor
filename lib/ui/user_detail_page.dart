@@ -286,9 +286,7 @@ class UserDetailPage extends StatelessWidget {
                           children: [
                             Text(
                               'ByScreenName',
-                              style: TextStyle(
-                                fontSize: 12,
-                              ),
+                              style: TextStyle(fontSize: 12),
                             ),
                             const SizedBox(height: 4),
                             InkWell(
@@ -331,12 +329,7 @@ class UserDetailPage extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'ByRestId',
-                              style: TextStyle(
-                                fontSize: 12,
-                              ),
-                            ),
+                            Text('ByRestId', style: TextStyle(fontSize: 12)),
                             const SizedBox(height: 4),
                             InkWell(
                               onTap: () => _launchURL(
@@ -372,10 +365,30 @@ class UserDetailPage extends StatelessWidget {
               style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ),
-          _buildInfoTile(context, Icons.create, l10n.tweets, "65"),
-          _buildInfoTile(context, Icons.image, l10n.media_count, "3"),
-          _buildInfoTile(context, Icons.favorite, l10n.likes, "100"),
-          _buildInfoTile(context, Icons.list_alt, l10n.listed_count, "1"),
+          _buildInfoTile(
+            context,
+            Icons.create,
+            l10n.tweets,
+            user.statusesCount.toString(),
+          ),
+          _buildInfoTile(
+            context,
+            Icons.image,
+            l10n.media_count,
+            user.mediaCount.toString(),
+          ),
+          _buildInfoTile(
+            context,
+            Icons.favorite,
+            l10n.likes,
+            user.favouritesCount.toString(),
+          ),
+          _buildInfoTile(
+            context,
+            Icons.list_alt,
+            l10n.listed_count,
+            user.listedCount.toString(),
+          ),
 
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 1, 0),

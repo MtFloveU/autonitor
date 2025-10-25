@@ -36,6 +36,7 @@ dependencies:
   flutter_inappwebview: ^6.0.0      # 浏览器视图
   http: ^1.2.1                    # 网络请求
   dio: ^5.4.3                         # 网络请求增强
+  cached_network_image: ^3.4.1  # 图片缓存
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -45,6 +46,10 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: ^0.20.2
+  drift: ^2.29.0
+  sqlite3_flutter_libs: ^0.5.40
+  path: ^1.9.1
+  path_provider: ^2.1.5
 
 dev_dependencies:
   flutter_test:
@@ -57,6 +62,8 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_launcher_icons: "^0.13.1" # 你可以使用最新的版本号
   flutter_lints: ^5.0.0
+  drift_dev: ^2.29.0
+  build_runner: ^2.10.1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
