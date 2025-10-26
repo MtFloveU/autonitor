@@ -47,8 +47,8 @@ class DataProcessor {
     if (category == 'normal_unfollowed') {
        return [
         // 使用 const 构造函数，并确保所有字段都提供了值或 null
-        const TwitterUser(id: "unfollowed1", name: "Unfollowed User 1", restId: "u1", avatarUrl: "", joinTime: 'Wed Apr 12 05:43:13 +0000 2023', bio: 'unfollowed 1', location: 'unfo1', bannerUrl: null, link: null, followersCount: 1200, followingCount: 100),
-        const TwitterUser(id: "unfollowed2", name: "Unfollowed User 2", restId: "u2", avatarUrl: "", joinTime: 'Wed Apr 12 05:43:14 +0000 2023', bio: 'unfollowed 2', location: 'unfo2', bannerUrl: null, link: null, followersCount: 1200, followingCount: 100),
+        const TwitterUser(id: "unfollowed1", name: "Unfollowed User 1", restId: "u1", avatarUrl: "", joinTime: 'Wed Apr 12 05:43:13 +0000 2023', bio: 'unfollowed 1', location: 'unfo1', bannerUrl: null, link: null, followersCount: 1200, followingCount: 100, statusesCount: 1323, mediaCount: 31, favouritesCount: 424214, listedCount: 31),
+        const TwitterUser(id: "unfollowed2", name: "Unfollowed User 2", restId: "u2", avatarUrl: "", joinTime: 'Wed Apr 12 05:43:14 +0000 2023', bio: 'unfollowed 2', location: 'unfo2', bannerUrl: null, link: null, followersCount: 1200, followingCount: 100, statusesCount: 2211, mediaCount: 123, favouritesCount: 2434224, listedCount: 2),
       ];
     }
     if (category == 'following') {
@@ -90,9 +90,9 @@ class DataProcessor {
   Map<String, TwitterUser> _fetchLatestUserData() {
     return {
       // 使用 const 构造函数，并确保所有字段都提供了值或 null
-      "user1": const TwitterUser(id: "user1", name: "User One (upd)", restId: "1234567890", bio: "Hello everyone, this is User 1 checking in. I'm here and ready to participate in the discussion.", location: "User 1 Location", joinTime: "Wed Apr 12 05:43:13 +0000 2023", avatarUrl: "", bannerUrl: null, link: 'https://example.com', followersCount: 1200, followingCount: 100),
-      "user2": const TwitterUser(id: "user2", name: "User Two", restId: "2", bio: "This is user 2", location: "User 2 Location", joinTime: "Wed Apr 12 05:43:14 +0000 2023", avatarUrl: "", bannerUrl: null, link: null, followersCount: 1200, followingCount: 100),
-      "user4": const TwitterUser(id: "user4", name: "User Four", restId: "4", bio: "This is user 4", location: "User 4 Location", joinTime: "Wed Apr 12 05:43:15 +0000 2023", avatarUrl: "", bannerUrl: null, link: null, followersCount: 1200, followingCount: 100),
+      "user1": const TwitterUser(id: "user1", name: "User One (upd)", restId: "1234567890", bio: "Hello everyone, this is User 1 checking in. I'm here and ready to participate in the discussion.", location: "User 1 Location", joinTime: "Wed Apr 12 05:43:13 +0000 2023", avatarUrl: "", bannerUrl: null, link: 'https://example.com', followersCount: 1200, followingCount: 100, statusesCount: 3112, mediaCount: 2, favouritesCount: 3145, listedCount: 9),
+      "user2": const TwitterUser(id: "user2", name: "User Two", restId: "2", bio: "This is user 2", location: "User 2 Location", joinTime: "Wed Apr 12 05:43:14 +0000 2023", avatarUrl: "", bannerUrl: null, link: null, followersCount: 1200, followingCount: 100, statusesCount: 1231, mediaCount: 13, favouritesCount: 3113313, listedCount: 12),
+      "user4": const TwitterUser(id: "user4", name: "User Four", restId: "4", bio: "This is user 4", location: "User 4 Location", joinTime: "Wed Apr 12 05:43:15 +0000 2023", avatarUrl: "", bannerUrl: null, link: null, followersCount: 1200, followingCount: 100, statusesCount: 5335, mediaCount: 321, favouritesCount: 6464, listedCount: 4),
     };
   }
 }
@@ -1310,71 +1310,156 @@ class MyApp extends ConsumerWidget {
 
 
 ### FILE: ./models/account.dart
-    class Account {
-      /// The unique Twitter User ID (Rest ID / twid).
-      final String id;
-      /// The full cookie string required for authentication.
-      final String cookie;
-      /// The user's display name (e.g., "Elon Musk"). Fetched from API.
-      final String? name;
-      /// The user's screen name / handle (e.g., "elonmusk"). Fetched from API.
-      final String? screenName;
-      /// The URL for the user's profile image. Fetched from API.
-      final String? avatarUrl;
-    
-      Account({
-        required this.id,
-        required this.cookie,
-        this.name,
-        this.screenName,
-        this.avatarUrl,
-      });
-    
-      /// Creates an Account instance from a JSON map.
-      factory Account.fromJson(Map<String, dynamic> json) {
-        return Account(
-          id: json['id'] as String? ?? '', // Provide default empty string
-          cookie: json['cookie'] as String? ?? '', // Provide default empty string
-          name: json['name'] as String?,
-          screenName: json['screenName'] as String?,
-          avatarUrl: json['avatarUrl'] as String?,
-        );
-      }
-    
-      /// Converts the Account instance to a JSON map.
-      Map<String, dynamic> toJson() {
-        return {
-          'id': id,
-          'cookie': cookie,
-          'name': name,
-          'screenName': screenName,
-          'avatarUrl': avatarUrl,
-        };
-      }
-    
-      // Optional: Add copyWith for easier updates
-      Account copyWith({
-        String? id,
-        String? cookie,
-        String? name,
-        String? screenName,
-        String? avatarUrl,
-      }) {
-        return Account(
-          id: id ?? this.id,
-          cookie: cookie ?? this.cookie,
-          name: name ?? this.name,
-          screenName: screenName ?? this.screenName,
-          avatarUrl: avatarUrl ?? this.avatarUrl,
-        );
-      }
-    
-      // Optional: Override toString for better debugging
-      @override
-      String toString() {
-        return 'Account(id: $id, name: $name, screenName: $screenName, avatarUrl: $avatarUrl, cookie: ${cookie.length > 10 ? cookie.substring(0, 10) + '...' : cookie})';
-      }
-    }
+class Account {
+  /// The unique Twitter User ID (Rest ID / twid).
+  final String id;
+
+  /// The full cookie string required for authentication.
+  final String cookie;
+
+  /// The user's display name (e.g., "Elon Musk"). Fetched from API.
+  final String? name;
+
+  /// The user's screen name / handle (e.g., "elonmusk"). Fetched from API.
+  final String? screenName;
+
+  /// The URL for the user's profile image. Fetched from API.
+  final String? avatarUrl;
+
+  /// The URL for the user's profile banner.
+  final String? bannerUrl;
+
+  /// The user's biography.
+  final String? bio;
+
+  /// The user's profile location.
+  final String? location;
+
+  /// The user's profile link (t.co).
+  final String? link;
+
+  /// The ISO 8601 string of when the account was created.
+  final String? joinTime;
+
+  /// The number of followers.
+  final int followersCount;
+
+  /// The number of accounts the user is following.
+  final int followingCount;
+  final int statusesCount;
+  final int mediaCount;
+  final int favouritesCount;
+  final int listedCount;
+
+  Account({
+    required this.id,
+    required this.cookie,
+    this.name,
+    this.screenName,
+    this.avatarUrl,
+    this.bannerUrl,
+    this.bio,
+    this.location,
+    this.link,
+    this.joinTime,
+    this.followersCount = 0,
+    this.followingCount = 0,
+    this.statusesCount = 0,
+    this.mediaCount = 0,
+    this.favouritesCount = 0,
+    this.listedCount = 0,
+  });
+
+  /// Creates an Account instance from a JSON map.
+  factory Account.fromJson(Map<String, dynamic> json) {
+    return Account(
+      id: json['id'] as String? ?? '', // Provide default empty string
+      cookie: json['cookie'] as String? ?? '', // Provide default empty string
+      name: json['name'] as String?,
+      screenName: json['screenName'] as String?,
+      avatarUrl: json['avatarUrl'] as String?,
+      bannerUrl: json['bannerUrl'] as String?,
+      bio: json['bio'] as String?,
+      location: json['location'] as String?,
+      link: json['link'] as String?,
+      joinTime: json['joinTime'] as String?,
+      followersCount: json['followersCount'] as int? ?? 0,
+      followingCount: json['followingCount'] as int? ?? 0,
+      statusesCount: json['statusesCount'] ?? 0,
+      mediaCount: json['mediaCount'] ?? 0,
+      favouritesCount: json['favouritesCount'] ?? 0,
+      listedCount: json['listedCount'] ?? 0,
+    );
+  }
+
+  /// Converts the Account instance to a JSON map.
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'cookie': cookie,
+      'name': name,
+      'screenName': screenName,
+      'avatarUrl': avatarUrl,
+      'bannerUrl': bannerUrl,
+      'bio': bio,
+      'location': location,
+      'link': link,
+      'joinTime': joinTime,
+      'followersCount': followersCount,
+      'followingCount': followingCount,
+      'statusesCount': statusesCount,
+      'mediaCount': mediaCount,
+      'favouritesCount': favouritesCount,
+      'listedCount': listedCount,
+    };
+  }
+
+  // Optional: Add copyWith for easier updates
+  Account copyWith({
+    String? id,
+    String? cookie,
+    String? name,
+    String? screenName,
+    String? avatarUrl,
+    String? bannerUrl,
+    String? bio,
+    String? location,
+    String? link,
+    String? joinTime,
+    int? followersCount,
+    int? followingCount,
+    int? statusesCount,
+    int? mediaCount,
+    int? favouritesCount,
+    int? listedCount,
+  }) {
+    return Account(
+      id: id ?? this.id,
+      cookie: cookie ?? this.cookie,
+      name: name ?? this.name,
+      screenName: screenName ?? this.screenName,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      bannerUrl: bannerUrl ?? this.bannerUrl,
+      bio: bio ?? this.bio,
+      location: location ?? this.location,
+      link: link ?? this.link,
+      joinTime: joinTime ?? this.joinTime,
+      followersCount: followersCount ?? this.followersCount,
+      followingCount: followingCount ?? this.followingCount,
+      statusesCount: statusesCount ?? this.statusesCount,
+      mediaCount: mediaCount ?? this.mediaCount,
+      favouritesCount: favouritesCount ?? this.favouritesCount,
+      listedCount: listedCount ?? this.listedCount,
+    );
+  }
+
+  // Optional: Override toString for better debugging
+  @override
+  String toString() {
+    return 'Account(id: $id, name: $name, screenName: $screenName, avatarUrl: $avatarUrl, cookie: ${cookie.length > 10 ? cookie.substring(0, 10) + '...' : cookie})';
+  }
+}
+
 
 ### FILE: ./models/app_settings.dart
 import 'package:flutter/material.dart';
@@ -1505,6 +1590,10 @@ class TwitterUser {
   final String? link;
   final int followingCount;
   final int followersCount;
+  final int statusesCount;
+  final int mediaCount;
+  final int favouritesCount;
+  final int listedCount;
 
   const TwitterUser({
     required this.avatarUrl,
@@ -1518,6 +1607,10 @@ class TwitterUser {
     required this.link,
     required this.followersCount,
     required this.followingCount,
+    required this.statusesCount,
+    required this.mediaCount,
+    required this.favouritesCount,
+    required this.listedCount,
   });
 
   // 从Map(JSON)创建TwitterUser实例
@@ -1534,6 +1627,10 @@ class TwitterUser {
       link: json['link'],
       followersCount: json['followersCount'] ?? 0,
       followingCount: json['followingCount'] ?? 0,
+      statusesCount: json['statusesCount'] ?? 0,
+      mediaCount: json['mediaCount'] ?? 0,
+      favouritesCount: json['favouritesCount'] ?? 0,
+      listedCount: json['listedCount'] ?? 0,
     );
   }
 
@@ -1548,10 +1645,13 @@ class TwitterUser {
       'location': location,
       'joinTime': joinTime,
       'bannerUrl': bannerUrl,
+      'statusesCount': statusesCount,
+      'mediaCount': mediaCount,
+      'favouritesCount': favouritesCount,
+      'listedCount': listedCount,
     };
   }
 }
-
 
 
 ### FILE: ./providers/auth_provider.dart
@@ -1559,7 +1659,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/account.dart';
 import '../services/secure_storage_service.dart';
 import '../services/twitter_api_service.dart';
-// 移除了未使用的 dart:convert 导入
+import 'dart:convert';
 
 // --- Provider 定义 ---
 
@@ -1723,6 +1823,17 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
     String? name;
     String? screenName;
     String? avatarUrl;
+    String? bannerUrl;
+    String? bio;
+    String? location;
+    String? link;
+    String? joinTime;
+    int followersCount = 0;
+    int followingCount = 0;
+    int statusesCount = 0;
+    int mediaCount = 0;
+    int favouritesCount = 0;
+    int listedCount = 0;
 
     try {
       final Map<String, dynamic> userProfileJson = await _apiService
@@ -1730,27 +1841,78 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
 
       final result = userProfileJson['data']?['user']?['result'];
 
+      // ... 在 addAccount 方法内部 ...
       if (result != null &&
           result is Map<String, dynamic> &&
           result['__typename'] == 'User') {
+        // --- 修正后的解析逻辑 ---
+
         final core = result['core'];
+        final legacy = result['legacy'];
+
         if (core != null && core is Map<String, dynamic>) {
           name = core['name'] as String?;
           screenName = core['screen_name'] as String?;
-          avatarUrl = (result['avatar']['image_url'] as String?)?.replaceFirst('_normal', '_400x400');
+          avatarUrl = (result['avatar']['image_url'] as String?)?.replaceFirst(
+            '_normal',
+            '_400x400',
+          );
+
+          // 'joinTime' 来自 core
+          joinTime = core['created_at'] as String?;
+
           print(
             "addAccount: Profile fetched - Name: $name, ScreenName: $screenName, Avatar: $avatarUrl",
           );
         } else {
           print("addAccount: API 返回成功，但 core 数据缺失或格式不正确。");
         }
+
+        if (legacy != null && legacy is Map<String, dynamic>) {
+          bio = legacy['description'] as String?;
+          followersCount = legacy['followers_count'] as int? ?? 0;
+          followingCount =
+              legacy['friends_count'] as int? ?? 0; // API 使用 'friends_count'
+          final String? tcoUrl = legacy['url'] as String?;
+          String? finalLink = tcoUrl; // 默认回退到 t.co 链接
+
+          try {
+            final entities = legacy['entities'] as Map<String, dynamic>?;
+            final urlBlock = entities?['url'] as Map<String, dynamic>?;
+            final urlsList = urlBlock?['urls'] as List<dynamic>?;
+
+            if (tcoUrl != null && urlsList != null) {
+              // 遍历列表，查找 t.co 链接匹配的块
+              for (final item in urlsList) {
+                final urlMap = item as Map<String, dynamic>?;
+                if (urlMap != null && urlMap['url'] == tcoUrl) {
+                  // 找到了！使用 expanded_url
+                  finalLink = urlMap['expanded_url'] as String?;
+                  break; // 停止搜索
+                }
+              }
+            }
+          } catch (e) {
+            // 发生解析错误，finalLink 将保持为 tcoUrl，这正是我们想要的回退行为
+          }
+
+          link = finalLink;
+
+          // [修正] 'bannerUrl' 来自 legacy
+          bannerUrl = legacy['profile_banner_url'] as String?;
+          statusesCount = legacy['statuses_count'] as int? ?? 0;
+          mediaCount = legacy['media_count'] as int? ?? 0;
+          favouritesCount = legacy['favourites_count'] as int? ?? 0;
+          listedCount = legacy['listed_count'] as int? ?? 0;
+        }
+
+        // [修正] 'location' 是一个嵌套对象
+        final locationMap = result['location'] as Map<String, dynamic>?;
+        location = locationMap?['location'] as String?;
+
+        // --- 修正结束 ---
       } else {
-        final typeName = result?['__typename'];
-        final reason = result?['reason'];
-        print(
-          "addAccount: API 返回成功，但用户结果类型不是 'User' (可能是 '$typeName', 原因: '$reason')。",
-        );
-        throw Exception("无法获取有效的用户信息 (可能不存在或被限制)。");
+        print("addAccount: API 返回成功，但 result 数据缺失或格式不正确。");
       }
     } catch (e) {
       print("addAccount: 调用 API 或解析 Profile 时出错: $e");
@@ -1764,6 +1926,17 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
       name: name, // 确保 Account 构造函数有 'name'
       screenName: screenName, // 确保 Account 构造函数有 'screenName'
       avatarUrl: avatarUrl, // 确保 Account 构造函数有 'avatarUrl'
+      bannerUrl: bannerUrl,
+      bio: bio,
+      location: location,
+      link: link,
+      joinTime: joinTime,
+      followersCount: followersCount,
+      followingCount: followingCount,
+      statusesCount: statusesCount,
+      mediaCount: mediaCount,
+      favouritesCount: favouritesCount,
+      listedCount: listedCount,
     );
 
     // --- 将这部分代码移回方法内部 ---
@@ -1806,25 +1979,25 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
         orElse: () => '',
       );
       if (twidPart.isNotEmpty) {
-      var valuePart = twidPart.split('=')[1].trim();
+        var valuePart = twidPart.split('=')[1].trim();
 
-      // URL 解码
-      valuePart = Uri.decodeComponent(valuePart);
+        // URL 解码
+        valuePart = Uri.decodeComponent(valuePart);
 
-      // 兼容 u=xxxx 或 u_xxxx
-      if (valuePart.startsWith('u=')) {
-        final id = valuePart.substring(2);
-        return id.isNotEmpty ? id : null;
-      } else if (valuePart.startsWith('u_')) {
-        final id = valuePart.substring(2);
-        return id.isNotEmpty ? id : null;
-      } else {
-        print("解析 twid 失败: twid value ($valuePart) 不以 'u=' 或 'u_' 开头");
-        return null;
+        // 兼容 u=xxxx 或 u_xxxx
+        if (valuePart.startsWith('u=')) {
+          final id = valuePart.substring(2);
+          return id.isNotEmpty ? id : null;
+        } else if (valuePart.startsWith('u_')) {
+          final id = valuePart.substring(2);
+          return id.isNotEmpty ? id : null;
+        } else {
+          print("解析 twid 失败: twid value ($valuePart) 不以 'u=' 或 'u_' 开头");
+          return null;
+        }
       }
-    }
-    return null;
-  } catch (e) {
+      return null;
+    } catch (e) {
       print("Error parsing twid from cookie: $e");
       return null;
     }
@@ -1896,6 +2069,9 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
   // 未来可以在这里添加更新其他设置的方法
   // Future<void> updateDarkMode(bool isDark) async { ... }
 }
+
+### FILE: ./services/database.dart
+
 
 ### FILE: ./services/secure_storage_service.dart
 import 'dart:convert';
@@ -2636,8 +2812,7 @@ class CommitsPage extends StatelessWidget {
 }
 
 ### FILE: ./ui/home_page.dart
-import 'dart:math';
-
+import 'package:autonitor/ui/user_detail_page.dart';
 import 'package:autonitor/models/twitter_user.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -2953,133 +3128,193 @@ class HomePage extends ConsumerWidget {
           Card(
             clipBehavior: Clip.antiAlias,
             margin: EdgeInsets.zero,
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 24,
-                        backgroundColor: Colors.transparent, // 去掉灰底，让Icon能显示
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            const Icon(Icons.person, size: 24),
-                            if (activeAccount?.avatarUrl != null &&
-                                activeAccount!.avatarUrl!.isNotEmpty)
-                              ClipOval(
-                                child: CachedNetworkImage(
-                                  imageUrl: activeAccount.avatarUrl!,
-                                  fit: BoxFit.cover,
-                                  width: 48,
-                                  height: 48,
-                                  fadeInDuration: const Duration(
-                                    milliseconds: 300,
+
+            // 替换 Card( child: [原有的 Column] ) 为 Card( child: InkWell(...) )
+            child: InkWell(
+              onTap: () {
+                // 1. 检查 activeAccount 是否为空
+                if (activeAccount == null) return;
+
+                // 2. 从 activeAccount 创建一个 TwitterUser 对象
+                // 注意：Account.id 是 restId, Account.screenName 是 id(handle)
+                final user = TwitterUser(
+                  avatarUrl: activeAccount.avatarUrl ?? '',
+                  name: activeAccount.name ?? 'Unknown',
+                  id:
+                      activeAccount.screenName ??
+                      activeAccount.id, // user.id 是 @handle
+                  restId: activeAccount.id, // user.restId 是数字 ID
+                  joinTime: activeAccount.joinTime ?? '',
+                  bio: activeAccount.bio,
+                  location: activeAccount.location,
+                  bannerUrl: activeAccount.bannerUrl,
+                  link: activeAccount.link,
+                  followersCount: activeAccount.followersCount,
+                  followingCount: activeAccount.followingCount,
+                  statusesCount: activeAccount.statusesCount,
+                  mediaCount: activeAccount.mediaCount,
+                  favouritesCount: activeAccount.favouritesCount,
+                  listedCount: activeAccount.listedCount,
+                );
+
+                // 3. 导航到详情页
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => UserDetailPage(user: user),
+                  ),
+                );
+              },
+              child: Column(
+                // --- InkWell 的 child 是原有的 Column ---
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                    child: Row(
+                      children: [
+                        // --- 修改：将 CircleAvatar 包装在 Hero 中 ---
+                        Hero(
+                          // 确保 tag 与 UserListPage 中的一致
+                          // 我们使用 restId (即 activeAccount.id) 作为 tag
+                          tag: 'avatar_${activeAccount?.id}',
+                          child: CircleAvatar(
+                            radius: 24,
+                            backgroundColor:
+                                Colors.transparent, // 去掉灰底，让Icon能显示
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                const Icon(Icons.person, size: 24),
+                                if (activeAccount?.avatarUrl != null &&
+                                    activeAccount!.avatarUrl!.isNotEmpty)
+                                  ClipOval(
+                                    child: CachedNetworkImage(
+                                      imageUrl: activeAccount.avatarUrl!,
+                                      fit: BoxFit.cover,
+                                      width: 48,
+                                      height: 48,
+                                      fadeInDuration: const Duration(
+                                        milliseconds: 300,
+                                      ),
+                                      fadeOutDuration: const Duration(
+                                        milliseconds: 100,
+                                      ),
+                                      errorWidget: (context, url, error) =>
+                                          const SizedBox(),
+                                    ),
                                   ),
-                                  fadeOutDuration: const Duration(
-                                    milliseconds: 100,
-                                  ),
-                                  errorWidget: (context, url, error) =>
-                                      const SizedBox(),
-                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        // --- Hero 包装结束 ---
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                activeAccount?.name ??
+                                    'Unknown Name', // 使用 name, 提供 fallback
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                          ],
+                              Text(
+                                "@${activeAccount?.screenName ?? activeAccount?.id ?? '...'}", // 使用 screenName, fallback to id
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(color: Colors.grey.shade600),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                "ID: ${activeAccount?.id ?? '...'}", // 使用 id (RestId)
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(color: Colors.grey.shade600),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              activeAccount?.name ??
-                                  'Unknown Name', // 使用 name, 提供 fallback
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.bold),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              "@${activeAccount?.screenName ?? activeAccount?.id ?? '...'}", // 使用 screenName, fallback to id
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(color: Colors.grey.shade600),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              "ID: ${activeAccount?.id ?? '...'}", // 使用 id (RestId)
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: Colors.grey.shade600),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+                        IconButton(
+                          icon: const Icon(Icons.swap_horiz),
+                          tooltip: l10n.switch_account,
+                          onPressed: () => _showAccountSwitcher(context, ref),
                         ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.swap_horiz),
-                        tooltip: l10n.switch_account,
-                        onPressed: () => _showAccountSwitcher(context, ref),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                const Divider(height: 1, indent: 0, endIndent: 0),
-                IntrinsicHeight(
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: InkWell(
-                          onTap: () =>
-                              _navigateToUserList(context, ref, 'following'),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 12.0),
-                            child: Column(
-                              children: [
-                                Text(
-                                  cache.followingCount.toString(),
-                                  style: Theme.of(context).textTheme.titleMedium
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  l10n.following,
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ],
+                  const Divider(height: 1, indent: 0, endIndent: 0),
+                  IntrinsicHeight(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: () =>
+                                _navigateToUserList(context, ref, 'following'),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 12.0,
+                              ),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    cache.followingCount.toString(),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    l10n.following,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const VerticalDivider(width: 1),
-                      Expanded(
-                        child: InkWell(
-                          onTap: () =>
-                              _navigateToUserList(context, ref, 'followers'),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 12.0),
-                            child: Column(
-                              children: [
-                                Text(
-                                  cache.followersCount.toString(),
-                                  style: Theme.of(context).textTheme.titleMedium
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  l10n.followers,
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ],
+                        const VerticalDivider(width: 1),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () =>
+                                _navigateToUserList(context, ref, 'followers'),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 12.0,
+                              ),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    cache.followersCount.toString(),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    l10n.followers,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
+              // --- InkWell 结束 ---
             ),
           ),
           const SizedBox(height: 24),
@@ -3406,7 +3641,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
 
 ### FILE: ./ui/user_detail_page.dart
-import 'dart:math'; // 导入 math 库以使用 max 函数
+import 'dart:math';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -3458,7 +3694,16 @@ class UserDetailPage extends StatelessWidget {
               AspectRatio(
                 aspectRatio: bannerAspectRatio,
                 child: (user.bannerUrl ?? '').isNotEmpty
-                    ? Image.network(user.bannerUrl!, fit: BoxFit.cover)
+                    ? CachedNetworkImage(
+                        imageUrl: user.bannerUrl!,
+                        fit: BoxFit.cover,
+                        // 添加一个占位符，保持灰色背景
+                        placeholder: (context, url) =>
+                            Container(color: Colors.grey.shade300),
+                        // 加载失败时也显示灰色背景
+                        errorWidget: (context, url, error) =>
+                            Container(color: Colors.grey.shade300),
+                      )
                     : Container(color: Colors.grey.shade300),
               ),
               Positioned(
@@ -3472,7 +3717,7 @@ class UserDetailPage extends StatelessWidget {
                     child: CircleAvatar(
                       radius: 42,
                       backgroundImage: user.avatarUrl.isNotEmpty
-                          ? NetworkImage(user.avatarUrl)
+                          ? CachedNetworkImageProvider(user.avatarUrl)
                           : null,
                       child: user.avatarUrl.isEmpty
                           ? const Icon(Icons.person, size: 40)
@@ -3694,9 +3939,7 @@ class UserDetailPage extends StatelessWidget {
                           children: [
                             Text(
                               'ByScreenName',
-                              style: TextStyle(
-                                fontSize: 12,
-                              ),
+                              style: TextStyle(fontSize: 12),
                             ),
                             const SizedBox(height: 4),
                             InkWell(
@@ -3739,12 +3982,7 @@ class UserDetailPage extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'ByRestId',
-                              style: TextStyle(
-                                fontSize: 12,
-                              ),
-                            ),
+                            Text('ByRestId', style: TextStyle(fontSize: 12)),
                             const SizedBox(height: 4),
                             InkWell(
                               onTap: () => _launchURL(
@@ -3780,10 +4018,30 @@ class UserDetailPage extends StatelessWidget {
               style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ),
-          _buildInfoTile(context, Icons.create, l10n.tweets, "65"),
-          _buildInfoTile(context, Icons.image, l10n.media_count, "3"),
-          _buildInfoTile(context, Icons.favorite, l10n.likes, "100"),
-          _buildInfoTile(context, Icons.list_alt, l10n.listed_count, "1"),
+          _buildInfoTile(
+            context,
+            Icons.create,
+            l10n.tweets,
+            user.statusesCount.toString(),
+          ),
+          _buildInfoTile(
+            context,
+            Icons.image,
+            l10n.media_count,
+            user.mediaCount.toString(),
+          ),
+          _buildInfoTile(
+            context,
+            Icons.favorite,
+            l10n.likes,
+            user.favouritesCount.toString(),
+          ),
+          _buildInfoTile(
+            context,
+            Icons.list_alt,
+            l10n.listed_count,
+            user.listedCount.toString(),
+          ),
 
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 1, 0),

@@ -1,39 +1,67 @@
-import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../models/account.dart';
 
 final secureStorageServiceProvider = Provider((ref) => SecureStorageService());
 
 class SecureStorageService {
   final _storage = const FlutterSecureStorage();
-  
-  static const _accountsKey = 'accounts_list';
+
   static const _activeAccountIdKey = 'active_account_id';
 
-  Future<List<Account>> getAccounts() async {
+  /// 保存指定 ID 的 cookie
+  Future<void> saveCookie(String id, String cookie) async {
     try {
-      final jsonString = await _storage.read(key: _accountsKey);
-      if (jsonString == null) {
-        return [];
-      }
-      final List<dynamic> jsonList = jsonDecode(jsonString);
-      return jsonList.map((json) => Account.fromJson(json)).toList();
+      // 使用账号 ID 作为 key 的一部分，确保唯一性
+      await _storage.write(key: 'cookie_$id', value: cookie);
     } catch (e) {
-      return [];
+      print("Error saving cookie for ID $id: $e");
+      // 可以考虑向上抛出异常，让调用者知道失败了
+      // throw Exception('Failed to save cookie: $e');
     }
   }
-  
-  Future<void> saveAccounts(List<Account> accounts) async {
+
+  /// 读取指定 ID 的 cookie
+  Future<String?> getCookie(String id) async {
     try {
-      final List<Map<String, dynamic>> jsonList =
-          accounts.map((account) => account.toJson()).toList();
-      final jsonString = jsonEncode(jsonList);
-      await _storage.write(key: _accountsKey, value: jsonString);
+      return await _storage.read(key: 'cookie_$id');
     } catch (e) {
-      // handle error
+      print("Error reading cookie for ID $id: $e");
+      return null;
     }
   }
+
+  /// 删除指定 ID 的 cookie
+  Future<void> deleteCookie(String id) async {
+    try {
+      await _storage.delete(key: 'cookie_$id');
+    } catch (e) {
+      print("Error deleting cookie for ID $id: $e");
+      // 可以考虑向上抛出异常
+      // throw Exception('Failed to delete cookie: $e');
+    }
+  }
+
+  /// 读取所有存储的 cookies，返回一个 Map<String, String> (ID -> Cookie)
+  Future<Map<String, String>> getAllCookies() async {
+    try {
+      // 读取所有 secure storage 中的键值对
+      final allValues = await _storage.readAll();
+      final Map<String, String> cookies = {};
+      // 筛选出以 'cookie_' 开头的键
+      allValues.forEach((key, value) {
+        if (key.startsWith('cookie_')) {
+          // 提取 ID (去掉 'cookie_' 前缀)
+          final id = key.substring('cookie_'.length);
+          cookies[id] = value;
+        }
+      });
+      return cookies;
+    } catch (e) {
+      print("Error reading all cookies: $e");
+      return {}; // 出错时返回空 Map
+    }
+  }
+
   Future<String?> readActiveAccountId() async {
     try {
       return await _storage.read(key: _activeAccountIdKey);
@@ -42,6 +70,7 @@ class SecureStorageService {
       return null;
     }
   }
+
   Future<void> saveActiveAccountId(String id) async {
     try {
       await _storage.write(key: _activeAccountIdKey, value: id);
@@ -49,6 +78,7 @@ class SecureStorageService {
       print("Error saving active account ID: $e");
     }
   }
+
   Future<void> deleteActiveAccountId() async {
     try {
       await _storage.delete(key: _activeAccountIdKey);
@@ -57,4 +87,3 @@ class SecureStorageService {
     }
   }
 }
-

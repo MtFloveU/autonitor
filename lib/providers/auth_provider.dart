@@ -2,7 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/account.dart';
 import '../services/secure_storage_service.dart';
 import '../services/twitter_api_service.dart';
+import '../services/database.dart';
+import '../main.dart';
 import 'dart:convert';
+import 'package:drift/drift.dart';
 
 // --- Provider 定义 ---
 
@@ -40,11 +43,9 @@ class ActiveAccountNotifier extends StateNotifier<Account?> {
         print(
           "ActiveAccountNotifier: Stored active ID $activeId not found in accounts list. Resetting.",
         );
-        // 使用假设的正确方法名
         await _storageService.deleteActiveAccountId();
         if (accounts.isNotEmpty) {
           state = accounts.first;
-          // 使用假设的正确方法名
           await _storageService.saveActiveAccountId(state!.id);
           print(
             "ActiveAccountNotifier: Reset active account to first account ID ${state?.id}.",
@@ -56,7 +57,6 @@ class ActiveAccountNotifier extends StateNotifier<Account?> {
       }
     } else if (accounts.isNotEmpty) {
       state = accounts.first;
-      // 使用假设的正确方法名
       await _storageService.saveActiveAccountId(state!.id);
       print(
         "ActiveAccountNotifier: No active ID stored, setting first account ID ${state?.id} as active.",
@@ -72,13 +72,11 @@ class ActiveAccountNotifier extends StateNotifier<Account?> {
   Future<void> setActive(Account? account) async {
     state = account;
     if (account != null) {
-      // 使用假设的正确方法名
       await _storageService.saveActiveAccountId(account.id);
       print(
         "ActiveAccountNotifier: Set active account ID: ${account.id} and persisted.",
       );
     } else {
-      // 使用假设的正确方法名
       await _storageService.deleteActiveAccountId();
       print("ActiveAccountNotifier: Cleared active account ID and persisted.");
     }
@@ -143,18 +141,86 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
   final Ref _ref;
   late final SecureStorageService _storageService;
   late final TwitterApiService _apiService;
+  late final AppDatabase _database;
 
   AccountsNotifier(this._ref) : super([]) {
     _storageService = _ref.read(secureStorageServiceProvider);
     _apiService = _ref.read(twitterApiServiceProvider);
+    _database = _ref.read(databaseProvider);
     loadAccounts();
   }
 
   Future<void> loadAccounts() async {
-    state = await _storageService.getAccounts(); // Assuming getAccounts exists
-    print("AccountsNotifier: Loaded ${state.length} accounts.");
-    // Notify ActiveAccountNotifier after loading
-    _ref.read(activeAccountProvider.notifier).updateFromList(state);
+    try {
+      final profiles = await _database.select(_database.loggedAccounts).get();
+      final cookies = await _storageService.getAllCookies();
+      final List<Account> loadedAccounts = [];
+      for (final profile in profiles) {
+        final cookie = cookies[profile.id];
+        if (cookie != null) {
+          loadedAccounts.add(
+            Account(
+              id: profile.id,
+              cookie: cookie,
+              name: profile.name,
+              screenName: profile.screenName,
+              avatarUrl: profile.avatarUrl,
+              bannerUrl: profile.bannerUrl,
+              bio: profile.bio,
+              location: profile.location,
+              link: profile.link,
+              joinTime: profile.joinTime,
+              followersCount: profile.followersCount,
+              followingCount: profile.followingCount,
+              statusesCount: profile.statusesCount,
+              mediaCount: profile.mediaCount,
+              favouritesCount: profile.favouritesCount,
+              listedCount: profile.listedCount,
+            ),
+          );
+        } else {
+          print(
+            "AccountsNotifier: Warning - Profile found for ID ${profile.id} but no cookie in SecureStorage. Skipping this account.",
+          );
+        }
+      }
+      state = loadedAccounts;
+      print("AccountsNotifier: Loaded and assembled ${state.length} accounts.");
+      _ref.read(activeAccountProvider.notifier).updateFromList(state);
+    } catch (e, s) {
+      print("AccountsNotifier: Error loading accounts: $e\n$s");
+      state = [];
+      _ref.read(activeAccountProvider.notifier).updateFromList(state);
+    }
+  }
+
+  // <-- 修正：方法移动到 addAccount 之前
+  String? _parseTwidFromCookie(String cookie) {
+    try {
+      final parts = cookie.split(';');
+      final twidPart = parts.firstWhere(
+        (part) => part.trim().startsWith('twid='),
+        orElse: () => '',
+      );
+      if (twidPart.isNotEmpty) {
+        var valuePart = twidPart.split('=')[1].trim();
+        valuePart = Uri.decodeComponent(valuePart);
+        if (valuePart.startsWith('u=')) {
+          final id = valuePart.substring(2);
+          return id.isNotEmpty ? id : null;
+        } else if (valuePart.startsWith('u_')) {
+          final id = valuePart.substring(2);
+          return id.isNotEmpty ? id : null;
+        } else {
+          print("解析 twid 失败: twid value ($valuePart) 不以 'u=' 或 'u_' 开头");
+          return null;
+        }
+      }
+      return null;
+    } catch (e) {
+      print("Error parsing twid from cookie: $e");
+      return null;
+    }
   }
 
   Future<void> addAccount(String cookie) async {
@@ -177,19 +243,17 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
     int mediaCount = 0;
     int favouritesCount = 0;
     int listedCount = 0;
+    String rawJsonString = '{}'; // <-- 初始化为空 JSON 对象字符串
 
     try {
       final Map<String, dynamic> userProfileJson = await _apiService
           .getUserByRestId(twid, cookie);
-
+      rawJsonString = jsonEncode(userProfileJson); // <-- 保存原始 JSON
       final result = userProfileJson['data']?['user']?['result'];
 
-      // ... 在 addAccount 方法内部 ...
       if (result != null &&
           result is Map<String, dynamic> &&
           result['__typename'] == 'User') {
-        // --- 修正后的解析逻辑 ---
-
         final core = result['core'];
         final legacy = result['legacy'];
 
@@ -200,10 +264,7 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
             '_normal',
             '_400x400',
           );
-
-          // 'joinTime' 来自 core
           joinTime = core['created_at'] as String?;
-
           print(
             "addAccount: Profile fetched - Name: $name, ScreenName: $screenName, Avatar: $avatarUrl",
           );
@@ -214,34 +275,27 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
         if (legacy != null && legacy is Map<String, dynamic>) {
           bio = legacy['description'] as String?;
           followersCount = legacy['followers_count'] as int? ?? 0;
-          followingCount =
-              legacy['friends_count'] as int? ?? 0; // API 使用 'friends_count'
+          followingCount = legacy['friends_count'] as int? ?? 0;
           final String? tcoUrl = legacy['url'] as String?;
-          String? finalLink = tcoUrl; // 默认回退到 t.co 链接
+          String? finalLink = tcoUrl;
 
           try {
             final entities = legacy['entities'] as Map<String, dynamic>?;
             final urlBlock = entities?['url'] as Map<String, dynamic>?;
             final urlsList = urlBlock?['urls'] as List<dynamic>?;
-
             if (tcoUrl != null && urlsList != null) {
-              // 遍历列表，查找 t.co 链接匹配的块
               for (final item in urlsList) {
                 final urlMap = item as Map<String, dynamic>?;
                 if (urlMap != null && urlMap['url'] == tcoUrl) {
-                  // 找到了！使用 expanded_url
                   finalLink = urlMap['expanded_url'] as String?;
-                  break; // 停止搜索
+                  break;
                 }
               }
             }
           } catch (e) {
-            // 发生解析错误，finalLink 将保持为 tcoUrl，这正是我们想要的回退行为
+             // Fallback handled by finalLink initialization
           }
-
           link = finalLink;
-
-          // [修正] 'bannerUrl' 来自 legacy
           bannerUrl = legacy['profile_banner_url'] as String?;
           statusesCount = legacy['statuses_count'] as int? ?? 0;
           mediaCount = legacy['media_count'] as int? ?? 0;
@@ -249,100 +303,69 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
           listedCount = legacy['listed_count'] as int? ?? 0;
         }
 
-        // [修正] 'location' 是一个嵌套对象
         final locationMap = result['location'] as Map<String, dynamic>?;
         location = locationMap?['location'] as String?;
-
-        // --- 修正结束 ---
       } else {
         print("addAccount: API 返回成功，但 result 数据缺失或格式不正确。");
+        // Consider throwing an error if profile data is essential
       }
     } catch (e) {
       print("addAccount: 调用 API 或解析 Profile 时出错: $e");
       rethrow;
     }
 
-    // --- 使用正确的命名参数调用 Account 构造函数 ---
-    final newAccount = Account(
-      id: twid,
-      cookie: cookie,
-      name: name, // 确保 Account 构造函数有 'name'
-      screenName: screenName, // 确保 Account 构造函数有 'screenName'
-      avatarUrl: avatarUrl, // 确保 Account 构造函数有 'avatarUrl'
-      bannerUrl: bannerUrl,
-      bio: bio,
-      location: location,
-      link: link,
-      joinTime: joinTime,
-      followersCount: followersCount,
-      followingCount: followingCount,
-      statusesCount: statusesCount,
-      mediaCount: mediaCount,
-      favouritesCount: favouritesCount,
-      listedCount: listedCount,
+    await _storageService.saveCookie(twid, cookie);
+    print("addAccount: Saved cookie to SecureStorage for ID: $twid");
+
+    final companion = LoggedAccountsCompanion(
+      id: Value(twid),
+      name: Value(name),
+      screenName: Value(screenName),
+      avatarUrl: Value(avatarUrl),
+      bannerUrl: Value(bannerUrl),
+      bio: Value(bio),
+      location: Value(location),
+      link: Value(link),
+      joinTime: Value(joinTime),
+      followersCount: Value(followersCount),
+      followingCount: Value(followingCount),
+      statusesCount: Value(statusesCount),
+      mediaCount: Value(mediaCount),
+      favouritesCount: Value(favouritesCount),
+      listedCount: Value(listedCount),
+      latestRawJson: Value(rawJsonString),
+      avatarLocalPath: Value(null),
+      bannerLocalPath: Value(null),
     );
 
-    // --- 将这部分代码移回方法内部 ---
-    final exists = state.any((acc) => acc.id == newAccount.id);
-    List<Account> newList;
-    if (exists) {
-      newList = [
-        for (final acc in state)
-          if (acc.id == newAccount.id) newAccount else acc,
-      ];
-      print("addAccount: Updated existing account for ID: $twid");
-    } else {
-      newList = [...state, newAccount];
-      print("addAccount: Added new account for ID: $twid");
-    }
-    state = newList;
+    await _database.into(_database.loggedAccounts).insert(
+          companion,
+          mode: InsertMode.replace,
+        );
+    print("addAccount: Inserted/Replaced profile in database for ID: $twid");
 
-    // Assuming saveAccounts exists and uses the correct state
-    await _storageService.saveAccounts(state);
-    print("addAccount: Saved accounts list to secure storage.");
+    await loadAccounts(); // <-- 修正：只保留 loadAccounts()
 
-    await _ref.read(activeAccountProvider.notifier).setActive(newAccount);
-    print("addAccount: Set account ID $twid as active.");
-    // --- 移动的代码块结束 ---
   } // <--- addAccount 方法结束
 
   Future<void> removeAccount(String id) async {
-    final newList = state.where((acc) => acc.id != id).toList();
-    state = newList;
-    // Assuming saveAccounts exists
-    await _storageService.saveAccounts(state);
-    print("AccountsNotifier: Removed account ID $id and saved.");
-  }
-
-  String? _parseTwidFromCookie(String cookie) {
     try {
-      final parts = cookie.split(';');
-      final twidPart = parts.firstWhere(
-        (part) => part.trim().startsWith('twid='),
-        orElse: () => '',
-      );
-      if (twidPart.isNotEmpty) {
-        var valuePart = twidPart.split('=')[1].trim();
+      await _storageService.deleteCookie(id);
+      print("AccountsNotifier: Deleted cookie from SecureStorage for ID $id.");
 
-        // URL 解码
-        valuePart = Uri.decodeComponent(valuePart);
-
-        // 兼容 u=xxxx 或 u_xxxx
-        if (valuePart.startsWith('u=')) {
-          final id = valuePart.substring(2);
-          return id.isNotEmpty ? id : null;
-        } else if (valuePart.startsWith('u_')) {
-          final id = valuePart.substring(2);
-          return id.isNotEmpty ? id : null;
-        } else {
-          print("解析 twid 失败: twid value ($valuePart) 不以 'u=' 或 'u_' 开头");
-          return null;
-        }
+      final deletedRows = await (_database.delete(_database.loggedAccounts)..where((tbl) => tbl.id.equals(id))).go();
+      
+      if (deletedRows > 0) {
+         print("AccountsNotifier: Deleted profile from database for ID $id.");
+      } else {
+         print("AccountsNotifier: Warning - Tried to delete profile for ID $id, but it was not found in the database.");
       }
-      return null;
-    } catch (e) {
-      print("Error parsing twid from cookie: $e");
-      return null;
+
+      await loadAccounts(); 
+
+    } catch (e, s) {
+      print("AccountsNotifier: Error removing account ID $id: $e\n$s");
     }
   }
+
 }
