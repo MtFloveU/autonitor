@@ -7,9 +7,8 @@ import 'package:autonitor/providers/auth_provider.dart';
 import 'package:autonitor/ui/user_list_page.dart';
 import '../l10n/app_localizations.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-// 移除了未使用的 drift, database, main 导入
 
-// Providers 现已在 auth_provider.dart 中定义
+// Providers (cacheProvider, userListProvider) 现在在 auth_provider.dart 中定义
 
 class HomePage extends ConsumerStatefulWidget {
   final VoidCallback onNavigateToAccounts;
@@ -19,6 +18,26 @@ class HomePage extends ConsumerStatefulWidget {
 }
 
 class _HomePageState extends ConsumerState<HomePage> {
+  // 辅助方法：格式化 ISO 8601 时间字符串
+  String _getFormattedLastUpdate(BuildContext context, AppLocalizations l10n, String isoString) {
+    if (isoString.isEmpty) {
+      return l10n.last_updated_at("N/A");
+    }
+    try {
+      final dateTime = DateTime.parse(isoString).toLocal();
+      // 格式: YYYY-MM-DD HH:MM
+      final formattedDate = "${dateTime.year.toString().padLeft(4, '0')}-"
+                          "${dateTime.month.toString().padLeft(2, '0')}-"
+                          "${dateTime.day.toString().padLeft(2, '0')} "
+                          "${dateTime.hour.toString().padLeft(2, '0')}:"
+                          "${dateTime.minute.toString().padLeft(2, '0')}";
+      return l10n.last_updated_at(formattedDate);
+    } catch (e) {
+      print("Error parsing lastUpdateTime: $e");
+      return l10n.last_updated_at("Invalid Date");
+    }
+  }
+
   void _showAccountSwitcher(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final allAccounts = ref.read(accountsProvider);
@@ -86,12 +105,10 @@ class _HomePageState extends ConsumerState<HomePage> {
     if (activeAccount == null) return;
     print('--- HomePage: Navigating to UserListPage for category $categoryKey ---');
     Navigator.push(context, MaterialPageRoute(
-        // --- 修正：使用 UserListPage 的正确构造函数 ---
         builder: (_) => UserListPage(
-          ownerId: activeAccount.id,   // 传递 ownerId
-          categoryKey: categoryKey, // 传递 categoryKey
+          ownerId: activeAccount.id,
+          categoryKey: categoryKey,
         ),
-        // --- 修正结束 ---
     ));
   }
 
@@ -125,7 +142,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     final cacheAsyncValue = ref.watch(cacheProvider);
     return cacheAsyncValue.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('加载缓存失败: $err')), // TODO: Add l10n
+      error: (err, stack) => Center(child: Text('加载缓存失败: $err')),
       data: (cacheData) {
         if (cacheData == null) { return _buildEmptyCacheState(context); }
         return _buildDataDisplay(context, cacheData);
@@ -138,12 +155,12 @@ class _HomePageState extends ConsumerState<HomePage> {
     return Center(child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(l10n.no_analysis_data), // 使用 l10n
+          Text(l10n.no_analysis_data),
           const SizedBox(height: 20),
           ElevatedButton.icon(
             icon: const Icon(Icons.sync),
             onPressed: () => ref.invalidate(cacheProvider),
-            label: Text(l10n.run_analysis_now), // 使用 l10n
+            label: Text(l10n.run_analysis_now),
           ),
         ],
     ));
@@ -223,15 +240,25 @@ class _HomePageState extends ConsumerState<HomePage> {
                 _buildDetailListItem(context, 'normal_unfollowed', Icons.person_remove_outlined, l10n.normal_unfollowed, cache.unfollowedCount),
                 _buildDetailListItem(context, 'mutual_unfollowed', Icons.group_off_rounded, l10n.mutual_unfollowed, cache.mutualUnfollowedCount),
                 _buildDetailListItem(context, 'oneway_unfollowed', Icons.group_off_outlined, l10n.oneway_unfollowed, cache.singleUnfollowedCount),
-                // --- 修正：使用 l10n key 并从 cache 获取真实 count ---
                 _buildDetailListItem(context, 'temporarily_restricted', Icons.warning_amber_rounded, l10n.temporarily_restricted, cache.temporarilyRestrictedCount),
-                // --- 修正结束 ---
                 _buildDetailListItem(context, 'suspended', Icons.lock_outline, l10n.suspended, cache.frozenCount),
                 _buildDetailListItem(context, 'deactivated', Icons.no_accounts_outlined, l10n.deactivated, cache.deactivatedCount),
                 _buildDetailListItem(context, 'be_followed_back', Icons.group_add_outlined, l10n.be_followed_back, cache.refollowedCount),
                 _buildDetailListItem(context, 'new_followers_following', Icons.person_add_alt_1_outlined, l10n.new_followers_following, cache.newFollowersCount, showDivider: false),
           ])),
           const SizedBox(height: 80),
+
+          // --- 新增：上次更新时间 ---
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),
+            child: Center(
+              child: Text(
+                _getFormattedLastUpdate(context, l10n, cache.lastUpdateTime),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
+              ),
+            ),
+          ),
+          // --- 新增结束 ---
         ],
       ),
     );
@@ -258,7 +285,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     final l10n = AppLocalizations.of(context)!;
     final activeAccount = ref.watch(activeAccountProvider);
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.app_title)), // 使用 l10n key
+      appBar: AppBar(title: Text(l10n.app_title)),
       body: activeAccount == null
           ? _buildNoAccountState(context, widget.onNavigateToAccounts)
           : _buildAccountView(context),
@@ -268,57 +295,106 @@ class _HomePageState extends ConsumerState<HomePage> {
               onPressed: () async {
                 final currentContext = context; final currentRef = ref;
                 final currentL10n = AppLocalizations.of(currentContext)!; final currentTheme = Theme.of(currentContext);
+                
+                // --- 修改：在 showDialog 之前启动分析 ---
+                // (这将立即设置 analysisIsRunningProvider 为 true)
+                // (并且异步执行，不会阻塞 UI)
+                // 我们在 try/catch 之外调用它，因为日志对话框会处理自己的错误
+                // 确保 accountToProcess 在调用前被检查
+                final accountToProcess = currentRef.read(activeAccountProvider);
+                if (accountToProcess == null) {
+                  ScaffoldMessenger.of(currentContext).showSnackBar(SnackBar(
+                      content: Text(currentL10n.no_active_account_error, style: TextStyle(color: currentTheme.colorScheme.onError)),
+                      backgroundColor: currentTheme.colorScheme.error,
+                  ));
+                  return; // 没有活动账号，不执行
+                }
+                
+                // 异步调用，但不等待它
+                // 我们将通过 analysisIsRunningProvider 观察它的完成
+                currentRef.read(accountsProvider.notifier).runAnalysisProcess(accountToProcess)
+                .catchError((e) {
+                   // 即使在 provider 中捕获了错误，这里也可能需要一个顶层捕获
+                   // 以防 runAnalysisProcess 本身抛出（例如 accountToProcess 为 null）
+                   // 已经在 provider 内部处理了
+                   print("runAnalysisProcess top-level error (should be handled in Notifier): $e");
+                }).whenComplete(() {
+                   // 无论成功还是失败，都触发 cacheProvider 刷新
+                   currentRef.invalidate(cacheProvider);
+                });
+                
+                // --- 立即显示对话框 ---
                 showDialog(
                   context: currentContext, barrierDismissible: false,
                   builder: (dialogContext) => PopScope(
                     canPop: false,
                     child: AlertDialog(
                       title: Row(children: [
-                          SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 3)),
-                          SizedBox(width: 16), Text(currentL10n.analysis_log), // 使用 l10n
+                          Consumer( // 让转圈动画也监听状态
+                            builder: (context, ref, child) {
+                              final isRunning = ref.watch(analysisIsRunningProvider);
+                              return isRunning
+                                ? SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 3))
+                                : Icon(Icons.check_circle, color: Colors.green); // 完成时显示勾
+                            },
+                          ),
+                          SizedBox(width: 16), 
+                          Text(currentL10n.analysis_log),
                       ]),
+                      // --- 修改：使用不可编辑的 TextField ---
                       content: SizedBox(
                          width: double.maxFinite, height: MediaQuery.of(currentContext).size.height * 0.7,
                          child: Consumer(
                            builder: (context, ref, child) {
                              final logs = ref.watch(analysisLogProvider);
-                             final ScrollController scrollController = ScrollController();
-                             WidgetsBinding.instance.addPostFrameCallback((_) {
-                               if (scrollController.hasClients) {
-                                  scrollController.animateTo(scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
-                               }
-                             });
-                             return ListView.builder(
-                               controller: scrollController, itemCount: logs.length,
-                               itemBuilder: (context, index) => Padding(
-                                   padding: const EdgeInsets.symmetric(vertical: 2.0),
-                                   child: Text(logs[index], style: TextStyle(fontSize: 10, fontFamily: 'monospace')), // Use monospace for logs
+                             final String logText = logs.join('\n');
+                             // 使用 TextEditingController 来设置文本
+                             final controller = TextEditingController(text: logText);
+                             
+                             return Container(
+                               decoration: BoxDecoration(
+                                 color: currentTheme.colorScheme.surfaceContainerHighest,
+                                 borderRadius: BorderRadius.circular(8.0),
+                               ),
+                               child: SingleChildScrollView(
+                                 reverse: true, // 尝试自动滚动到底部
+                                 padding: const EdgeInsets.all(8.0),
+                                 child: TextField(
+                                   controller: controller,
+                                   readOnly: true,
+                                   maxLines: null,
+                                   decoration: InputDecoration.collapsed(hintText: null),
+                                   style: TextStyle(
+                                     fontSize: 10,
+                                     fontFamily: 'monospace',
+                                     color: currentTheme.colorScheme.onSurfaceVariant,
+                                   ),
+                                 ),
                                ),
                              );
                            }
                          ),
                       ),
-                      actions: [ TextButton(child: Text(currentL10n.close), onPressed: () => Navigator.pop(dialogContext)) ], // TODO: Disable button while running
+                      // --- 修改：根据状态显示/隐藏关闭按钮 ---
+                      actions: [ 
+                        Consumer(
+                           builder: (context, ref, child) {
+                              final isRunning = ref.watch(analysisIsRunningProvider);
+                              // 运行时隐藏按钮
+                              if (isRunning) return const SizedBox.shrink();
+                              // 运行结束后显示按钮
+                              return TextButton(
+                                child: Text(currentL10n.close),
+                                onPressed: () => Navigator.pop(dialogContext)
+                              );
+                           }
+                        )
+                      ],
                     ),
                   ),
                 );
-                try {
-                  final accountToProcess = currentRef.read(activeAccountProvider);
-                  if (accountToProcess == null) { throw Exception(currentL10n.no_active_account_error); } // 使用 l10n
-                  await currentRef.read(accountsProvider.notifier).runAnalysisProcess(accountToProcess);
-                } catch (e) {
-                  if (!currentContext.mounted) return;
-                  ScaffoldMessenger.of(currentContext).showSnackBar(SnackBar(
-                      content: Text('${currentL10n.analysis_failed_error}: $e', style: TextStyle(color: currentTheme.colorScheme.onError)), // 使用 l10n
-                      backgroundColor: currentTheme.colorScheme.error,
-                  ));
-                } finally {
-                  if (currentContext.mounted) {
-                     try { if (Navigator.canPop(currentContext)) { Navigator.pop(currentContext); } }
-                     catch (e) { print("Error closing dialog in finally: $e"); }
-                  }
-                   currentRef.invalidate(cacheProvider);
-                }
+                // --- 移除 try/catch/finally 块 ---
+                // (因为逻辑已经移入 Notifier 和 Dialog 状态)
               },
               label: Text(l10n.run), icon: const Icon(Icons.play_arrow),
             ),

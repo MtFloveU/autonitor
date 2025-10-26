@@ -70,5 +70,13 @@
   "no_active_account_error": "Cannot run analysis: No account is active.",
   "analysis_failed_error": "Analysis failed",
   "no_analysis_data": "No analysis data found",
-  "run_analysis_now": "Run Analysis Now"
+  "run_analysis_now": "Run Analysis Now",
+  "last_updated_at": "Last updated: {date}",
+  "@last_updated_at": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  }
 }

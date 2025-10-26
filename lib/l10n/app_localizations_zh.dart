@@ -192,6 +192,11 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get run_analysis_now => '立即运行分析';
+
+  @override
+  String last_updated_at(String date) {
+    return '上次更新：$date';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -382,4 +387,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get run_analysis_now => '立即運行分析';
+
+  @override
+  String last_updated_at(String date) {
+    return '上次更新：$date';
+  }
 }

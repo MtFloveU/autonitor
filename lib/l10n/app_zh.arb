@@ -70,5 +70,13 @@
   "no_active_account_error": "无法运行分析：没有活动的账号。",
   "analysis_failed_error": "分析失败",
   "no_analysis_data": "尚未生成分析数据",
-  "run_analysis_now": "立即运行分析"
+  "run_analysis_now": "立即运行分析",
+  "last_updated_at": "上次更新：{date}",
+  "@last_updated_at": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  }
 }

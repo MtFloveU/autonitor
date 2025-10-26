@@ -70,5 +70,13 @@
   "no_active_account_error": "無法運行分析：沒有活動的賬戶。",
   "analysis_failed_error": "分析失敗",
   "no_analysis_data": "尚未生成分析數據",
-  "run_analysis_now": "立即運行分析"
+  "run_analysis_now": "立即運行分析",
+  "last_updated_at": "上次更新：{date}",
+  "@last_updated_at": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -464,6 +464,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Run Analysis Now'**
   String get run_analysis_now;
+
+  /// No description provided for @last_updated_at.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated: {date}'**
+  String last_updated_at(String date);
 }
 
 class _AppLocalizationsDelegate

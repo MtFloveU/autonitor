@@ -193,4 +193,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get run_analysis_now => 'Run Analysis Now';
+
+  @override
+  String last_updated_at(String date) {
+    return 'Last updated: $date';
+  }
 }

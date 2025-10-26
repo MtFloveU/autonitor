@@ -2411,6 +2411,17 @@ class $ChangeReportsTable extends ChangeReports
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _userSnapshotJsonMeta = const VerificationMeta(
+    'userSnapshotJson',
+  );
+  @override
+  late final GeneratedColumn<String> userSnapshotJson = GeneratedColumn<String>(
+    'user_snapshot_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2418,6 +2429,7 @@ class $ChangeReportsTable extends ChangeReports
     userId,
     changeType,
     timestamp,
+    userSnapshotJson,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2466,6 +2478,15 @@ class $ChangeReportsTable extends ChangeReports
     } else if (isInserting) {
       context.missing(_timestampMeta);
     }
+    if (data.containsKey('user_snapshot_json')) {
+      context.handle(
+        _userSnapshotJsonMeta,
+        userSnapshotJson.isAcceptableOrUnknown(
+          data['user_snapshot_json']!,
+          _userSnapshotJsonMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2495,6 +2516,10 @@ class $ChangeReportsTable extends ChangeReports
         DriftSqlType.dateTime,
         data['${effectivePrefix}timestamp'],
       )!,
+      userSnapshotJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_snapshot_json'],
+      ),
     );
   }
 
@@ -2511,12 +2536,14 @@ class ChangeReportEntry extends DataClass
   final String userId;
   final String changeType;
   final DateTime timestamp;
+  final String? userSnapshotJson;
   const ChangeReportEntry({
     required this.id,
     required this.ownerId,
     required this.userId,
     required this.changeType,
     required this.timestamp,
+    this.userSnapshotJson,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2526,6 +2553,9 @@ class ChangeReportEntry extends DataClass
     map['user_id'] = Variable<String>(userId);
     map['change_type'] = Variable<String>(changeType);
     map['timestamp'] = Variable<DateTime>(timestamp);
+    if (!nullToAbsent || userSnapshotJson != null) {
+      map['user_snapshot_json'] = Variable<String>(userSnapshotJson);
+    }
     return map;
   }
 
@@ -2536,6 +2566,9 @@ class ChangeReportEntry extends DataClass
       userId: Value(userId),
       changeType: Value(changeType),
       timestamp: Value(timestamp),
+      userSnapshotJson: userSnapshotJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(userSnapshotJson),
     );
   }
 
@@ -2550,6 +2583,7 @@ class ChangeReportEntry extends DataClass
       userId: serializer.fromJson<String>(json['userId']),
       changeType: serializer.fromJson<String>(json['changeType']),
       timestamp: serializer.fromJson<DateTime>(json['timestamp']),
+      userSnapshotJson: serializer.fromJson<String?>(json['userSnapshotJson']),
     );
   }
   @override
@@ -2561,6 +2595,7 @@ class ChangeReportEntry extends DataClass
       'userId': serializer.toJson<String>(userId),
       'changeType': serializer.toJson<String>(changeType),
       'timestamp': serializer.toJson<DateTime>(timestamp),
+      'userSnapshotJson': serializer.toJson<String?>(userSnapshotJson),
     };
   }
 
@@ -2570,12 +2605,16 @@ class ChangeReportEntry extends DataClass
     String? userId,
     String? changeType,
     DateTime? timestamp,
+    Value<String?> userSnapshotJson = const Value.absent(),
   }) => ChangeReportEntry(
     id: id ?? this.id,
     ownerId: ownerId ?? this.ownerId,
     userId: userId ?? this.userId,
     changeType: changeType ?? this.changeType,
     timestamp: timestamp ?? this.timestamp,
+    userSnapshotJson: userSnapshotJson.present
+        ? userSnapshotJson.value
+        : this.userSnapshotJson,
   );
   ChangeReportEntry copyWithCompanion(ChangeReportsCompanion data) {
     return ChangeReportEntry(
@@ -2586,6 +2625,9 @@ class ChangeReportEntry extends DataClass
           ? data.changeType.value
           : this.changeType,
       timestamp: data.timestamp.present ? data.timestamp.value : this.timestamp,
+      userSnapshotJson: data.userSnapshotJson.present
+          ? data.userSnapshotJson.value
+          : this.userSnapshotJson,
     );
   }
 
@@ -2596,13 +2638,15 @@ class ChangeReportEntry extends DataClass
           ..write('ownerId: $ownerId, ')
           ..write('userId: $userId, ')
           ..write('changeType: $changeType, ')
-          ..write('timestamp: $timestamp')
+          ..write('timestamp: $timestamp, ')
+          ..write('userSnapshotJson: $userSnapshotJson')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, ownerId, userId, changeType, timestamp);
+  int get hashCode =>
+      Object.hash(id, ownerId, userId, changeType, timestamp, userSnapshotJson);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2611,7 +2655,8 @@ class ChangeReportEntry extends DataClass
           other.ownerId == this.ownerId &&
           other.userId == this.userId &&
           other.changeType == this.changeType &&
-          other.timestamp == this.timestamp);
+          other.timestamp == this.timestamp &&
+          other.userSnapshotJson == this.userSnapshotJson);
 }
 
 class ChangeReportsCompanion extends UpdateCompanion<ChangeReportEntry> {
@@ -2620,12 +2665,14 @@ class ChangeReportsCompanion extends UpdateCompanion<ChangeReportEntry> {
   final Value<String> userId;
   final Value<String> changeType;
   final Value<DateTime> timestamp;
+  final Value<String?> userSnapshotJson;
   const ChangeReportsCompanion({
     this.id = const Value.absent(),
     this.ownerId = const Value.absent(),
     this.userId = const Value.absent(),
     this.changeType = const Value.absent(),
     this.timestamp = const Value.absent(),
+    this.userSnapshotJson = const Value.absent(),
   });
   ChangeReportsCompanion.insert({
     this.id = const Value.absent(),
@@ -2633,6 +2680,7 @@ class ChangeReportsCompanion extends UpdateCompanion<ChangeReportEntry> {
     required String userId,
     required String changeType,
     required DateTime timestamp,
+    this.userSnapshotJson = const Value.absent(),
   }) : ownerId = Value(ownerId),
        userId = Value(userId),
        changeType = Value(changeType),
@@ -2643,6 +2691,7 @@ class ChangeReportsCompanion extends UpdateCompanion<ChangeReportEntry> {
     Expression<String>? userId,
     Expression<String>? changeType,
     Expression<DateTime>? timestamp,
+    Expression<String>? userSnapshotJson,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2650,6 +2699,7 @@ class ChangeReportsCompanion extends UpdateCompanion<ChangeReportEntry> {
       if (userId != null) 'user_id': userId,
       if (changeType != null) 'change_type': changeType,
       if (timestamp != null) 'timestamp': timestamp,
+      if (userSnapshotJson != null) 'user_snapshot_json': userSnapshotJson,
     });
   }
 
@@ -2659,6 +2709,7 @@ class ChangeReportsCompanion extends UpdateCompanion<ChangeReportEntry> {
     Value<String>? userId,
     Value<String>? changeType,
     Value<DateTime>? timestamp,
+    Value<String?>? userSnapshotJson,
   }) {
     return ChangeReportsCompanion(
       id: id ?? this.id,
@@ -2666,6 +2717,7 @@ class ChangeReportsCompanion extends UpdateCompanion<ChangeReportEntry> {
       userId: userId ?? this.userId,
       changeType: changeType ?? this.changeType,
       timestamp: timestamp ?? this.timestamp,
+      userSnapshotJson: userSnapshotJson ?? this.userSnapshotJson,
     );
   }
 
@@ -2687,6 +2739,9 @@ class ChangeReportsCompanion extends UpdateCompanion<ChangeReportEntry> {
     if (timestamp.present) {
       map['timestamp'] = Variable<DateTime>(timestamp.value);
     }
+    if (userSnapshotJson.present) {
+      map['user_snapshot_json'] = Variable<String>(userSnapshotJson.value);
+    }
     return map;
   }
 
@@ -2697,7 +2752,8 @@ class ChangeReportsCompanion extends UpdateCompanion<ChangeReportEntry> {
           ..write('ownerId: $ownerId, ')
           ..write('userId: $userId, ')
           ..write('changeType: $changeType, ')
-          ..write('timestamp: $timestamp')
+          ..write('timestamp: $timestamp, ')
+          ..write('userSnapshotJson: $userSnapshotJson')
           ..write(')'))
         .toString();
   }
@@ -4500,6 +4556,7 @@ typedef $$ChangeReportsTableCreateCompanionBuilder =
       required String userId,
       required String changeType,
       required DateTime timestamp,
+      Value<String?> userSnapshotJson,
     });
 typedef $$ChangeReportsTableUpdateCompanionBuilder =
     ChangeReportsCompanion Function({
@@ -4508,6 +4565,7 @@ typedef $$ChangeReportsTableUpdateCompanionBuilder =
       Value<String> userId,
       Value<String> changeType,
       Value<DateTime> timestamp,
+      Value<String?> userSnapshotJson,
     });
 
 final class $$ChangeReportsTableReferences
@@ -4568,6 +4626,11 @@ class $$ChangeReportsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get userSnapshotJson => $composableBuilder(
+    column: $table.userSnapshotJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$LoggedAccountsTableFilterComposer get ownerId {
     final $$LoggedAccountsTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -4621,6 +4684,11 @@ class $$ChangeReportsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get userSnapshotJson => $composableBuilder(
+    column: $table.userSnapshotJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$LoggedAccountsTableOrderingComposer get ownerId {
     final $$LoggedAccountsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -4667,6 +4735,11 @@ class $$ChangeReportsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get timestamp =>
       $composableBuilder(column: $table.timestamp, builder: (column) => column);
+
+  GeneratedColumn<String> get userSnapshotJson => $composableBuilder(
+    column: $table.userSnapshotJson,
+    builder: (column) => column,
+  );
 
   $$LoggedAccountsTableAnnotationComposer get ownerId {
     final $$LoggedAccountsTableAnnotationComposer composer = $composerBuilder(
@@ -4725,12 +4798,14 @@ class $$ChangeReportsTableTableManager
                 Value<String> userId = const Value.absent(),
                 Value<String> changeType = const Value.absent(),
                 Value<DateTime> timestamp = const Value.absent(),
+                Value<String?> userSnapshotJson = const Value.absent(),
               }) => ChangeReportsCompanion(
                 id: id,
                 ownerId: ownerId,
                 userId: userId,
                 changeType: changeType,
                 timestamp: timestamp,
+                userSnapshotJson: userSnapshotJson,
               ),
           createCompanionCallback:
               ({
@@ -4739,12 +4814,14 @@ class $$ChangeReportsTableTableManager
                 required String userId,
                 required String changeType,
                 required DateTime timestamp,
+                Value<String?> userSnapshotJson = const Value.absent(),
               }) => ChangeReportsCompanion.insert(
                 id: id,
                 ownerId: ownerId,
                 userId: userId,
                 changeType: changeType,
                 timestamp: timestamp,
+                userSnapshotJson: userSnapshotJson,
               ),
           withReferenceMapper: (p0) => p0
               .map(
