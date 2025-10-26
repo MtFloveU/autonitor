@@ -50,6 +50,8 @@ dependencies:
   sqlite3_flutter_libs: ^0.5.40
   path: ^1.9.1
   path_provider: ^2.1.5
+  async: ^2.13.0
+  async_locks: ^4.0.2
 
 dev_dependencies:
   flutter_test:

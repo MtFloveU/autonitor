@@ -396,8 +396,26 @@ abstract class AppLocalizations {
   /// No description provided for @confirm_delete_account.
   ///
   /// In en, this message translates to:
-  /// **'Are you sure you want to delete account {accountId}? This action cannot be undone.'**
+  /// **'Are you sure you want to delete account {accountId}? This action cannot be undone. Deleting an account will permanently remove all its associated data (history, follower/following lists etc.). If you only want to update the cookie, simply add the account again.'**
   String confirm_delete_account(Object accountId);
+
+  /// No description provided for @copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copy;
+
+  /// No description provided for @copied_to_clipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to clipboard!'**
+  String get copied_to_clipboard;
+
+  /// No description provided for @no_json_data_available.
+  ///
+  /// In en, this message translates to:
+  /// **'No JSON data available'**
+  String get no_json_data_available;
 }
 
 class _AppLocalizationsDelegate

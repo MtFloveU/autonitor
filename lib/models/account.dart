@@ -1,4 +1,5 @@
 class Account {
+  final String? latestRawJson;
   /// The unique Twitter User ID (Rest ID / twid).
   final String id;
 
@@ -56,6 +57,7 @@ class Account {
     this.mediaCount = 0,
     this.favouritesCount = 0,
     this.listedCount = 0,
+    this.latestRawJson,
   });
 
   /// Creates an Account instance from a JSON map.
@@ -77,6 +79,7 @@ class Account {
       mediaCount: json['mediaCount'] ?? 0,
       favouritesCount: json['favouritesCount'] ?? 0,
       listedCount: json['listedCount'] ?? 0,
+      latestRawJson: json['latestRawJson'] as String?,
     );
   }
 
@@ -99,6 +102,7 @@ class Account {
       'mediaCount': mediaCount,
       'favouritesCount': favouritesCount,
       'listedCount': listedCount,
+      'latestRawJson': latestRawJson,
     };
   }
 
@@ -120,6 +124,7 @@ class Account {
     int? mediaCount,
     int? favouritesCount,
     int? listedCount,
+    String? latestRawJson,
   }) {
     return Account(
       id: id ?? this.id,
@@ -138,6 +143,7 @@ class Account {
       mediaCount: mediaCount ?? this.mediaCount,
       favouritesCount: favouritesCount ?? this.favouritesCount,
       listedCount: listedCount ?? this.listedCount,
+      latestRawJson: latestRawJson ?? this.latestRawJson,
     );
   }
 

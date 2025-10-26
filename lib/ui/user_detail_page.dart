@@ -4,6 +4,9 @@ import '../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/twitter_user.dart';
+import 'dart:convert';
+import 'package:flutter/services.dart';
+
 
 class UserDetailPage extends StatelessWidget {
   final TwitterUser user;
@@ -33,7 +36,7 @@ class UserDetailPage extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.history),
-            tooltip: '查看历史',
+            tooltip: l10n.history,
             onPressed: () {
               // TODO: History 逻辑
             },
@@ -96,7 +99,110 @@ class UserDetailPage extends StatelessWidget {
               alignment: Alignment.centerRight, // 靠右对齐
               child: FilledButton.tonalIcon(
                 onPressed: () {
-                  /* TODO: JSON 逻辑 */
+                  final rawJson = user.latestRawJson;
+                  if (rawJson != null && rawJson.isNotEmpty) {
+                    String formattedJson = rawJson; // 默认值
+                    try {
+                      // 尝试解码并重新编码以格式化
+                      final dynamic jsonObj = jsonDecode(rawJson);
+                      const encoder = JsonEncoder.withIndent('  '); // 2空格缩进
+                      formattedJson = encoder.convert(jsonObj);
+                    } catch (e) {
+                      // 如果解码失败（理论上不应发生），则保持原始字符串
+                      print("Error formatting JSON for display: $e");
+                    }
+
+                    showDialog(
+                      context: context,
+                      builder: (dialogContext) => AlertDialog(
+                        // 使用硬编码标题或 l10n.json_title (如果添加了)
+                        title: const Text('JSON'),
+                        content: Container(
+                          // 使用 Container 设置最大高度和背景色
+                          width: double.maxFinite, // 尽可能宽
+                          // 设置一个最大高度，防止 JSON 过长导致对话框无限高
+                          // MediaQuery.of(context).size.height * 0.6 表示屏幕高度的 60%
+                          constraints: BoxConstraints(
+                            maxHeight: MediaQuery.of(context).size.height * 0.6,
+                          ),
+                          decoration: BoxDecoration(
+                            // 使用 M3 风格的容器背景色
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(8.0), // 圆角
+                          ),
+                          child: SingleChildScrollView(
+                            // 仍然需要滚动
+                            padding: const EdgeInsets.all(
+                              8.0,
+                            ), // TextField 周围的内边距
+                            child: TextField(
+                              controller: TextEditingController(
+                                text: formattedJson,
+                              ), // 设置文本
+                              readOnly: true, // 只读，不可编辑
+                              maxLines: null, // 自动换行，显示所有内容
+                              decoration: InputDecoration.collapsed(
+                                // 移除边框和下划线
+                                hintText: null, // 不需要提示文本
+                              ),
+                              style: TextStyle(
+                                fontFamily: 'monospace', // 等宽字体
+                                fontSize: 12,
+                                // 使用 M3 风格的文本颜色
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ),
+                        actions: <Widget>[
+                          // 复制按钮
+                          TextButton(
+                            child: Text(l10n.copy), // 使用 l10n.copy
+                            onPressed: () {
+                              Clipboard.setData(
+                                ClipboardData(text: formattedJson),
+                              );
+                              // 可选：显示一个 SnackBar 提示复制成功
+                              Navigator.pop(dialogContext); // 关闭对话框
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    l10n.copied_to_clipboard,
+                                    style: TextStyle(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onPrimaryContainer,
+                                    ),
+                                  ),
+                                  backgroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.primaryContainer,
+                                ),
+                              );
+                            },
+                          ),
+                          // 确定按钮
+                          ElevatedButton(
+                            child: Text(l10n.ok), // 使用 l10n.ok
+                            onPressed: () {
+                              Navigator.pop(dialogContext); // 只关闭对话框
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  } else {
+                    // 如果没有 JSON 数据，可以显示一个提示
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(l10n.no_json_data_available),
+                      ), // 使用 l10n.no_json_data_available
+                    );
+                  }
                 },
                 style: FilledButton.styleFrom(
                   backgroundColor: Colors.pink.shade100,

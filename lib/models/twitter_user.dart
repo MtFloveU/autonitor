@@ -19,6 +19,7 @@ class TwitterUser {
   final int mediaCount;
   final int favouritesCount;
   final int listedCount;
+  final String? latestRawJson;
 
   const TwitterUser({
     required this.avatarUrl,
@@ -36,6 +37,7 @@ class TwitterUser {
     required this.mediaCount,
     required this.favouritesCount,
     required this.listedCount,
+    required this.latestRawJson,
   });
 
   // 从Map(JSON)创建TwitterUser实例
@@ -56,6 +58,7 @@ class TwitterUser {
       mediaCount: json['mediaCount'] ?? 0,
       favouritesCount: json['favouritesCount'] ?? 0,
       listedCount: json['listedCount'] ?? 0,
+      latestRawJson: json['latestRawJson'] as String?,
     );
   }
 
@@ -74,6 +77,7 @@ class TwitterUser {
       'mediaCount': mediaCount,
       'favouritesCount': favouritesCount,
       'listedCount': listedCount,
+      'latestRawJson': latestRawJson,
     };
   }
 }

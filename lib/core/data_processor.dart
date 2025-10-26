@@ -43,8 +43,8 @@ class DataProcessor {
     if (category == 'normal_unfollowed') {
        return [
         // 使用 const 构造函数，并确保所有字段都提供了值或 null
-        const TwitterUser(id: "unfollowed1", name: "Unfollowed User 1", restId: "u1", avatarUrl: "", joinTime: 'Wed Apr 12 05:43:13 +0000 2023', bio: 'unfollowed 1', location: 'unfo1', bannerUrl: null, link: null, followersCount: 1200, followingCount: 100, statusesCount: 1323, mediaCount: 31, favouritesCount: 424214, listedCount: 31),
-        const TwitterUser(id: "unfollowed2", name: "Unfollowed User 2", restId: "u2", avatarUrl: "", joinTime: 'Wed Apr 12 05:43:14 +0000 2023', bio: 'unfollowed 2', location: 'unfo2', bannerUrl: null, link: null, followersCount: 1200, followingCount: 100, statusesCount: 2211, mediaCount: 123, favouritesCount: 2434224, listedCount: 2),
+        const TwitterUser(id: "unfollowed1", name: "Unfollowed User 1", restId: "u1", avatarUrl: "", joinTime: 'Wed Apr 12 05:43:13 +0000 2023', bio: 'unfollowed 1', location: 'unfo1', bannerUrl: null, link: null, followersCount: 1200, followingCount: 100, statusesCount: 1323, mediaCount: 31, favouritesCount: 424214, listedCount: 31, latestRawJson: ''),
+        const TwitterUser(id: "unfollowed2", name: "Unfollowed User 2", restId: "u2", avatarUrl: "", joinTime: 'Wed Apr 12 05:43:14 +0000 2023', bio: 'unfollowed 2', location: 'unfo2', bannerUrl: null, link: null, followersCount: 1200, followingCount: 100, statusesCount: 2211, mediaCount: 123, favouritesCount: 2434224, listedCount: 2, latestRawJson: ''),
       ];
     }
     if (category == 'following') {
@@ -86,9 +86,9 @@ class DataProcessor {
   Map<String, TwitterUser> _fetchLatestUserData() {
     return {
       // 使用 const 构造函数，并确保所有字段都提供了值或 null
-      "user1": const TwitterUser(id: "user1", name: "User One (upd)", restId: "1234567890", bio: "Hello everyone, this is User 1 checking in. I'm here and ready to participate in the discussion.", location: "User 1 Location", joinTime: "Wed Apr 12 05:43:13 +0000 2023", avatarUrl: "", bannerUrl: null, link: 'https://example.com', followersCount: 1200, followingCount: 100, statusesCount: 3112, mediaCount: 2, favouritesCount: 3145, listedCount: 9),
-      "user2": const TwitterUser(id: "user2", name: "User Two", restId: "2", bio: "This is user 2", location: "User 2 Location", joinTime: "Wed Apr 12 05:43:14 +0000 2023", avatarUrl: "", bannerUrl: null, link: null, followersCount: 1200, followingCount: 100, statusesCount: 1231, mediaCount: 13, favouritesCount: 3113313, listedCount: 12),
-      "user4": const TwitterUser(id: "user4", name: "User Four", restId: "4", bio: "This is user 4", location: "User 4 Location", joinTime: "Wed Apr 12 05:43:15 +0000 2023", avatarUrl: "", bannerUrl: null, link: null, followersCount: 1200, followingCount: 100, statusesCount: 5335, mediaCount: 321, favouritesCount: 6464, listedCount: 4),
+      "user1": const TwitterUser(id: "user1", name: "User One (upd)", restId: "1234567890", bio: "Hello everyone, this is User 1 checking in. I'm here and ready to participate in the discussion.", location: "User 1 Location", joinTime: "Wed Apr 12 05:43:13 +0000 2023", avatarUrl: "", bannerUrl: null, link: 'https://example.com', followersCount: 1200, followingCount: 100, statusesCount: 3112, mediaCount: 2, favouritesCount: 3145, listedCount: 9, latestRawJson: ''),
+      "user2": const TwitterUser(id: "user2", name: "User Two", restId: "2", bio: "This is user 2", location: "User 2 Location", joinTime: "Wed Apr 12 05:43:14 +0000 2023", avatarUrl: "", bannerUrl: null, link: null, followersCount: 1200, followingCount: 100, statusesCount: 1231, mediaCount: 13, favouritesCount: 3113313, listedCount: 12, latestRawJson: ''),
+      "user4": const TwitterUser(id: "user4", name: "User Four", restId: "4", bio: "This is user 4", location: "User 4 Location", joinTime: "Wed Apr 12 05:43:15 +0000 2023", avatarUrl: "", bannerUrl: null, link: null, followersCount: 1200, followingCount: 100, statusesCount: 5335, mediaCount: 321, favouritesCount: 6464, listedCount: 4, latestRawJson: ''),
     };
   }
 }

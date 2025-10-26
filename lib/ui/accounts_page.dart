@@ -5,13 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
 import '../l10n/app_localizations.dart';
 import '../models/account.dart';
-
-// [已更新]
-// 核心改动：
-// 1. 移除了 AppBar。
-// 2. 在列表顶部新增了一个带"+"图标的“添加新账号”按钮。
-// 3. 将登录流程（浏览器/手动）的触发逻辑直接整合到了这个页面中。
-// 4. 增加了 `_isLoading` 状态，用于在保存账号时显示全屏加载动画。
+import 'package:flutter/services.dart';
 
 class AccountsPage extends ConsumerStatefulWidget {
   const AccountsPage({super.key});
@@ -21,7 +15,7 @@ class AccountsPage extends ConsumerStatefulWidget {
 }
 
 class _AccountsPageState extends ConsumerState<AccountsPage> {
-  bool _isLoading = false;
+  bool _isRefreshing = false;
 
   Future<void> _navigateAndAddAccount(BuildContext context) async {
     final source = await _showLoginOptions(context);
@@ -44,39 +38,30 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
 
   Future<void> _confirmAndDelete(Account account) async {
     final l10n = AppLocalizations.of(context)!;
-
-    // 弹出确认对话框
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        // --- 恢复：使用您提供的 l10n key ---
         title: Text(l10n.delete),
-        // --- 恢复：使用您提供的 l10n key ---
         content: Text(l10n.confirm_delete_account(account.id)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.cancel), // 使用 "取消"
+            child: Text(l10n.cancel),
           ),
-          // 为破坏性操作使用红色按钮
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
             onPressed: () => Navigator.pop(context, true),
-            // --- 恢复：使用您提供的 l10n key ---
             child: Text(l10n.delete),
           ),
         ],
       ),
     );
-
-    // 如果用户确认了，则调用 provider
-    if (confirmed == true && context.mounted) {
+    if (confirmed == true && mounted) {
       ref.read(accountsProvider.notifier).removeAccount(account.id);
     }
   }
-  // --- ↑↑↑ 新方法添加完毕 ↑↑↑ ---
 
   Future<String?> _showLoginOptions(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -122,47 +107,165 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
 
   Future<void> _handleLogin(String cookie) async {
     final l10n = AppLocalizations.of(context)!;
-    // --- 1. 在 try 之前获取 theme ---
     final theme = Theme.of(context);
-
-    setState(() => _isLoading = true);
-
+    final currentContext = context;
+    showDialog(
+      context: currentContext,
+      barrierDismissible: false,
+      builder: (dialogContext) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text(l10n.saving_account),
+            ],
+          ),
+        ),
+      ),
+    );
     try {
       await ref.read(accountsProvider.notifier).addAccount(cookie);
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            // --- 2. 修改成功 SnackBar ---
             content: Text(
               l10n.account_added_successfully,
-              // 使用 'onPrimaryContainer' 颜色，它保证在 'primaryContainer' 上清晰可见
               style: TextStyle(color: theme.colorScheme.onPrimaryContainer),
             ),
-            // 使用 'primaryContainer' 作为背景色
-            // 它在亮色模式下是浅色，在暗色模式下是深色
             backgroundColor: theme.colorScheme.primaryContainer,
           ),
         );
       }
-    } catch (e, s) {
-      // 捕获错误 (e) 和堆栈 (s)
-      if (context.mounted) {
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            // --- 3. 修改错误 SnackBar ---
             content: Text(
               "$e",
-              // 使用 'onError' 颜色，它保证在 'error' 色上清晰可见
               style: TextStyle(color: theme.colorScheme.onError),
             ),
-            // 使用 'error' 颜色，它会自动适应深浅色模式
             backgroundColor: theme.colorScheme.error,
           ),
         );
       }
     } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
+        Navigator.pop(currentContext);
+      }
+    }
+  }
+
+  Future<void> _refreshAllAccounts() async {
+    if (_isRefreshing) return;
+
+    // --- 获取 Theme 和 l10n ---
+    final theme = Theme.of(context);
+    // final l10n = AppLocalizations.of(context)!; // Keep if you add l10n later
+
+    setState(() => _isRefreshing = true);
+    final currentContext = context;
+    final scaffoldMessenger = ScaffoldMessenger.of(currentContext);
+
+    // --- 新增：显示模态加载对话框 ---
+    showDialog(
+      context: currentContext,
+      barrierDismissible: false,
+      builder: (dialogContext) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Refreshing accounts...'), // Add l10n later
+            ],
+          ),
+        ),
+      ),
+    );
+    
+    try {
+      final accountsToRefresh = ref.read(accountsProvider);
+      if (accountsToRefresh.isEmpty) {
+        // --- 修改 SnackBar 样式 ---
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'No accounts to refresh.', // Add l10n later
+              style: TextStyle(
+                color: theme.colorScheme.onSecondaryContainer,
+              ), // 信息文本颜色
+            ),
+            backgroundColor: theme.colorScheme.secondaryContainer, // 信息背景颜色
+          ),
+        );
+        // 注意：因为没有异步操作，需要在这里手动关闭对话框
+        if (mounted) Navigator.pop(currentContext);
+        setState(() => _isRefreshing = false); // 别忘了重置状态
+        return;
+      }
+
+      final results = await ref
+          .read(accountsProvider.notifier)
+          .refreshAllAccountProfiles(accountsToRefresh);
+
+      // 刷新完成后，先重新加载数据
+      if (mounted) {
+        await ref.read(accountsProvider.notifier).loadAccounts();
+      }
+
+      // 处理结果并显示总结 SnackBar
+      int successCount = results.where((r) => r.success).length;
+      int failureCount = results.length - successCount;
+      String summary =
+          'Refresh complete: $successCount succeeded'; // Add l10n later
+      bool hasFailures = failureCount > 0;
+      if (hasFailures) {
+        summary += ', $failureCount failed.'; // Add l10n later
+        results.where((r) => !r.success).forEach((failure) {
+          print("Refresh failed for ${failure.accountId}: ${failure.error}");
+        });
+      }
+      // --- 修改 SnackBar 样式 ---
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            summary,
+            // 根据是否有失败使用不同颜色
+            style: TextStyle(
+              color: hasFailures
+                  ? theme.colorScheme.onErrorContainer
+                  : theme.colorScheme.onSecondaryContainer,
+            ),
+          ),
+          backgroundColor: hasFailures
+              ? theme.colorScheme.errorContainer
+              : theme.colorScheme.secondaryContainer,
+        ),
+      );
+    } catch (e) {
+      print("Error during _refreshAllAccounts UI call: $e");
+      // --- 修改 SnackBar 样式 ---
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'An unexpected error occurred during refresh.', // Add l10n later
+            style: TextStyle(color: theme.colorScheme.onError), // 错误文本颜色
+          ),
+          backgroundColor: theme.colorScheme.error, // 错误背景颜色
+        ),
+      );
+    } finally {
+      // 确保无论如何都重置状态并关闭对话框
+      if (mounted) {
+        // 关闭模态对话框
+        Navigator.pop(currentContext);
+        // 重置刷新状态
+        setState(() => _isRefreshing = false);
       }
     }
   }
@@ -173,150 +276,173 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
     final accounts = ref.watch(accountsProvider);
     final activeAccount = ref.watch(activeAccountProvider);
 
-    // 1. 返回一个 Scaffold
     return Scaffold(
-      // 2. 添加 AppBar，并使用 l10n 获取标题
-      appBar: AppBar(title: Text(l10n.accounts)),
-      // 3. body 是之前返回的 Stack
-      body: Stack(
-        children: [
-          ListView.builder(
-            itemCount: accounts.length + 1, // +1 for the add button
-            itemBuilder: (context, index) {
-              if (index == 0) {
-                return Card(
-                  margin: const EdgeInsets.all(8.0),
-                  child: ListTile(
-                    leading: const Icon(Icons.add_circle_outline),
-                    title: Text(l10n.new_account),
-                    onTap: () => _navigateAndAddAccount(context),
-                  ),
-                );
-              }
-              final account = accounts[index - 1];
-              final bool isActive = activeAccount?.id == account.id;
-
-              return Card(
-                margin: const EdgeInsets.symmetric(
-                  horizontal: 8.0,
-                  vertical: 4.0,
-                ),
-                color: null,
-                child: ListTile(
-                  leading: CircleAvatar(
-                    radius: 24,
-                    backgroundColor: Colors.transparent,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        const Icon(Icons.person, size: 24),
-                        if (account.avatarUrl != null &&
-                            account.avatarUrl!.isNotEmpty)
-                          ClipOval(
-                            child: CachedNetworkImage(
-                              imageUrl: account.avatarUrl!,
-                              fit: BoxFit.cover,
-                              width: 48,
-                              height: 48,
-                              fadeInDuration: const Duration(milliseconds: 300),
-                              fadeOutDuration: const Duration(
-                                milliseconds: 100,
-                              ),
-                              errorWidget: (context, url, error) =>
-                                  const SizedBox(),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-
-                  title: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        account.name ?? 'Unknown Name',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        "@${account.screenName ?? account.id ?? '...'}",
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                      Text(
-                        "ID: ${account.id ?? '...'}",
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min, // 保证 Row 不会溢出
-                    children: [
-                      // 1. "查看 Cookie" 按钮
-                      IconButton(
-                        icon: const Icon(Icons.cookie_outlined), // 饼干图标
-                        tooltip: l10n.view_cookie, // "view_cookie" 作为描述
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              content: SingleChildScrollView(
-                                child: SelectableText(account.cookie),
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  // --- 恢复：使用 l10n.ok ---
-                                  child: Text(l10n.ok),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                      // 2. "删除" 按钮
-                      IconButton(
-                        icon: Icon(
-                          Icons.delete_outline,
-                          // 添加红色以示警告
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                        // --- 恢复：使用硬编码的 tooltip ---
-                        tooltip: l10n.delete,
-                        onPressed: () {
-                          // 调用我们刚创建的确认方法
-                          _confirmAndDelete(account);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
+      appBar: AppBar(
+        title: Text(l10n.accounts),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh All Profiles', // Add l10n later
+            onPressed: _isRefreshing ? null : _refreshAllAccounts,
           ),
-          if (_isLoading)
-            Container(
-              color: Colors.black.withOpacity(0.5),
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+        ],
+      ),
+      body: ListView.builder(
+        itemCount: accounts.length + 1,
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return Card(
+              margin: const EdgeInsets.all(8.0),
+              child: ListTile(
+                leading: const Icon(Icons.add_circle_outline),
+                title: Text(l10n.new_account),
+                onTap: () => _navigateAndAddAccount(context),
+              ),
+            );
+          }
+          final account = accounts[index - 1];
+
+          return Card(
+            margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+            child: ListTile(
+              leading: CircleAvatar(
+                radius: 24,
+                backgroundColor: Colors.transparent,
+                child: Stack(
+                  alignment: Alignment.center,
                   children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text(
-                      l10n.saving_account,
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                    ),
+                    const Icon(Icons.person, size: 24),
+                    if (account.avatarUrl != null &&
+                        account.avatarUrl!.isNotEmpty)
+                      ClipOval(
+                        child: CachedNetworkImage(
+                          imageUrl: account.avatarUrl!,
+                          fit: BoxFit.cover,
+                          width: 48,
+                          height: 48,
+                          fadeInDuration: const Duration(milliseconds: 300),
+                          fadeOutDuration: const Duration(milliseconds: 100),
+                          errorWidget: (context, url, error) =>
+                              const SizedBox(),
+                        ),
+                      ),
                   ],
                 ),
               ),
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    account.name ?? 'Unknown Name',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    "@${account.screenName ?? account.id ?? '...'}",
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                  Text(
+                    "ID: ${account.id ?? '...'}",
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.cookie_outlined),
+                    tooltip: l10n.view_cookie,
+                    onPressed: () {
+                      final theme = Theme.of(context);
+                      final l10n = AppLocalizations.of(context)!;
+                      showDialog(
+                        context: context,
+                        builder: (dialogContext) => AlertDialog(
+                          title: Text(l10n.cookie),
+                          content: Container(
+                            width: double.maxFinite,
+                            constraints: BoxConstraints(
+                              maxHeight:
+                                  MediaQuery.of(context).size.height * 0.6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(8.0),
+                            ),
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.all(8.0),
+                              child: TextField(
+                                controller: TextEditingController(
+                                  text: account.cookie,
+                                ),
+                                readOnly: true,
+                                maxLines: null,
+                                decoration: InputDecoration.collapsed(
+                                  hintText: null,
+                                ),
+                                style: TextStyle(
+                                  fontFamily: 'monospace',
+                                  fontSize: 12,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              child: Text(l10n.copy),
+                              onPressed: () {
+                                Clipboard.setData(
+                                  ClipboardData(text: account.cookie),
+                                );
+                                Navigator.pop(dialogContext);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      l10n.copied_to_clipboard,
+                                      style: TextStyle(
+                                        color: theme
+                                            .colorScheme
+                                            .onPrimaryContainer,
+                                      ),
+                                    ),
+                                    backgroundColor:
+                                        theme.colorScheme.primaryContainer,
+                                  ),
+                                );
+                              },
+                            ),
+                            ElevatedButton(
+                              onPressed: () => Navigator.pop(dialogContext),
+                              child: Text(l10n.ok),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.delete_outline,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    tooltip: l10n.delete,
+                    onPressed: () {
+                      _confirmAndDelete(account);
+                    },
+                  ),
+                ],
+              ),
             ),
-        ],
+          );
+        },
       ),
     );
   }

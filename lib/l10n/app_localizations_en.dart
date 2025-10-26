@@ -157,6 +157,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String confirm_delete_account(Object accountId) {
-    return 'Are you sure you want to delete account $accountId? This action cannot be undone.';
+    return 'Are you sure you want to delete account $accountId? This action cannot be undone. Deleting an account will permanently remove all its associated data (history, follower/following lists etc.). If you only want to update the cookie, simply add the account again.';
   }
+
+  @override
+  String get copy => 'Copy';
+
+  @override
+  String get copied_to_clipboard => 'Copied to clipboard!';
+
+  @override
+  String get no_json_data_available => 'No JSON data available';
 }

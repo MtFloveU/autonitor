@@ -52,12 +52,15 @@
   "login_first_description": "请至少添加一个账号以继续",
   "log_in": "登录",
   "delete": "删除",
-  "confirm_delete_account": "您确定要删除账号 {accountId} 吗？此操作无法撤销。",
-    "@confirm_delete_account": {
+  "confirm_delete_account": "您确定要删除账号 {accountId} 吗？此操作无法撤销。删除账号将永久移除其所有关联数据（历史记录、关注者/关注列表等）。如果您只想更新 Cookie，请直接重新添加该账号。",
+  "@confirm_delete_account": {
     "placeholders": {
       "accountId": {
         "description": "The ID of the account to be deleted"
       }
     }
-  }
+  },
+  "copy": "复制",
+  "copied_to_clipboard": "已复制到剪贴板！",
+  "no_json_data_available": "无 JSON 数据"
 }

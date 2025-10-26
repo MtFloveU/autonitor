@@ -52,12 +52,15 @@
   "login_first_description": "Add at least one account to continue",
   "log_in": "Log In",
   "delete": "Delete",
-  "confirm_delete_account": "Are you sure you want to delete account {accountId}? This action cannot be undone.",
-    "@confirm_delete_account": {
+  "confirm_delete_account": "Are you sure you want to delete account {accountId}? This action cannot be undone. Deleting an account will permanently remove all its associated data (history, follower/following lists etc.). If you only want to update the cookie, simply add the account again.",
+  "@confirm_delete_account": {
     "placeholders": {
       "accountId": {
         "description": "The ID of the account to be deleted"
       }
     }
-  }
+  },
+  "copy": "Copy",
+  "copied_to_clipboard": "Copied to clipboard!",
+  "no_json_data_available": "No JSON data available"
 }

@@ -34,13 +34,21 @@ packages:
     source: hosted
     version: "2.7.0"
   async:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: async
       sha256: "758e6d74e971c3e5aceb4110bfd6698efc7f501675bcfe0c775459a8140750eb"
       url: "https://pub.dev"
     source: hosted
     version: "2.13.0"
+  async_locks:
+    dependency: "direct main"
+    description:
+      name: async_locks
+      sha256: ca9ffa89fa1e91e74280aefef2053e3eb7b3469f45c10ac79b2cf011969e684b
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.0.2"
   boolean_selector:
     dependency: transitive
     description:

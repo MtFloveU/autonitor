@@ -341,6 +341,7 @@ class HomePage extends ConsumerWidget {
                   mediaCount: activeAccount.mediaCount,
                   favouritesCount: activeAccount.favouritesCount,
                   listedCount: activeAccount.listedCount,
+                  latestRawJson: activeAccount.latestRawJson,
                 );
 
                 // 3. 导航到详情页

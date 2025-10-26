@@ -157,8 +157,17 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String confirm_delete_account(Object accountId) {
-    return '您确定要删除账号 $accountId 吗？此操作无法撤销。';
+    return '您确定要删除账号 $accountId 吗？此操作无法撤销。删除账号将永久移除其所有关联数据（历史记录、关注者/关注列表等）。如果您只想更新 Cookie，请直接重新添加该账号。';
   }
+
+  @override
+  String get copy => '复制';
+
+  @override
+  String get copied_to_clipboard => '已复制到剪贴板！';
+
+  @override
+  String get no_json_data_available => '无 JSON 数据';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -314,6 +323,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String confirm_delete_account(Object accountId) {
-    return '您確定要刪除賬戶 $accountId 嗎？此操作無法撤銷。';
+    return '您確定要刪除賬戶 $accountId 嗎？此操作無法撤銷。刪除賬戶將永久移除其所有關聯數據（歷史紀錄、跟隨者/跟隨列表等）。如果您只想更新 Cookie，請直接重新添加該賬戶。';
   }
+
+  @override
+  String get copy => '拷貝';
+
+  @override
+  String get copied_to_clipboard => '已拷貝到剪貼簿！';
+
+  @override
+  String get no_json_data_available => '無 JSON 數據';
 }
