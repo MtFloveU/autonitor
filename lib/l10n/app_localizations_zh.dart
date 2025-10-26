@@ -168,6 +168,30 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get no_json_data_available => '无 JSON 数据';
+
+  @override
+  String get temporarily_restricted => '暂时受限';
+
+  @override
+  String get failed_to_load_user_list => '加载用户列表失败';
+
+  @override
+  String get no_users_in_this_category => '此分类下没有用户';
+
+  @override
+  String get analysis_log => '分析日志';
+
+  @override
+  String get no_active_account_error => '无法运行分析：没有活动的账号。';
+
+  @override
+  String get analysis_failed_error => '分析失败';
+
+  @override
+  String get no_analysis_data => '尚未生成分析数据';
+
+  @override
+  String get run_analysis_now => '立即运行分析';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -334,4 +358,28 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get no_json_data_available => '無 JSON 數據';
+
+  @override
+  String get temporarily_restricted => '暫時受限';
+
+  @override
+  String get failed_to_load_user_list => '載入用戶列表失敗';
+
+  @override
+  String get no_users_in_this_category => '此分類下沒有用戶';
+
+  @override
+  String get analysis_log => '分析日誌';
+
+  @override
+  String get no_active_account_error => '無法運行分析：沒有活動的賬戶。';
+
+  @override
+  String get analysis_failed_error => '分析失敗';
+
+  @override
+  String get no_analysis_data => '尚未生成分析數據';
+
+  @override
+  String get run_analysis_now => '立即運行分析';
 }

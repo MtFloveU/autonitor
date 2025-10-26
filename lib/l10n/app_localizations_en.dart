@@ -168,4 +168,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get no_json_data_available => 'No JSON data available';
+
+  @override
+  String get temporarily_restricted => 'Temporarily Restricted';
+
+  @override
+  String get failed_to_load_user_list => 'Failed to load user list';
+
+  @override
+  String get no_users_in_this_category => 'No users in this category';
+
+  @override
+  String get analysis_log => 'Analysis Log';
+
+  @override
+  String get no_active_account_error =>
+      'Cannot run analysis: No account is active.';
+
+  @override
+  String get analysis_failed_error => 'Analysis failed';
+
+  @override
+  String get no_analysis_data => 'No analysis data found';
+
+  @override
+  String get run_analysis_now => 'Run Analysis Now';
 }

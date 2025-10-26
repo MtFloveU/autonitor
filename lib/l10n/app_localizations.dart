@@ -416,6 +416,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No JSON data available'**
   String get no_json_data_available;
+
+  /// No description provided for @temporarily_restricted.
+  ///
+  /// In en, this message translates to:
+  /// **'Temporarily Restricted'**
+  String get temporarily_restricted;
+
+  /// No description provided for @failed_to_load_user_list.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load user list'**
+  String get failed_to_load_user_list;
+
+  /// No description provided for @no_users_in_this_category.
+  ///
+  /// In en, this message translates to:
+  /// **'No users in this category'**
+  String get no_users_in_this_category;
+
+  /// No description provided for @analysis_log.
+  ///
+  /// In en, this message translates to:
+  /// **'Analysis Log'**
+  String get analysis_log;
+
+  /// No description provided for @no_active_account_error.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot run analysis: No account is active.'**
+  String get no_active_account_error;
+
+  /// No description provided for @analysis_failed_error.
+  ///
+  /// In en, this message translates to:
+  /// **'Analysis failed'**
+  String get analysis_failed_error;
+
+  /// No description provided for @no_analysis_data.
+  ///
+  /// In en, this message translates to:
+  /// **'No analysis data found'**
+  String get no_analysis_data;
+
+  /// No description provided for @run_analysis_now.
+  ///
+  /// In en, this message translates to:
+  /// **'Run Analysis Now'**
+  String get run_analysis_now;
 }
 
 class _AppLocalizationsDelegate

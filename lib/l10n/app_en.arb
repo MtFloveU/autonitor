@@ -62,5 +62,13 @@
   },
   "copy": "Copy",
   "copied_to_clipboard": "Copied to clipboard!",
-  "no_json_data_available": "No JSON data available"
+  "no_json_data_available": "No JSON data available",
+  "temporarily_restricted": "Temporarily Restricted",
+  "failed_to_load_user_list": "Failed to load user list",
+  "no_users_in_this_category": "No users in this category",
+  "analysis_log": "Analysis Log",
+  "no_active_account_error": "Cannot run analysis: No account is active.",
+  "analysis_failed_error": "Analysis failed",
+  "no_analysis_data": "No analysis data found",
+  "run_analysis_now": "Run Analysis Now"
 }
