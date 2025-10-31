@@ -38,10 +38,14 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
 
   Future<void> _confirmAndDelete(Account account) async {
     final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(l10n.delete),
+        title: Text(
+    l10n.delete,
+    style: TextStyle(color: theme.colorScheme.onPrimaryContainer),
+  ),
         content: Text(l10n.confirm_delete_account(account.id)),
         actions: [
           TextButton(

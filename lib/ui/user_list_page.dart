@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/auth_provider.dart'; // <-- 修正：导入 auth_provider.dart
 import '../l10n/app_localizations.dart';
 import '../models/twitter_user.dart';
+import '../providers/report_providers.dart';
 
 class UserListPage extends ConsumerWidget {
   final String ownerId;

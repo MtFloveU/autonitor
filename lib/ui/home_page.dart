@@ -7,6 +7,8 @@ import 'package:autonitor/providers/auth_provider.dart';
 import 'package:autonitor/ui/user_list_page.dart';
 import '../l10n/app_localizations.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../providers/report_providers.dart';
+import '../providers/analysis_provider.dart';
 
 // Providers (cacheProvider, userListProvider) 现在在 auth_provider.dart 中定义
 
@@ -312,7 +314,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 
                 // 异步调用，但不等待它
                 // 我们将通过 analysisIsRunningProvider 观察它的完成
-                currentRef.read(accountsProvider.notifier).runAnalysisProcess(accountToProcess)
+                currentRef.read(analysisServiceProvider.notifier).runAnalysis(accountToProcess)
                 .catchError((e) {
                    // 即使在 provider 中捕获了错误，这里也可能需要一个顶层捕获
                    // 以防 runAnalysisProcess 本身抛出（例如 accountToProcess 为 null）
