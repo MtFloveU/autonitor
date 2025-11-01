@@ -91,5 +91,8 @@
   "theme_mode": "主題",
   "theme_mode_system": "跟隨系統",
   "theme_mode_light": "淺色",
-  "theme_mode_dark": "深色"
+  "theme_mode_dark": "深色",
+  "log": "日誌",
+  "view_log": "查看日誌",
+  "clear": "清除"
 }

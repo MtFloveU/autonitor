@@ -151,6 +151,6 @@ class Account {
   // Optional: Override toString for better debugging
   @override
   String toString() {
-    return 'Account(id: $id, name: $name, screenName: $screenName, avatarUrl: $avatarUrl, cookie: ${cookie.length > 10 ? cookie.substring(0, 10) + '...' : cookie})';
+    return 'Account(id: $id, name: $name, screenName: $screenName, avatarUrl: $avatarUrl, cookie: ${cookie.length > 10 ? '${cookie.substring(0, 10)}...' : cookie})';
   }
 }

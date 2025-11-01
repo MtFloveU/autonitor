@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'log_service.dart';
+
 final twitterApiV1ServiceProvider = Provider((ref) => TwitterApiV1Service());
 
 class UserListResult {
@@ -37,8 +39,8 @@ class TwitterApiV1Service {
         final token = csrfPart.split('=')[1].trim();
         return token.isNotEmpty ? token : null;
       }
-    } catch (e) {
-      print("TwitterApiV1Service: Failed to parse ct0 token: $e");
+    } catch (e, s) {
+      logger.e("TwitterApiV1Service: Failed to parse ct0 token: $e", error: e, stackTrace: s);
     }
     return null;
   }
@@ -69,7 +71,7 @@ class TwitterApiV1Service {
 
     final csrfToken = _parseCsrfToken(cookie);
     if (csrfToken == null) {
-      print(
+      logger.e(
         "TwitterApiV1Service: FATAL - ct0 token not found in cookie for $listTypeLogName.",
       );
       throw Exception("Cannot get ct0 token from cookie (x-csrf-token)");
@@ -101,7 +103,7 @@ class TwitterApiV1Service {
     int attempt = 0;
     while (attempt <= _maxRetries) {
       attempt++;
-      print(
+      logger.d(
         "TwitterApiV1Service: Fetching $listTypeLogName for $userId with cursor ${queryParameters['cursor']} (Attempt $attempt/$_maxRetries)...",
       );
 
@@ -188,11 +190,11 @@ class TwitterApiV1Service {
 
   // --- 辅助方法用于日志记录和抛出异常 ---
   void _log(String message) {
-    print("TwitterApiV1Service: $message");
+    logger.d("TwitterApiV1Service: $message");
   }
 
   Never _logAndThrow(String errorMessage) {
-    print("TwitterApiV1Service: $errorMessage");
+    logger.e("TwitterApiV1Service: $errorMessage", error: Exception(errorMessage), stackTrace: StackTrace.current);
     throw Exception(errorMessage); // 抛出异常中断执行
   }
   // --- 辅助方法结束 ---

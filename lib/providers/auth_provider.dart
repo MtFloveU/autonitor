@@ -4,6 +4,7 @@ import '../services/secure_storage_service.dart';
 import '../repositories/account_repository.dart';
 import 'package:async/async.dart';
 import 'package:async_locks/async_locks.dart';
+import 'package:autonitor/services/log_service.dart';
 
 class RefreshResult {
   final String accountId;
@@ -29,33 +30,33 @@ class ActiveAccountNotifier extends StateNotifier<Account?> {
 
   void initializeState(List<Account> accounts, String? activeId) {
     if (_isInitialized || state != null) {
-      print("ActiveAccountNotifier: Initialization skipped.");
+      logger.i("ActiveAccountNotifier: Initialization skipped.");
       return;
     }
-    print(
+    logger.i(
       "ActiveAccountNotifier: Initializing state with ${accounts.length} accounts and activeId: $activeId",
     );
     if (activeId != null && accounts.isNotEmpty) {
       try {
         final initialAccount = accounts.firstWhere((acc) => acc.id == activeId);
         state = initialAccount;
-        print(
+        logger.i(
           "ActiveAccountNotifier: Initial state set to ID ${state?.id} from storage.",
         );
         _isInitialized = true;
       } catch (e) {
-        print(
+        logger.w(
           "ActiveAccountNotifier: Stored active ID $activeId not found. Resetting.",
         );
         _resetActiveAccountAndMarkInitialized(accounts);
       }
     } else if (accounts.isNotEmpty) {
-      print(
+      logger.i(
         "ActiveAccountNotifier: No active ID stored. Setting first account.",
       );
       _resetActiveAccountAndMarkInitialized(accounts);
     } else {
-      print("ActiveAccountNotifier: No accounts loaded. State remains null.");
+      logger.i("ActiveAccountNotifier: No accounts loaded. State remains null.");
       state = null;
       _isInitialized = true;
     }
@@ -66,20 +67,20 @@ class ActiveAccountNotifier extends StateNotifier<Account?> {
   ) async {
     await _resetActiveAccount(accounts);
     _isInitialized = true;
-    print("ActiveAccountNotifier: Initialization completed after reset.");
+    logger.i("ActiveAccountNotifier: Initialization completed after reset.");
   }
 
   Future<void> _resetActiveAccount(List<Account> accounts) async {
     if (accounts.isNotEmpty) {
       state = accounts.first;
       await _storageService.saveActiveAccountId(state!.id);
-      print(
+      logger.i(
         "ActiveAccountNotifier: Reset active account to first ID ${state?.id}.",
       );
     } else {
       state = null;
       await _storageService.deleteActiveAccountId();
-      print("ActiveAccountNotifier: Reset called but no accounts available.");
+      logger.i("ActiveAccountNotifier: Reset called but no accounts available.");
     }
   }
 
@@ -87,23 +88,23 @@ class ActiveAccountNotifier extends StateNotifier<Account?> {
     state = account;
     if (account != null) {
       await _storageService.saveActiveAccountId(account.id);
-      print(
+      logger.i(
         "ActiveAccountNotifier: Set active account ID: ${account.id} and persisted.",
       );
     } else {
       await _storageService.deleteActiveAccountId();
-      print("ActiveAccountNotifier: Cleared active account ID and persisted.");
+      logger.i("ActiveAccountNotifier: Cleared active account ID and persisted.");
     }
   }
 
   Future<void> updateFromList(List<Account> newList) async {
-    print(
+    logger.i(
       "ActiveAccountNotifier: (Post-init) Account list updated. Current active ID: ${state?.id}. New list size: ${newList.length}",
     );
     if (state != null) {
       final bool stillExists = newList.any((acc) => acc.id == state!.id);
       if (!stillExists) {
-        print(
+        logger.i(
           "ActiveAccountNotifier: (Post-init) Active account ${state!.id} removed. Resetting.",
         );
         await _resetActiveAccount(newList);
@@ -113,13 +114,13 @@ class ActiveAccountNotifier extends StateNotifier<Account?> {
         );
         if (state != updatedAccountInstance) {
           state = updatedAccountInstance;
-          print(
+          logger.i(
             "ActiveAccountNotifier: (Post-init) Updated active account instance for ID ${state!.id}.",
           );
         }
       }
     } else if (newList.isNotEmpty) {
-      print(
+      logger.i(
         "ActiveAccountNotifier: (Post-init) State was null, setting first account.",
       );
       await _resetActiveAccount(newList);
@@ -134,12 +135,12 @@ final activeAccountProvider =
       final notifier = ActiveAccountNotifier(ref);
       ref.listen(accountsProvider, (previousList, newList) {
         if (notifier.isInitialized) {
-          print(
+          logger.i(
             "ActiveAccountNotifier Listen: Initialized, calling updateFromList.",
           );
           notifier.updateFromList(newList);
         } else {
-          print(
+          logger.i(
             "ActiveAccountNotifier Listen: Not initialized yet, skipping updateFromList.",
           );
         }
@@ -159,28 +160,19 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
   }
 
   Future<void> loadAccounts() async {
-    List<Account> loadedAccounts = []; // Default to empty list
+    List<Account> loadedAccounts = [];
     String? storedActiveId;
 
     try {
-      // 1. Delegate fetching the list to the repository
       loadedAccounts = await _accountRepository.getAllAccounts();
-
-      // 2. Still fetch the active ID (Notifier's job to coordinate this)
       storedActiveId = await _storageService.readActiveAccountId();
     } catch (e, s) {
-      print("AccountsNotifier: Error loading accounts from repository: $e\n$s");
-      // If loading fails, state will remain an empty list
-      // and storedActiveId will be null.
+      logger.e("AccountsNotifier: Error loading accounts from repository: $e\n$s");
     }
 
-    // 3. Set the Notifier's own state
     state = loadedAccounts;
-    print("AccountsNotifier: Loaded and assembled ${state.length} accounts.");
+    logger.i("AccountsNotifier: Loaded and assembled ${state.length} accounts.");
 
-    // 4. Initialize the ActiveAccountNotifier
-    // This is the correct place for this logic, as the Notifier
-    // coordinates the state of the app.
     _ref
         .read(activeAccountProvider.notifier)
         .initializeState(loadedAccounts, storedActiveId);
@@ -191,7 +183,7 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
       await _accountRepository.addAccount(cookie);
       await loadAccounts();
     } catch (e) {
-      print("AccountsNotifier: Error adding account: $e");
+      logger.e("AccountsNotifier: Error adding account: $e");
       rethrow;
     }
   }
@@ -201,7 +193,7 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
       await _accountRepository.removeAccount(id);
       await loadAccounts();
     } catch (e) {
-      print("AccountsNotifier: Error removing account: $e");
+      logger.e("AccountsNotifier: Error removing account: $e");
       rethrow;
     }
   }
@@ -211,7 +203,7 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
   ) async {
     final semaphore = Semaphore(5);
     final group = FutureGroup<RefreshResult>();
-    print(
+    logger.i(
       "AccountsNotifier: Starting refresh for ${accounts.length} accounts with concurrency limit 5...",
     );
     for (final account in accounts) {
@@ -219,12 +211,12 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
         Future(() async {
           await semaphore.acquire();
           try {
-            print("AccountsNotifier: Refreshing profile for ${account.id}...");
+            logger.i("AccountsNotifier: Refreshing profile for ${account.id}...");
             await _refreshSingleAccountProfile(account);
-            print("AccountsNotifier: Refresh successful for ${account.id}.");
+            logger.i("AccountsNotifier: Refresh successful for ${account.id}.");
             return RefreshResult(accountId: account.id, success: true);
           } catch (e) {
-            print("AccountsNotifier: Refresh failed for ${account.id}: $e");
+            logger.e("AccountsNotifier: Refresh failed for ${account.id}: $e");
             return RefreshResult(
               accountId: account.id,
               success: false,
@@ -238,24 +230,16 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
     }
     group.close();
     final results = await group.future;
-    print("AccountsNotifier: Refresh process completed.");
+    logger.i("AccountsNotifier: Refresh process completed.");
     return results;
   }
 
   Future<void> _refreshSingleAccountProfile(Account account) async {
-    // Delegate the work to the repository
-    // We don't need the returned Account object here because
-    // refreshAllAccountProfiles will call loadAccounts() at the end.
     try {
       await _accountRepository.refreshAccountProfile(account);
     } catch (e) {
-      // The error is already logged by the repository,
-      // but we rethrow it so the FutureGroup in refreshAllAccountProfiles
-      // knows it failed.
-      print("AccountsNotifier: _refreshSingleAccountProfile failed.");
+      logger.e("AccountsNotifier: _refreshSingleAccountProfile failed.");
       rethrow;
     }
   }
-
-  // --- 新增结束 ---
 }

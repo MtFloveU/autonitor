@@ -7,6 +7,7 @@ import '../services/twitter_api_service.dart';
 import '../services/secure_storage_service.dart';
 import '../main.dart';
 import '../utils/diff_utils.dart';
+import 'package:autonitor/services/log_service.dart';
 
 final accountRepositoryProvider = Provider<AccountRepository>((ref) {
   final db = ref.watch(databaseProvider);
@@ -39,13 +40,13 @@ class AccountRepository {
           final id = valuePart.substring(2);
           return id.isNotEmpty ? id : null;
         } else {
-          print("解析 id 失败: id value ($valuePart) 不以 'u=' 或 'u_' 开头");
+          logger.w("解析 id 失败: id value ($valuePart) 不以 'u=' 或 'u_' 开头");
           return null;
         }
       }
       return null;
-    } catch (e) {
-      print("Error parsing id from cookie: $e");
+    } catch (e, s) {
+      logger.e("Error parsing id from cookie", error: e, stackTrace: s);
       return null;
     }
   }
@@ -53,31 +54,31 @@ class AccountRepository {
   Future<Account> addAccount(String cookie) async {
     final id = _parseidFromCookie(cookie);
     if (id == null) {
-      throw Exception('无法从Cookie中解析出id');
+      throw Exception('Unable to parse ID from Cookie');
     }
     await _secureStorage.saveCookie(id, cookie);
-    print("addAccount: Saved cookie to SecureStorage for ID: $id");
+    logger.i("addAccount: Saved cookie to SecureStorage for ID: $id");
     return await _fetchAndSaveAccountProfile(id, cookie);
   }
 
   Future<void> removeAccount(String id) async {
     try {
       await _secureStorage.deleteCookie(id);
-      print("AccountRepository: Deleted cookie from SecureStorage for ID $id.");
+      logger.i("AccountRepository: Deleted cookie from SecureStorage for ID $id.");
 
       final deletedRows = await (_database.delete(
         _database.loggedAccounts,
       )..where((tbl) => tbl.id.equals(id))).go();
 
       if (deletedRows > 0) {
-        print("AccountRepository: Deleted profile from database for ID $id.");
+        logger.i("AccountRepository: Deleted profile from database for ID $id.");
       } else {
-        print(
-          "AccountRepository: Warning - Tried to delete profile for ID $id, but it was not found.",
+        logger.w(
+          "AccountRepository: Tried to delete profile for ID $id, but it was not found.",
         );
       }
     } catch (e, s) {
-      print("AccountRepository: Error removing account ID $id: $e\n$s");
+      logger.e("AccountRepository: Error removing account ID $id", error: e, stackTrace: s);
       throw Exception('Failed to remove account: $e');
     }
   }
@@ -112,13 +113,14 @@ class AccountRepository {
             ),
           );
         } else {
-          print(
-            "AccountRepository: Warning - Profile found for ID ${profile.id} but no cookie in SecureStorage. Skipping.",
+          logger.w(
+            "AccountRepository: Profile found for ID ${profile.id} but no cookie in SecureStorage. Skipping.",
           );
         }
       }
       return loadedAccounts;
-    } catch (e) {
+    } catch (e, s) {
+      logger.e("AccountRepository: Error getting all accounts", error: e, stackTrace: s);
       rethrow;
     }
   }
@@ -144,8 +146,8 @@ class AccountRepository {
     int listedCount = 0;
     String rawJsonString = '{}';
     try {
-      final Map<String, dynamic> userProfileJson = await _apiService
-          .getUserByRestId(id, cookie);
+      final Map<String, dynamic> userProfileJson =
+          await _apiService.getUserByRestId(id, cookie);
       rawJsonString = jsonEncode(userProfileJson);
       final result = userProfileJson['data']?['user']?['result'];
       if (result != null &&
@@ -161,11 +163,11 @@ class AccountRepository {
             '_400x400',
           );
           joinTime = core['created_at'] as String?;
-          print(
+          logger.i(
             "addAccount: Profile fetched - Name: $name, ScreenName: $screenName, Avatar: $avatarUrl",
           );
         } else {
-          print("addAccount: API 返回成功，但 core 数据缺失或格式不正确。");
+          logger.w("addAccount: API 返回成功，但 core 数据缺失或格式不正确。");
         }
         if (legacy != null && legacy is Map<String, dynamic>) {
           bio = legacy['description'] as String?;
@@ -186,8 +188,8 @@ class AccountRepository {
                 }
               }
             }
-          } catch (e) {
-            /* Fallback */
+          } catch (e, s) {
+            logger.w("addAccount: Failed to parse URL entities", error: e, stackTrace: s);
           }
           link = finalLink;
           bannerUrl = legacy['profile_banner_url'] as String?;
@@ -199,10 +201,10 @@ class AccountRepository {
         final locationMap = result['location'] as Map<String, dynamic>?;
         location = locationMap?['location'] as String?;
       } else {
-        print("addAccount: API 返回成功，但 result 数据缺失或格式不正确。");
+        logger.w("addAccount: API 返回成功，但 result 数据缺失或格式不正确。");
       }
-    } catch (e) {
-      print("addAccount: 调用 API 或解析 Profile 时出错: $e");
+    } catch (e, s) {
+      logger.e("addAccount: 调用 API 或解析 Profile 时出错", error: e, stackTrace: s);
       rethrow;
     }
     try {
@@ -212,7 +214,7 @@ class AccountRepository {
         )..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
         final oldJsonString = oldProfile?.latestRawJson;
         final diffString = calculateReverseDiff(rawJsonString, oldJsonString);
-        print(
+        logger.i(
           "addAccount: Calculated reverse diff (length: ${diffString?.length ?? 'null'}) for ID: $id",
         );
         final companion = LoggedAccountsCompanion(
@@ -244,7 +246,7 @@ class AccountRepository {
         await _database
             .into(_database.loggedAccounts)
             .insert(companion, mode: InsertMode.replace);
-        print(
+        logger.i(
           "addAccount: Inserted/Replaced profile in LoggedAccounts for ID: $id",
         );
         if (diffString != null && diffString.isNotEmpty) {
@@ -256,7 +258,7 @@ class AccountRepository {
           await _database
               .into(_database.accountProfileHistory)
               .insert(historyCompanion);
-          print(
+          logger.i(
             "addAccount: Inserted profile history into AccountProfileHistory for ID: $id",
           );
         }
@@ -281,10 +283,11 @@ class AccountRepository {
         latestRawJson: rawJsonString,
       );
     } catch (e, s) {
-      print("addAccount: Error during database transaction for ID $id: $e\n$s");
+      logger.e("addAccount: Error during database transaction for ID $id", error: e, stackTrace: s);
       throw Exception('Failed to save account data: $e');
     }
   }
+
   // --- 稍后我们会把 AccountsNotifier 中的方法逻辑搬到这里 ---
   // 比如：
   // Future<Account> addNewAccount(String cookie) async { ... }

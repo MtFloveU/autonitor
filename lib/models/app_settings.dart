@@ -42,7 +42,7 @@ class AppSettings {
     int? historyLimitN,
   }) {
     return AppSettings(
-      locale: this.locale,
+      locale: locale,
       themeMode: themeMode ?? this.themeMode,
       saveAvatarHistory: saveAvatarHistory ?? this.saveAvatarHistory,
       saveBannerHistory: saveBannerHistory ?? this.saveBannerHistory,

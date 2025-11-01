@@ -1,3 +1,4 @@
+import 'package:autonitor/services/log_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import '../../l10n/app_localizations.dart';
@@ -37,7 +38,7 @@ class _WebViewLoginPageState extends State<WebViewLoginPage> {
         // --- 修改点 1：捕获所有 Error 和 Exception ---
         // [已修改] 捕获 *所有* 异常和错误 (StateError, PlatformException, Error, etc.)
         // 只要 getCookies 失败，就视为空列表，让后续逻辑处理 "No cookie found" 提示。
-        debugPrint("Error during getCookies, treating as empty list: $e\n$s");
+        logger.e("Error during getCookies, treating as empty list: $e\n$s", error: e, stackTrace: s);
         gotCookies = []; // 手动设置为空列表
       }
 
@@ -106,7 +107,7 @@ class _WebViewLoginPageState extends State<WebViewLoginPage> {
       }
     } catch (e, s) {
       // --- 修改点 2：捕获所有 Error 和 Exception ---
-      debugPrint("Unhandled error in _onLoginComplete: $e\n$s");
+      logger.e("Unhandled error in _onLoginComplete: $e\n$s", error: e, stackTrace: s);
       if (mounted) Navigator.pop(context); // 关闭加载圈
       if (mounted) {
         // 其他未预料到的错误仍会在这里显示

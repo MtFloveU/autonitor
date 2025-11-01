@@ -245,6 +245,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get theme_mode_dark => '深色';
+
+  @override
+  String get log => '日志';
+
+  @override
+  String get view_log => '查看日志';
+
+  @override
+  String get clear => '清除';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -488,4 +497,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get theme_mode_dark => '深色';
+
+  @override
+  String get log => '日誌';
+
+  @override
+  String get view_log => '查看日誌';
+
+  @override
+  String get clear => '清除';
 }

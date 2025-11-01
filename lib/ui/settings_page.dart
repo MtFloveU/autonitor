@@ -1,6 +1,7 @@
 import 'package:autonitor/models/app_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/log_provider.dart';
 import '../providers/settings_provider.dart';
 import '../l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +15,7 @@ class SettingsPage extends ConsumerStatefulWidget {
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
   late TextEditingController _historyLimitController;
+
   @override
   void initState() {
     super.initState();
@@ -26,6 +28,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     super.dispose();
   }
 
+  @override
   Widget build(BuildContext context) {
     // 1. 获取 l10n (您可能需要导入 'l10n/app_localizations.dart')
     final l10n = AppLocalizations.of(context)!;
@@ -59,6 +62,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               TextPosition(offset: _historyLimitController.text.length),
             );
           }
+
           return ListView(
             children: [
               ListTile(
@@ -73,7 +77,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
               ListTile(
                 title: Text(l10n.language),
-                leading: Icon(Icons.language),
+                leading: const Icon(Icons.language),
                 trailing: DropdownButton<String>(
                   alignment: Alignment.centerRight,
                   // 1. 当前选中的值：从 Provider 读取
@@ -150,7 +154,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       child: Text(l10n.theme_mode_dark),
                     ),
                   ],
-
                   onChanged: (ThemeMode? newValue) {
                     if (newValue != null) {
                       ref
@@ -220,10 +223,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 },
               ),
               Padding(
-                padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: Text(
                   l10n.history_strategy,
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
                 ),
               ),
               // (Radio button 1: Save All)
@@ -352,6 +355,92 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     Text(l10n.strategy_save_last_n_suffix),
                   ],
                 ),
+              ),
+              const Divider(),
+              ListTile(
+                title: Text(
+                  l10n.log,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                dense: true,
+              ),
+              ListTile(
+                leading: const Icon(Icons.view_list_outlined),
+                title: Text(l10n.view_log),
+                onTap: () {
+                  final logs = ref.read(logHistoryProvider);
+                  final theme = Theme.of(context);
+                  final logText = logs.join('\n'); // (Get the text once)
+
+                  showDialog(
+                    context: context,
+                    builder: (dialogContext) => AlertDialog(
+                      title: Text(l10n.view_log), // (You fixed this last time)
+                      // --- (B) MODIFICATION: Use a read-only TextField ---
+                      // (修改：使用只读的 TextField)
+                      content: Container(
+                        width: double.maxFinite,
+                        constraints: BoxConstraints(
+                          maxHeight: MediaQuery.of(context).size.height * 0.7,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        child: SingleChildScrollView(
+                          reverse: true,
+                          padding: const EdgeInsets.all(8.0),
+                          child: TextField(
+                            controller: TextEditingController(text: logText),
+                            readOnly: true,
+                            maxLines: null,
+                            decoration: InputDecoration.collapsed(
+                              hintText: null,
+                            ),
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontFamily: 'monospace',
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // --- END (B) MODIFICATION ---
+
+                      // --- (C) MODIFICATION: Add new buttons ---
+                      // (修改：添加新按钮)
+                      actions: [
+                        TextButton(
+                          child: Text(l10n.copy), // (Copy button)
+                          onPressed: () {
+                            Clipboard.setData(ClipboardData(text: logText));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(l10n.copied_to_clipboard)),
+                            );
+                            Navigator.pop(dialogContext);
+                          },
+                        ),
+                        TextButton(
+                          child: Text(l10n.clear), // (Clear button)
+                          onPressed: () {
+                            ref
+                                .read(logHistoryNotifierProvider.notifier)
+                                .clearLog();
+                            Navigator.pop(dialogContext);
+                          },
+                        ),
+                        TextButton(
+                          child: Text(l10n.close), // (Close button)
+                          onPressed: () => Navigator.pop(dialogContext),
+                        ),
+                      ],
+                      // --- END (C) MODIFICATION ---
+                    ),
+                  );
+                },
               ),
               // 未来可以在这里添加其他设置项...
             ],

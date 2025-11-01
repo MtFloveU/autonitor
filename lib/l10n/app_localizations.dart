@@ -566,6 +566,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dark'**
   String get theme_mode_dark;
+
+  /// No description provided for @log.
+  ///
+  /// In en, this message translates to:
+  /// **'Log'**
+  String get log;
+
+  /// No description provided for @view_log.
+  ///
+  /// In en, this message translates to:
+  /// **'View Logs'**
+  String get view_log;
+
+  /// No description provided for @clear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get clear;
 }
 
 class _AppLocalizationsDelegate

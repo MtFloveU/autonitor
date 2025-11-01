@@ -1,3 +1,4 @@
+import 'package:autonitor/services/log_service.dart';
 import 'package:autonitor/ui/user_detail_page.dart';
 import 'package:autonitor/models/twitter_user.dart';
 import 'package:flutter/material.dart';
@@ -39,8 +40,8 @@ class _HomePageState extends ConsumerState<HomePage> {
           "${dateTime.hour.toString().padLeft(2, '0')}:"
           "${dateTime.minute.toString().padLeft(2, '0')}";
       return l10n.last_updated_at(formattedDate);
-    } catch (e) {
-      print("Error parsing lastUpdateTime: $e");
+    } catch (e, s) {
+      logger.e("Error parsing lastUpdateTime: $e", error: e, stackTrace: s);
       return l10n.last_updated_at("Invalid Date");
     }
   }
@@ -160,7 +161,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   ) async {
     final activeAccount = ref.read(activeAccountProvider);
     if (activeAccount == null) return;
-    print(
+    logger.i(
       '--- HomePage: Navigating to UserListPage for category $categoryKey ---',
     );
     Navigator.push(
@@ -596,12 +597,14 @@ class _HomePageState extends ConsumerState<HomePage> {
                 currentRef
                     .read(analysisServiceProvider.notifier)
                     .runAnalysis(accountToProcess)
-                    .catchError((e) {
+                    .catchError((e, s) {
                       // 即使在 provider 中捕获了错误，这里也可能需要一个顶层捕获
                       // 以防 runAnalysisProcess 本身抛出（例如 accountToProcess 为 null）
                       // 已经在 provider 内部处理了
-                      print(
+                      logger.e(
                         "runAnalysisProcess top-level error (should be handled in Notifier): $e",
+                        error: e,
+                        stackTrace: s,
                       );
                     })
                     .whenComplete(() {

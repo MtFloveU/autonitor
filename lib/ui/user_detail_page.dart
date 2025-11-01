@@ -1,3 +1,4 @@
+import 'package:autonitor/services/log_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -100,9 +101,9 @@ class UserDetailPage extends StatelessWidget {
                       final dynamic jsonObj = jsonDecode(rawJson);
                       const encoder = JsonEncoder.withIndent('  '); // 2空格缩进
                       formattedJson = encoder.convert(jsonObj);
-                    } catch (e) {
+                    } catch (e, s) {
                       // 如果解码失败（理论上不应发生），则保持原始字符串
-                      print("Error formatting JSON for display: $e");
+                      logger.e("Error formatting JSON for display: $e", error: e, stackTrace: s);
                     }
 
                     showDialog(

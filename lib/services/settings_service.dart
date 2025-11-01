@@ -1,6 +1,7 @@
 import 'dart:convert'; // 用于 JSON 编解码
 import 'package:shared_preferences/shared_preferences.dart'; // 导入插件
-import '../models/app_settings.dart'; // 导入设置模型
+import '../models/app_settings.dart';
+import 'log_service.dart'; // 导入设置模型
 
 /// 用于加载和保存应用设置的服务类。
 class SettingsService {
@@ -18,9 +19,9 @@ class SettingsService {
         final jsonMap = jsonDecode(jsonString) as Map<String, dynamic>;
         return AppSettings.fromJson(jsonMap);
       }
-    } catch (e) {
+    } catch (e, s) {
       // 记录错误或处理损坏的数据
-      print('加载设置时出错: $e');
+      logger.e('加载设置时出错: $e', error: e, stackTrace: s);
     }
     // 如果加载失败或不存在设置，则返回默认设置
     return AppSettings();
@@ -34,9 +35,9 @@ class SettingsService {
       final jsonString = jsonEncode(settings.toJson());
       // 将 JSON 字符串保存到 shared preferences
       await prefs.setString(_settingsKey, jsonString);
-    } catch (e) {
+    } catch (e, s) {
       // 记录错误或处理保存失败
-      print('保存设置时出错: $e');
+      logger.e('Error saving settings: $e', error: e, stackTrace: s);
     }
   }
 }

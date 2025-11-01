@@ -7,6 +7,8 @@ import '../l10n/app_localizations.dart';
 import '../models/account.dart';
 import 'package:flutter/services.dart';
 
+import '../services/log_service.dart';
+
 class AccountsPage extends ConsumerStatefulWidget {
   const AccountsPage({super.key});
 
@@ -231,7 +233,7 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
       if (hasFailures) {
         summary += ', $failureCount failed.'; // Add l10n later
         results.where((r) => !r.success).forEach((failure) {
-          print("Refresh failed for ${failure.accountId}: ${failure.error}");
+          logger.e("Refresh failed for ${failure.accountId}: ${failure.error}", error: Exception(failure.error), stackTrace: StackTrace.current);
         });
       }
       // --- 修改 SnackBar 样式 ---
@@ -251,8 +253,8 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
               : theme.colorScheme.secondaryContainer,
         ),
       );
-    } catch (e) {
-      print("Error during _refreshAllAccounts UI call: $e");
+    } catch (e, s) {
+      logger.e("Error during _refreshAllAccounts UI call: $e", error: e, stackTrace: s);
       // --- 修改 SnackBar 样式 ---
       scaffoldMessenger.showSnackBar(
         SnackBar(

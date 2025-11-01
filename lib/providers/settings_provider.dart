@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:logger/logger.dart';
+import 'package:autonitor/services/log_service.dart';
 import '../models/app_settings.dart';
 import '../services/settings_service.dart';
 
@@ -8,13 +10,15 @@ final settingsServiceProvider = Provider((ref) => SettingsService());
 final settingsProvider =
     StateNotifierProvider<SettingsNotifier, AsyncValue<AppSettings>>((ref) {
       final service = ref.watch(settingsServiceProvider);
-      return SettingsNotifier(service);
+      final log = ref.watch(loggerProvider);
+      return SettingsNotifier(service, log);
     });
 
 class SettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
   final SettingsService _settingsService;
+  final Logger _log;
 
-  SettingsNotifier(this._settingsService) : super(const AsyncValue.loading()) {
+  SettingsNotifier(this._settingsService, this._log) : super(const AsyncValue.loading()) {
     _load();
   }
 
@@ -25,7 +29,7 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
       state = AsyncValue.data(settings);
     } catch (e, s) {
       state = AsyncValue.error(e, s);
-      print('加载设置失败: $e');
+      _log.e('加载设置失败', error: e, stackTrace: s);
     }
   }
 
@@ -48,7 +52,7 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
       await _settingsService.saveSettings(newState);
     } catch (e, s) {
       state = AsyncValue.error('保存语言设置失败: $e', s);
-      print('保存语言设置失败: $e');
+      _log.e('保存语言设置失败', error: e, stackTrace: s);
     }
   }
 
@@ -117,7 +121,7 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
       await _settingsService.saveSettings(newState);
     } catch (e, s) {
       state = AsyncValue.error('Failed to save theme: $e', s);
-      print('Failed to save themeMode setting: $e');
+      _log.e('Failed to save themeMode setting', error: e, stackTrace: s);
     }
   }
 }

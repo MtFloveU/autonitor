@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:autonitor/services/log_service.dart';
+
 /// 特殊标记，用于表示一个键在新 JSON 中存在但在旧 JSON 中不存在，
 /// 因此在反向补丁中需要被删除。
 const _keyToBeRemovedMarker = '__KEY_TO_BE_REMOVED__';
@@ -37,8 +39,8 @@ String? calculateReverseDiff(String? newJsonString, String? oldJsonString) {
     }
 
     return jsonEncode(diff);
-  } catch (e) {
-    print("Error calculating JSON diff: $e");
+  } catch (e, s) {
+    logger.e("Error calculating JSON diff: $e", error: e, stackTrace: s);
     // 发生错误时，保守起见不生成补丁
     return null;
   }
@@ -116,7 +118,7 @@ Map<String, dynamic>? applyReversePatch(
     final patch = jsonDecode(patchString);
     if (patch is! Map<String, dynamic>) {
       // 如果补丁不是 Map，无法应用（理论上 calculateReverseDiff 不会生成这样的补丁）
-      print("Error applying patch: Patch is not a Map.");
+      logger.e("Error applying patch: Patch is not a Map.");
       return newJson;
     }
 
@@ -124,8 +126,8 @@ Map<String, dynamic>? applyReversePatch(
     final reconstructedJson = Map<String, dynamic>.from(newJson);
     _applyPatchRecursive(reconstructedJson, patch);
     return reconstructedJson;
-  } catch (e) {
-    print("Error applying JSON patch: $e");
+  } catch (e, s) {
+    logger.e("Error applying JSON patch: $e", error: e, stackTrace: s);
     // 发生错误时，返回原始 newJson
     return newJson;
   }

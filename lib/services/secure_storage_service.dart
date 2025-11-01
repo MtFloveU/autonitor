@@ -1,3 +1,4 @@
+import 'package:autonitor/services/log_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -13,8 +14,8 @@ class SecureStorageService {
     try {
       // 使用账号 ID 作为 key 的一部分，确保唯一性
       await _storage.write(key: 'cookie_$id', value: cookie);
-    } catch (e) {
-      print("Error saving cookie for ID $id: $e");
+    } catch (e, s) {
+      logger.e("Error saving cookie for ID $id", error: e, stackTrace: s);
       // 可以考虑向上抛出异常，让调用者知道失败了
       // throw Exception('Failed to save cookie: $e');
     }
@@ -24,8 +25,8 @@ class SecureStorageService {
   Future<String?> getCookie(String id) async {
     try {
       return await _storage.read(key: 'cookie_$id');
-    } catch (e) {
-      print("Error reading cookie for ID $id: $e");
+    } catch (e, s) {
+      logger.e("Error reading cookie for ID $id: $e", error: e, stackTrace: s);
       return null;
     }
   }
@@ -34,14 +35,13 @@ class SecureStorageService {
   Future<void> deleteCookie(String id) async {
     try {
       await _storage.delete(key: 'cookie_$id');
-    } catch (e) {
-      print("Error deleting cookie for ID $id: $e");
+    } catch (e, s) {
+      logger.e("Error deleting cookie for ID $id: $e", error: e, stackTrace: s);
       // 可以考虑向上抛出异常
       // throw Exception('Failed to delete cookie: $e');
     }
   }
 
-  /// 读取所有存储的 cookies，返回一个 Map<String, String> (ID -> Cookie)
   Future<Map<String, String>> getAllCookies() async {
     try {
       // 读取所有 secure storage 中的键值对
@@ -56,8 +56,8 @@ class SecureStorageService {
         }
       });
       return cookies;
-    } catch (e) {
-      print("Error reading all cookies: $e");
+    } catch (e, s) {
+      logger.e("Error reading all cookies", error: e, stackTrace: s);
       return {}; // 出错时返回空 Map
     }
   }
@@ -65,8 +65,8 @@ class SecureStorageService {
   Future<String?> readActiveAccountId() async {
     try {
       return await _storage.read(key: _activeAccountIdKey);
-    } catch (e) {
-      print("Error reading active account ID: $e");
+    } catch (e, s) {
+      logger.e("Error reading active account ID", error: e, stackTrace: s);
       return null;
     }
   }
@@ -74,16 +74,16 @@ class SecureStorageService {
   Future<void> saveActiveAccountId(String id) async {
     try {
       await _storage.write(key: _activeAccountIdKey, value: id);
-    } catch (e) {
-      print("Error saving active account ID: $e");
+    } catch (e, s) {
+      logger.e("Error saving active account ID", error: e, stackTrace: s);
     }
   }
 
   Future<void> deleteActiveAccountId() async {
     try {
       await _storage.delete(key: _activeAccountIdKey);
-    } catch (e) {
-      print("Error deleting active account ID: $e");
+    } catch (e, s) {
+      logger.e("Error deleting active account ID", error: e, stackTrace: s);
     }
   }
 }

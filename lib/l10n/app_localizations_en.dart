@@ -246,4 +246,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get theme_mode_dark => 'Dark';
+
+  @override
+  String get log => 'Log';
+
+  @override
+  String get view_log => 'View Logs';
+
+  @override
+  String get clear => 'Clear';
 }

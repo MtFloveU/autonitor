@@ -6,6 +6,7 @@ import '../models/twitter_user.dart';
 import '../main.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:autonitor/services/log_service.dart';
 
 final analysisReportRepositoryProvider = Provider<AnalysisReportRepository>((
   ref,
@@ -25,7 +26,7 @@ class AnalysisReportRepository {
     required int limit,
     required int offset,
   }) async {
-    print(
+    logger.i(
       "AnalysisReportRepository: Getting users for category '$categoryKey' for owner '$ownerId' (Limit: $limit, Offset: $offset)...",
     );
     try {
@@ -45,7 +46,7 @@ class AnalysisReportRepository {
         // --- 修改：应用分页 ---
         final followUsers = await (query..limit(limit, offset: offset)).get();
 
-        print("AnalysisReportRepository: Fetched ${followUsers.length} users.");
+        logger.i("AnalysisReportRepository: Fetched ${followUsers.length} users.");
 
         paramsList = followUsers
             .map(
@@ -73,7 +74,7 @@ class AnalysisReportRepository {
         final reportResults = await (reportQuery..limit(limit, offset: offset))
             .get();
 
-        print(
+        logger.i(
           "AnalysisReportRepository: Fetched ${reportResults.length} user snapshots from ChangeReport for '$categoryKey'.",
         );
 
@@ -93,8 +94,10 @@ class AnalysisReportRepository {
 
       return await compute(_parseListInCompute, paramsList);
     } catch (e, s) {
-      print(
-        "AnalysisReportRepository: Error in getUsersForCategory '$categoryKey': $e\n$s",
+      logger.e(
+        "AnalysisReportRepository: Error in getUsersForCategory '$categoryKey'",
+        error: e,
+        stackTrace: s,
       );
       throw Exception('Failed to load user list: $e');
     }
@@ -176,9 +179,11 @@ TwitterUser _parseFollowUserToTwitterUser(_ParseParams params) {
       if (avatarUrl != null) {
         avatarUrl = avatarUrl.replaceFirst('_normal', '_400x400');
       }
-    } catch (e) {
-      print(
-        "AnalysisReportRepository (compute): Error parsing rawJson for user ${params.userId}: $e",
+    } catch (e, s) {
+      logger.e(
+        "AnalysisReportRepository (compute): Error parsing rawJson for user ${params.userId}",
+        error: e,
+        stackTrace: s,
       );
     }
   }

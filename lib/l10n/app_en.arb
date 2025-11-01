@@ -173,5 +173,11 @@
 "theme_mode_light": "Light",
 "@theme_mode_light": {},
 "theme_mode_dark": "Dark",
-"@theme_mode_dark": {}
+"@theme_mode_dark": {},
+"log": "Log",
+"@log": {},
+"view_log": "View Logs",
+"@view_log": {},
+"clear": "Clear",
+"@clear": {}
 }

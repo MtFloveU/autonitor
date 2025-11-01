@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'log_service.dart';
+
 final twitterApiServiceProvider = Provider((ref) => TwitterApiService());
 
 class TwitterApiService {
@@ -25,8 +27,8 @@ class TwitterApiService {
         final token = csrfPart.split('=')[1].trim();
         return token.isNotEmpty ? token : null;
       }
-    } catch (e) {
-      print("解析 ct0 token 失败: $e");
+    } catch (e, s) {
+      logger.e("Parsing the ct0 token failed: $e", error: e, stackTrace: s);
     }
     return null;
   }
@@ -40,7 +42,7 @@ class TwitterApiService {
   ) async {
     final csrfToken = _parseCsrfToken(cookie);
     if (csrfToken == null) {
-      throw Exception("无法从 Cookie 中解析出 x-csrf-token (ct0)");
+      throw Exception("Unable to parse x-csrf-token (ct0) from Cookie");
     }
 
     // 1. 准备 Query Parameters
@@ -102,18 +104,18 @@ class TwitterApiService {
 
       // 5. 检查响应并返回数据
       if (response.statusCode == 200 && response.data != null) {
-        print(response.data);
+        logger.d("Response data: ${response.data}");
         return response.data as Map<String, dynamic>;
       } else {
-        throw Exception('获取用户信息失败: Status ${response.statusCode}');
+        throw Exception('Failed to fetch user information: Status ${response.statusCode}');
       }
-    } on DioException catch (e) {
-      print("Dio Error on getUserByRestId: ${e.response?.data}");
-      throw Exception('网络请求失败: ${e.message}');
-    } catch (e) {
+    } on DioException catch (e, s) {
+      logger.e("Dio Error on getUserByRestId: ${e.response?.data}", error: e, stackTrace: s);
+      throw Exception('Network request failed: ${e.message}');
+    } catch (e, s) {
       // 捕获其他未知错误
-      print("Unknown error on getUserByRestId: $e");
-      throw Exception('发生未知错误');
+      logger.e("Unknown error on getUserByRestId", error: e, stackTrace: s);
+      throw Exception('An unknown error occurred.');
     }
   }
 }
