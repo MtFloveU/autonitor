@@ -33,7 +33,8 @@ class _WebViewLoginPageState extends State<WebViewLoginPage> {
       try {
         // 尝试获取 cookie
         gotCookies = await _cookieManager.getCookies(url: targetUrl);
-      } catch (e, s) { // --- 修改点 1：捕获所有 Error 和 Exception ---
+      } catch (e, s) {
+        // --- 修改点 1：捕获所有 Error 和 Exception ---
         // [已修改] 捕获 *所有* 异常和错误 (StateError, PlatformException, Error, etc.)
         // 只要 getCookies 失败，就视为空列表，让后续逻辑处理 "No cookie found" 提示。
         debugPrint("Error during getCookies, treating as empty list: $e\n$s");
@@ -103,7 +104,8 @@ class _WebViewLoginPageState extends State<WebViewLoginPage> {
       if (isConfirmed == true && mounted) {
         Navigator.pop(context, finalCookieString);
       }
-    } catch (e, s) { // --- 修改点 2：捕获所有 Error 和 Exception ---
+    } catch (e, s) {
+      // --- 修改点 2：捕获所有 Error 和 Exception ---
       debugPrint("Unhandled error in _onLoginComplete: $e\n$s");
       if (mounted) Navigator.pop(context); // 关闭加载圈
       if (mounted) {
@@ -146,4 +148,3 @@ class _WebViewLoginPageState extends State<WebViewLoginPage> {
     );
   }
 }
-

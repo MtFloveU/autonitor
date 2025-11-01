@@ -11,11 +11,7 @@ final databaseProvider = Provider<AppDatabase>((ref) {
 });
 
 void main() {
-  runApp(
-    const ProviderScope(
-      child: MyApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends ConsumerWidget {
@@ -43,7 +39,11 @@ class MyApp extends ConsumerWidget {
         ),
         useMaterial3: true,
       ),
-      themeMode: ThemeMode.system,
+      themeMode: settingsValue.when(
+        loading: () => ThemeMode.system,
+        error: (e, s) => ThemeMode.system,
+        data: (settings) => settings.themeMode,
+      ),
       home: const MainScaffold(),
 
       // --- 本地化配置 ---
@@ -55,19 +55,19 @@ class MyApp extends ConsumerWidget {
       ],
       // 6. 更新 supportedLocales
       supportedLocales: const [
-        Locale('en'),       // 英语
+        Locale('en'), // 英语
         Locale('zh', 'CN'), // 简体中文
         Locale('zh', 'TW'), // 繁體中文
-        Locale('zh'),       // 基础中文 (作为 fallback)
+        Locale('zh'), // 基础中文 (作为 fallback)
       ],
 
       // 7. 设置 locale 属性
       locale: settingsValue.when(
         loading: () => null, // 加载中，使用系统默认
         error: (e, s) => null, // 出错，使用系统默认
-        data: (settings) => settings.locale, // 使用 Provider 中的 Locale (null 表示 Auto/系统默认)
+        data: (settings) =>
+            settings.locale, // 使用 Provider 中的 Locale (null 表示 Auto/系统默认)
       ),
     );
   }
 }
-

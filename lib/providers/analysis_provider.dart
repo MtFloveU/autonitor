@@ -15,10 +15,7 @@ class AnalysisState {
 
   AnalysisState({this.isRunning = false, this.log = const []});
 
-  AnalysisState copyWith({
-    bool? isRunning,
-    List<String>? log,
-  }) {
+  AnalysisState copyWith({bool? isRunning, List<String>? log}) {
     return AnalysisState(
       isRunning: isRunning ?? this.isRunning,
       log: log ?? this.log,
@@ -44,7 +41,7 @@ class AnalysisService extends StateNotifier<AnalysisState> {
   // --- We will move the logic from runAnalysisProcess here ---
   Future<void> runAnalysis(Account accountToProcess) async {
     // Logic will go here in the next step
-        state = state.copyWith(isRunning: true, log: []);
+    state = state.copyWith(isRunning: true, log: []);
     void logCallback(String message) {
       state = state.copyWith(log: [...state.log, message]);
     }
@@ -74,8 +71,8 @@ class AnalysisService extends StateNotifier<AnalysisState> {
 // --- 3. Define the provider for this service ---
 final analysisServiceProvider =
     StateNotifierProvider<AnalysisService, AnalysisState>((ref) {
-  return AnalysisService(ref);
-});
+      return AnalysisService(ref);
+    });
 
 // --- 4. (Recommended) Providers for just the log/status ---
 // This makes it easy for the UI to listen *only* to what it needs.

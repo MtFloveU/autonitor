@@ -36,7 +36,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get following => 'Following';
 
   @override
-  String get new_account => 'Add a new account';
+  String get new_account => 'Add/Update an account';
 
   @override
   String get view_cookie => 'View Cookie';
@@ -198,4 +198,52 @@ class AppLocalizationsEn extends AppLocalizations {
   String last_updated_at(String date) {
     return 'Last updated: $date';
   }
+
+  @override
+  String get user_history_page_title => 'Profile History';
+
+  @override
+  String get storage_settings => 'Storage Settings';
+
+  @override
+  String get save_avatar_history => 'Save Avatar';
+
+  @override
+  String get save_banner_history => 'Save Banner';
+
+  @override
+  String get avatar_quality => 'Quality';
+
+  @override
+  String get quality_low => 'Low';
+
+  @override
+  String get quality_high => 'High';
+
+  @override
+  String get history_strategy => 'History Avatar/Banner Storage Strategy';
+
+  @override
+  String get strategy_save_all => 'Never Delete';
+
+  @override
+  String get strategy_save_latest => 'Keep Latest Only';
+
+  @override
+  String get strategy_save_last_n => 'Delete avatar/banner older than last';
+
+  @override
+  String get strategy_save_last_n_suffix => 'changes';
+
+  @override
+  String get theme_mode => 'Theme';
+
+  @override
+  String get theme_mode_system => 'Follow System';
+
+  @override
+  String get theme_mode_light => 'Light';
+
+  @override
+  String get theme_mode_dark => 'Dark';
 }

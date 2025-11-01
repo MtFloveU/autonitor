@@ -43,9 +43,9 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-    l10n.delete,
-    style: TextStyle(color: theme.colorScheme.onPrimaryContainer),
-  ),
+          l10n.delete,
+          style: TextStyle(color: theme.colorScheme.onPrimaryContainer),
+        ),
         content: Text(l10n.confirm_delete_account(account.id)),
         actions: [
           TextButton(
@@ -191,7 +191,7 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
         ),
       ),
     );
-    
+
     try {
       final accountsToRefresh = ref.read(accountsProvider);
       if (accountsToRefresh.isEmpty) {
@@ -278,7 +278,6 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final accounts = ref.watch(accountsProvider);
-    final activeAccount = ref.watch(activeAccountProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -344,13 +343,13 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                     ),
                   ),
                   Text(
-                    "@${account.screenName ?? account.id ?? '...'}",
+                    "@${account.screenName ?? account.id}",
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.grey.shade600,
                     ),
                   ),
                   Text(
-                    "ID: ${account.id ?? '...'}",
+                    "ID: ${account.id}",
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Colors.grey.shade600,
                     ),

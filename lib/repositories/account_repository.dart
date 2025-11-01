@@ -22,7 +22,7 @@ class AccountRepository {
 
   AccountRepository(this._database, this._apiService, this._secureStorage);
 
- String? _parseidFromCookie(String cookie) {
+  String? _parseidFromCookie(String cookie) {
     try {
       final parts = cookie.split(';');
       final idPart = parts.firstWhere(
@@ -49,7 +49,7 @@ class AccountRepository {
       return null;
     }
   }
-  
+
   Future<Account> addAccount(String cookie) async {
     final id = _parseidFromCookie(cookie);
     if (id == null) {
@@ -58,9 +58,8 @@ class AccountRepository {
     await _secureStorage.saveCookie(id, cookie);
     print("addAccount: Saved cookie to SecureStorage for ID: $id");
     return await _fetchAndSaveAccountProfile(id, cookie);
-    
   }
-  
+
   Future<void> removeAccount(String id) async {
     try {
       await _secureStorage.deleteCookie(id);
@@ -82,9 +81,9 @@ class AccountRepository {
       throw Exception('Failed to remove account: $e');
     }
   }
-  
+
   Future<List<Account>> getAllAccounts() async {
-      try {
+    try {
       final profiles = await _database.select(_database.loggedAccounts).get();
       final cookies = await _secureStorage.getAllCookies();
       final List<Account> loadedAccounts = [];
@@ -119,15 +118,15 @@ class AccountRepository {
         }
       }
       return loadedAccounts;
-      } catch (e, s) {
+    } catch (e) {
       rethrow;
     }
   }
-  
+
   Future<Account> refreshAccountProfile(Account account) async {
     return await _fetchAndSaveAccountProfile(account.id, account.cookie);
   }
-  
+
   Future<Account> _fetchAndSaveAccountProfile(String id, String cookie) async {
     String? name;
     String? screenName;
@@ -282,16 +281,13 @@ class AccountRepository {
         latestRawJson: rawJsonString,
       );
     } catch (e, s) {
-      print(
-        "addAccount: Error during database transaction for ID $id: $e\n$s",
-      );
+      print("addAccount: Error during database transaction for ID $id: $e\n$s");
       throw Exception('Failed to save account data: $e');
     }
-   }
+  }
   // --- 稍后我们会把 AccountsNotifier 中的方法逻辑搬到这里 ---
   // 比如：
   // Future<Account> addNewAccount(String cookie) async { ... }
   // Future<void> removeAccount(String id) async { ... }
   // Future<List<Account>> getAllAccounts() async { ... }
-
 }

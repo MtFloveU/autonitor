@@ -44,10 +44,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     ];
 
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: pagesWithVisibility,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: pagesWithVisibility),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onItemTapped,

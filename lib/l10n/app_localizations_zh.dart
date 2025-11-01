@@ -36,7 +36,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get following => '正在关注';
 
   @override
-  String get new_account => '添加新账号';
+  String get new_account => '添加/更新账号';
 
   @override
   String get view_cookie => '查看 Cookie';
@@ -197,6 +197,54 @@ class AppLocalizationsZh extends AppLocalizations {
   String last_updated_at(String date) {
     return '上次更新：$date';
   }
+
+  @override
+  String get user_history_page_title => '个人资料历史';
+
+  @override
+  String get storage_settings => '存储设置';
+
+  @override
+  String get save_avatar_history => '保存头像';
+
+  @override
+  String get save_banner_history => '保存横幅';
+
+  @override
+  String get avatar_quality => '质量';
+
+  @override
+  String get quality_low => '低';
+
+  @override
+  String get quality_high => '高';
+
+  @override
+  String get history_strategy => '历史头像/横幅存储策略';
+
+  @override
+  String get strategy_save_all => '从不删除';
+
+  @override
+  String get strategy_save_latest => '仅保留最新';
+
+  @override
+  String get strategy_save_last_n => '删除早于最近';
+
+  @override
+  String get strategy_save_last_n_suffix => '次更改的头像/横幅';
+
+  @override
+  String get theme_mode => '主题';
+
+  @override
+  String get theme_mode_system => '跟随系统';
+
+  @override
+  String get theme_mode_light => '浅色';
+
+  @override
+  String get theme_mode_dark => '深色';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -231,7 +279,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get following => '跟隨中';
 
   @override
-  String get new_account => '添加新賬戶';
+  String get new_account => '添加/更新賬戶';
 
   @override
   String get view_cookie => '查看 Cookie';
@@ -392,4 +440,52 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String last_updated_at(String date) {
     return '上次更新：$date';
   }
+
+  @override
+  String get user_history_page_title => '個人資料歷史';
+
+  @override
+  String get storage_settings => '儲存設定';
+
+  @override
+  String get save_avatar_history => '儲存頭像';
+
+  @override
+  String get save_banner_history => '儲存橫幅';
+
+  @override
+  String get avatar_quality => '品質';
+
+  @override
+  String get quality_low => '低';
+
+  @override
+  String get quality_high => '高';
+
+  @override
+  String get history_strategy => '歷史頭像/橫幅儲存策略';
+
+  @override
+  String get strategy_save_all => '從不刪除';
+
+  @override
+  String get strategy_save_latest => '僅保留最新';
+
+  @override
+  String get strategy_save_last_n => '刪除早於最近';
+
+  @override
+  String get strategy_save_last_n_suffix => '次更改的頭像/橫幅';
+
+  @override
+  String get theme_mode => '主題';
+
+  @override
+  String get theme_mode_system => '跟隨系統';
+
+  @override
+  String get theme_mode_light => '淺色';
+
+  @override
+  String get theme_mode_dark => '深色';
 }

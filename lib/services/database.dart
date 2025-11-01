@@ -140,7 +140,8 @@ class ChangeReports extends Table {
   TextColumn get changeType => text().named('change_type')();
 
   DateTimeColumn get timestamp => dateTime()();
-  TextColumn get userSnapshotJson => text().named('user_snapshot_json').nullable()();
+  TextColumn get userSnapshotJson =>
+      text().named('user_snapshot_json').nullable()();
 }
 
 // --- 4. 定义数据库主类 ---

@@ -1,9 +1,6 @@
 {
   "@@locale": "zh_TW",
   "language": "語言",
-  "@language": {
-    "description": "語言設定的標籤"
-  },
   "app_title": "Autonitor",
   "settings": "設定",
   "home": "首頁",
@@ -12,7 +9,7 @@
   "switchAccount": "切換賬戶",
   "followers": "跟隨者",
   "following": "跟隨中",
-  "new_account": "添加新賬戶",
+  "new_account": "添加/更新賬戶",
   "view_cookie": "查看 Cookie",
   "close": "關閉",
   "view_on_twitter": "在 Twitter 上查看",
@@ -78,5 +75,21 @@
         "type": "String"
       }
     }
-  }
+  },
+  "user_history_page_title": "個人資料歷史",
+  "storage_settings": "儲存設定",
+  "save_avatar_history": "儲存頭像",
+  "save_banner_history": "儲存橫幅",
+  "avatar_quality": "品質",
+  "quality_low": "低",
+  "quality_high": "高",
+  "history_strategy": "歷史頭像/橫幅儲存策略",
+  "strategy_save_all": "從不刪除",
+  "strategy_save_latest": "僅保留最新",
+  "strategy_save_last_n": "刪除早於最近",
+  "strategy_save_last_n_suffix": "次更改的頭像/橫幅",
+  "theme_mode": "主題",
+  "theme_mode_system": "跟隨系統",
+  "theme_mode_light": "淺色",
+  "theme_mode_dark": "深色"
 }

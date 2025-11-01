@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -6,7 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/twitter_user.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart';
-
+import 'user_history_page.dart';
 
 class UserDetailPage extends StatelessWidget {
   final TwitterUser user;
@@ -16,19 +15,8 @@ class UserDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    // 1024x341 的宽高比
-    const double bannerAspectRatio = 1024 / 341;
-    // 按钮高度(MD3 TonalButton 约 40) + 按钮与横幅间距(8)
-    const double buttonOverhang = 48.0;
-    // 头像半径(45) - 中心点距横幅底部的偏移(5) = 40
+    const double bannerAspectRatio = 1500 / 500;
     const double avatarOverhang = 40.0;
-
-    // 获取屏幕宽度
-    final screenWidth = MediaQuery.of(context).size.width;
-    // 计算动态的横幅高度
-    final bannerHeight = screenWidth / bannerAspectRatio;
-    // 计算 Stack 所需的总高度
-    final stackTotalHeight = bannerHeight + max(avatarOverhang, buttonOverhang);
 
     return Scaffold(
       appBar: AppBar(
@@ -38,7 +26,12 @@ class UserDetailPage extends StatelessWidget {
             icon: const Icon(Icons.history),
             tooltip: l10n.history,
             onPressed: () {
-              // TODO: History 逻辑
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => UserHistoryPage(user: user),
+                ),
+              );
             },
           ),
         ],
@@ -321,7 +314,7 @@ class UserDetailPage extends StatelessWidget {
                     const SizedBox(width: 4),
                     Flexible(
                       child: Text(
-                        '${l10n.joined} ${user.joinTime ?? ''}',
+                        '${l10n.joined} ${user.joinTime}',
                         style: TextStyle(color: Colors.grey),
                       ),
                     ),

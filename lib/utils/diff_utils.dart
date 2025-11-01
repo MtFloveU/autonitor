@@ -45,7 +45,10 @@ String? calculateReverseDiff(String? newJsonString, String? oldJsonString) {
 }
 
 /// 递归比较两个 Map 并生成反向差异。
-Map<String, dynamic> _compareMaps(Map<String, dynamic> newMap, Map<String, dynamic> oldMap) {
+Map<String, dynamic> _compareMaps(
+  Map<String, dynamic> newMap,
+  Map<String, dynamic> oldMap,
+) {
   final diff = <String, dynamic>{};
   final allKeys = {...newMap.keys, ...oldMap.keys}; // 获取所有键的并集
 
@@ -61,15 +64,16 @@ Map<String, dynamic> _compareMaps(Map<String, dynamic> newMap, Map<String, dynam
       diff[key] = _keyToBeRemovedMarker;
     } else if (newMap.containsKey(key) && oldMap.containsKey(key)) {
       // 键在两者中都存在
-      if (newValue is Map<String, dynamic> && oldValue is Map<String, dynamic>) {
+      if (newValue is Map<String, dynamic> &&
+          oldValue is Map<String, dynamic>) {
         // 如果值都是 Map，递归比较
         final nestedDiff = _compareMaps(newValue, oldValue);
         if (nestedDiff.isNotEmpty) {
           diff[key] = nestedDiff;
         }
       } else if (!_areEqual(newValue, oldValue)) {
-         // 如果值不同 (且不是 Map)，反向补丁记录旧值
-         diff[key] = oldValue;
+        // 如果值不同 (且不是 Map)，反向补丁记录旧值
+        diff[key] = oldValue;
       }
       // 如果值相同，则忽略，不加入 diff
     }
@@ -100,9 +104,11 @@ bool _areEqual(dynamic a, dynamic b) {
   return a == b;
 }
 
-
 /// 应用反向补丁到新的 JSON Map，以重建旧的 JSON Map。
-Map<String, dynamic>? applyReversePatch(Map<String, dynamic>? newJson, String? patchString) {
+Map<String, dynamic>? applyReversePatch(
+  Map<String, dynamic>? newJson,
+  String? patchString,
+) {
   if (newJson == null) return null; // 无法在 null 上应用补丁
   if (patchString == null || patchString.isEmpty) return newJson; // 没有补丁，返回原样
 
@@ -110,15 +116,14 @@ Map<String, dynamic>? applyReversePatch(Map<String, dynamic>? newJson, String? p
     final patch = jsonDecode(patchString);
     if (patch is! Map<String, dynamic>) {
       // 如果补丁不是 Map，无法应用（理论上 calculateReverseDiff 不会生成这样的补丁）
-       print("Error applying patch: Patch is not a Map.");
-       return newJson;
+      print("Error applying patch: Patch is not a Map.");
+      return newJson;
     }
-    
+
     // 创建一个新 Map 来存储结果，避免直接修改 newJson
     final reconstructedJson = Map<String, dynamic>.from(newJson);
     _applyPatchRecursive(reconstructedJson, patch);
     return reconstructedJson;
-
   } catch (e) {
     print("Error applying JSON patch: $e");
     // 发生错误时，返回原始 newJson
@@ -126,21 +131,25 @@ Map<String, dynamic>? applyReversePatch(Map<String, dynamic>? newJson, String? p
   }
 }
 
-void _applyPatchRecursive(Map<String, dynamic> target, Map<String, dynamic> patch) {
+void _applyPatchRecursive(
+  Map<String, dynamic> target,
+  Map<String, dynamic> patch,
+) {
   patch.forEach((key, patchValue) {
     if (patchValue == _keyToBeRemovedMarker) {
       // 如果补丁值是删除标记，则从目标中移除该键
       target.remove(key);
-    } else if (patchValue is Map<String, dynamic> && target[key] is Map<String, dynamic>) {
+    } else if (patchValue is Map<String, dynamic> &&
+        target[key] is Map<String, dynamic>) {
       // 如果补丁值和目标值都是 Map，递归应用补丁
       // 需要确保 target[key] 不是 null
-       final targetValueMap = target[key] as Map<String, dynamic>?;
-       if(targetValueMap != null){
-          _applyPatchRecursive(targetValueMap, patchValue);
-       } else {
-         // 如果目标值本来是 null 或不是 Map，则直接用补丁值覆盖（虽然理论上这不应发生）
-         target[key] = patchValue;
-       }
+      final targetValueMap = target[key] as Map<String, dynamic>?;
+      if (targetValueMap != null) {
+        _applyPatchRecursive(targetValueMap, patchValue);
+      } else {
+        // 如果目标值本来是 null 或不是 Map，则直接用补丁值覆盖（虽然理论上这不应发生）
+        target[key] = patchValue;
+      }
     } else {
       // 否则，直接用补丁值覆盖目标值（添加或修改）
       target[key] = patchValue;

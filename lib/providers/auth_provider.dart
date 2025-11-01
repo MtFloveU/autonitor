@@ -1,11 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/account.dart';
-import '../models/cache_data.dart';
-import '../models/twitter_user.dart';
 import '../services/secure_storage_service.dart';
-import '../main.dart';
-import 'package:drift/drift.dart';
-import 'package:flutter/material.dart';
 import '../repositories/account_repository.dart';
 import 'package:async/async.dart';
 import 'package:async_locks/async_locks.dart';
@@ -162,7 +157,7 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
     _accountRepository = _ref.read(accountRepositoryProvider);
     loadAccounts();
   }
-  
+
   Future<void> loadAccounts() async {
     List<Account> loadedAccounts = []; // Default to empty list
     String? storedActiveId;
@@ -173,12 +168,11 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
 
       // 2. Still fetch the active ID (Notifier's job to coordinate this)
       storedActiveId = await _storageService.readActiveAccountId();
-
     } catch (e, s) {
       print("AccountsNotifier: Error loading accounts from repository: $e\n$s");
       // If loading fails, state will remain an empty list
       // and storedActiveId will be null.
-    } 
+    }
 
     // 3. Set the Notifier's own state
     state = loadedAccounts;
@@ -196,7 +190,6 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
     try {
       await _accountRepository.addAccount(cookie);
       await loadAccounts();
-
     } catch (e) {
       print("AccountsNotifier: Error adding account: $e");
       rethrow;
@@ -205,7 +198,7 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
 
   Future<void> removeAccount(String id) async {
     try {
-      await _accountRepository.removeAccount(id); 
+      await _accountRepository.removeAccount(id);
       await loadAccounts();
     } catch (e) {
       print("AccountsNotifier: Error removing account: $e");
@@ -257,7 +250,7 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
       await _accountRepository.refreshAccountProfile(account);
     } catch (e) {
       // The error is already logged by the repository,
-      // but we rethrow it so the FutureGroup in refreshAllAccountProfiles 
+      // but we rethrow it so the FutureGroup in refreshAllAccountProfiles
       // knows it failed.
       print("AccountsNotifier: _refreshSingleAccountProfile failed.");
       rethrow;

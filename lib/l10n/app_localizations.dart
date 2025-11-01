@@ -156,7 +156,7 @@ abstract class AppLocalizations {
   /// No description provided for @new_account.
   ///
   /// In en, this message translates to:
-  /// **'Add a new account'**
+  /// **'Add/Update an account'**
   String get new_account;
 
   /// No description provided for @view_cookie.
@@ -470,6 +470,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Last updated: {date}'**
   String last_updated_at(String date);
+
+  /// No description provided for @user_history_page_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile History'**
+  String get user_history_page_title;
+
+  /// No description provided for @storage_settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage Settings'**
+  String get storage_settings;
+
+  /// No description provided for @save_avatar_history.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Avatar'**
+  String get save_avatar_history;
+
+  /// No description provided for @save_banner_history.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Banner'**
+  String get save_banner_history;
+
+  /// No description provided for @avatar_quality.
+  ///
+  /// In en, this message translates to:
+  /// **'Quality'**
+  String get avatar_quality;
+
+  /// e.g. 48x48, _normal suffix
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get quality_low;
+
+  /// e.g. 400x400, _400x400 suffix
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get quality_high;
+
+  /// No description provided for @history_strategy.
+  ///
+  /// In en, this message translates to:
+  /// **'History Avatar/Banner Storage Strategy'**
+  String get history_strategy;
+
+  /// No description provided for @strategy_save_all.
+  ///
+  /// In en, this message translates to:
+  /// **'Never Delete'**
+  String get strategy_save_all;
+
+  /// No description provided for @strategy_save_latest.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Latest Only'**
+  String get strategy_save_latest;
+
+  /// No description provided for @strategy_save_last_n.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete avatar/banner older than last'**
+  String get strategy_save_last_n;
+
+  /// No description provided for @strategy_save_last_n_suffix.
+  ///
+  /// In en, this message translates to:
+  /// **'changes'**
+  String get strategy_save_last_n_suffix;
+
+  /// No description provided for @theme_mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme'**
+  String get theme_mode;
+
+  /// No description provided for @theme_mode_system.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow System'**
+  String get theme_mode_system;
+
+  /// No description provided for @theme_mode_light.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get theme_mode_light;
+
+  /// No description provided for @theme_mode_dark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get theme_mode_dark;
 }
 
 class _AppLocalizationsDelegate

@@ -1,7 +1,9 @@
+import 'package:autonitor/models/app_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/settings_provider.dart';
 import '../l10n/app_localizations.dart';
+import 'package:flutter/services.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -11,7 +13,19 @@ class SettingsPage extends ConsumerStatefulWidget {
 }
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
+  late TextEditingController _historyLimitController;
   @override
+  void initState() {
+    super.initState();
+    _historyLimitController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _historyLimitController.dispose();
+    super.dispose();
+  }
+
   Widget build(BuildContext context) {
     // 1. 获取 l10n (您可能需要导入 'l10n/app_localizations.dart')
     final l10n = AppLocalizations.of(context)!;
@@ -37,19 +51,31 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         // 数据加载成功状态
         data: (settings) {
           // 构建设置列表 UI
+          final currentTextInField = _historyLimitController.text;
+          final settingsValue = settings.historyLimitN.toString();
+          if (currentTextInField != settingsValue) {
+            _historyLimitController.text = settingsValue;
+            _historyLimitController.selection = TextSelection.fromPosition(
+              TextPosition(offset: _historyLimitController.text.length),
+            );
+          }
           return ListView(
             children: [
-              Padding(
-                padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Text(
-                  l10n.general,
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
+              ListTile(
+                title: Text(
+                  l10n.general, // (From l10n)
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
+                dense: true,
               ),
               ListTile(
                 title: Text(l10n.language),
                 leading: Icon(Icons.language),
                 trailing: DropdownButton<String>(
+                  alignment: Alignment.centerRight,
                   // 1. 当前选中的值：从 Provider 读取
                   value: settings.locale?.toLanguageTag() ?? 'Auto',
 
@@ -95,11 +121,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                           .read(settingsProvider.notifier)
                           .updateLocale(newLocale);
                       // 更新提示文本（查找显示名称）
-                      String displaySelected = 'Auto';
-                      // Default
-                      if (newValue == 'en') displaySelected = 'English';
-                      if (newValue == 'zh-CN') displaySelected = '中文（中国）';
-                      if (newValue == 'zh-TW') displaySelected = '中文（台灣）';
+                      // Removed unused variable 'displaySelected'
                     }
                   },
 
@@ -107,6 +129,229 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   underline: Container(),
                 ),
                 // 从加载的设置中获取语言并显示
+              ),
+              ListTile(
+                leading: const Icon(Icons.brightness_6_outlined),
+                title: Text(l10n.theme_mode),
+                trailing: DropdownButton<ThemeMode>(
+                  alignment: Alignment.centerRight,
+                  value: settings.themeMode,
+                  items: [
+                    DropdownMenuItem(
+                      value: ThemeMode.system,
+                      child: Text(l10n.theme_mode_system),
+                    ),
+                    DropdownMenuItem(
+                      value: ThemeMode.light,
+                      child: Text(l10n.theme_mode_light),
+                    ),
+                    DropdownMenuItem(
+                      value: ThemeMode.dark,
+                      child: Text(l10n.theme_mode_dark),
+                    ),
+                  ],
+
+                  onChanged: (ThemeMode? newValue) {
+                    if (newValue != null) {
+                      ref
+                          .read(settingsProvider.notifier)
+                          .updateThemeMode(newValue);
+                    }
+                  },
+                  underline: Container(),
+                ),
+              ),
+              const Divider(),
+              ListTile(
+                title: Text(
+                  l10n.storage_settings, // (From l10n)
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                dense: true,
+              ),
+              SwitchListTile(
+                secondary: const Icon(Icons.person_outline_outlined),
+                title: Text(l10n.save_avatar_history),
+                value: settings.saveAvatarHistory,
+                onChanged: (bool newValue) {
+                  ref
+                      .read(settingsProvider.notifier)
+                      .updateSaveAvatarHistory(newValue);
+                },
+              ),
+              ListTile(
+                enabled: settings.saveAvatarHistory,
+                leading: const Icon(null),
+                title: Text(l10n.avatar_quality),
+                trailing: DropdownButton<AvatarQuality>(
+                  value: settings.avatarQuality,
+                  items: [
+                    DropdownMenuItem(
+                      value: AvatarQuality.high,
+                      child: Text(l10n.quality_high),
+                    ),
+                    DropdownMenuItem(
+                      value: AvatarQuality.low,
+                      child: Text(l10n.quality_low),
+                    ),
+                  ],
+                  onChanged: settings.saveAvatarHistory
+                      ? (AvatarQuality? newValue) {
+                          if (newValue != null) {
+                            ref
+                                .read(settingsProvider.notifier)
+                                .updateAvatarQuality(newValue);
+                          }
+                        }
+                      : null,
+                ),
+              ),
+              SwitchListTile(
+                secondary: const Icon(Icons.image_outlined),
+                title: Text(l10n.save_banner_history),
+                value: settings.saveBannerHistory,
+                onChanged: (bool newValue) {
+                  ref
+                      .read(settingsProvider.notifier)
+                      .updateSaveBannerHistory(newValue);
+                },
+              ),
+              Padding(
+                padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Text(
+                  l10n.history_strategy,
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ),
+              // (Radio button 1: Save All)
+              // (单选按钮 1: 全部保存)
+              RadioListTile<HistoryStrategy>(
+                title: Text(l10n.strategy_save_all),
+                value: HistoryStrategy.saveAll,
+                groupValue:
+                    settings.historyStrategy, // (The currently selected value)
+                // (当前选中的值)
+                onChanged: (HistoryStrategy? newValue) {
+                  if (newValue != null) {
+                    ref
+                        .read(settingsProvider.notifier)
+                        .updateHistoryStrategy(newValue);
+                  }
+                },
+              ),
+
+              // (Radio button 2: Save Latest)
+              // (单选按钮 2: 仅保存最新)
+              RadioListTile<HistoryStrategy>(
+                title: Text(l10n.strategy_save_latest),
+                value: HistoryStrategy.saveLatest,
+                groupValue: settings.historyStrategy,
+                onChanged: (HistoryStrategy? newValue) {
+                  if (newValue != null) {
+                    ref
+                        .read(settingsProvider.notifier)
+                        .updateHistoryStrategy(newValue);
+                  }
+                },
+              ),
+
+              // (Radio button 3: Save Last N)
+              // (单选按钮 3: 保存 N 个)
+              RadioListTile<HistoryStrategy>(
+                value: HistoryStrategy.saveLastN,
+                groupValue: settings.historyStrategy,
+                onChanged: (HistoryStrategy? newValue) {
+                  if (newValue != null) {
+                    ref
+                        .read(settingsProvider.notifier)
+                        .updateHistoryStrategy(newValue);
+                  }
+                },
+
+                // --- MODIFICATION: Title is now a complex Row ---
+                // (修改：标题现在是一个复杂的 Row)
+                title: Wrap(
+                  // <--- This is the solution
+                  // (Align items vertically in the middle, in case of wrapping)
+                  // (如果换行，保持垂直居中)
+                  crossAxisAlignment: WrapCrossAlignment.center,
+
+                  // (Set horizontal spacing between elements)
+                  // (设置元素之间的水平间距)
+                  spacing: 2.0,
+
+                  // (Set vertical spacing if it wraps to a new line)
+                  // (如果换行，设置垂直间距)
+                  runSpacing: 4.0,
+                  children: [
+                    // 1. The Prefix Text ("Save Last")
+                    // (1. 前缀文本 ("保存最近"))
+                    Text(
+                      l10n.strategy_save_last_n,
+                      // (This text never turns grey)
+                      // (这个文本永远不会变灰)
+                    ),
+
+                    const SizedBox(width: 8), // (Spacing)
+                    // 2. The Input Box
+                    // (2. 输入框)
+                    SizedBox(
+                      width: 60, // (Adjust width)
+                      child: TextFormField(
+                        controller: _historyLimitController,
+                        enabled:
+                            settings.historyStrategy ==
+                            HistoryStrategy.saveLastN,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        textAlign: TextAlign.center,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 8.0,
+                            vertical: 12.0,
+                          ),
+                          isDense: true, // (Makes it shorter)
+                        ),
+
+                        // (Save logic remains the same)
+                        // (保存逻辑保持不变)
+                        onEditingComplete: () {
+                          final String value = _historyLimitController.text;
+                          int n = int.tryParse(value) ?? 1;
+                          if (n < 1) n = 1;
+                          if (n > 500) n = 500;
+                          ref
+                              .read(settingsProvider.notifier)
+                              .updateHistoryLimitN(n);
+                          FocusScope.of(context).unfocus();
+                        },
+                        onTapOutside: (event) {
+                          final String value = _historyLimitController.text;
+                          int n = int.tryParse(value) ?? 1;
+                          if (n < 1) n = 1;
+                          if (n > 500) n = 500;
+                          if (n != settings.historyLimitN) {
+                            ref
+                                .read(settingsProvider.notifier)
+                                .updateHistoryLimitN(n);
+                          }
+                          FocusScope.of(context).unfocus();
+                        },
+                      ),
+                    ),
+
+                    const SizedBox(width: 6), // (Spacing)
+                    // 3. The Suffix Text ("Changes")
+                    // (3. 后缀文本 ("次更改"))
+                    Text(l10n.strategy_save_last_n_suffix),
+                  ],
+                ),
               ),
               // 未来可以在这里添加其他设置项...
             ],

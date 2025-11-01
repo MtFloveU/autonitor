@@ -1,5 +1,6 @@
 class Account {
   final String? latestRawJson;
+
   /// The unique Twitter User ID (Rest ID / twid).
   final String id;
 

@@ -5,7 +5,7 @@ import '../models/app_settings.dart'; // 导入设置模型
 /// 用于加载和保存应用设置的服务类。
 class SettingsService {
   // 用于在 shared_preferences 中存储设置的键
-  static const _settingsKey = 'app_settings_v1'; 
+  static const _settingsKey = 'app_settings_v1';
 
   /// 从 shared preferences 加载设置。
   /// 如果找不到或发生错误，则返回默认设置。
