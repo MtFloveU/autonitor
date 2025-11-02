@@ -83,14 +83,16 @@ final cacheProvider = FutureProvider.autoDispose<CacheData?>((ref) async {
 const int _kUserListPageSize = 30;
 
 class UserListNotifier
-    extends FamilyAsyncNotifier<List<TwitterUser>, UserListParam> {
+    extends AutoDisposeFamilyAsyncNotifier<List<TwitterUser>, UserListParam> {
   final List<TwitterUser> _users = [];
   bool _hasMore = true;
 
   @override
   Future<List<TwitterUser>> build(UserListParam arg) async {
-    _users.clear();
-    _hasMore = true;
+    // --- 关键修改：每次 build 时重置内部状态 ---
+    _users.clear(); // <-- 强制清空旧数据
+    _hasMore = true; // <-- 强制重置分页状态
+    // --- 关键修改结束 ---
 
     final repository = ref.read(analysisReportRepositoryProvider);
     final newUsers = await repository.getUsersForCategory(
@@ -171,7 +173,7 @@ class UserListNotifier
 }
 
 final userListProvider =
-    AsyncNotifierProvider.family<
+    AsyncNotifierProvider.family.autoDispose< // <-- 关键修改：添加 .autoDispose
       UserListNotifier,
       List<TwitterUser>,
       UserListParam

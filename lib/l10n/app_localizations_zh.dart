@@ -176,7 +176,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get failed_to_load_user_list => '加载用户列表失败';
 
   @override
-  String get no_users_in_this_category => '此分类下没有用户';
+  String get no_users_in_this_category => '列表为空';
 
   @override
   String get analysis_log => '分析日志';
@@ -428,7 +428,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get failed_to_load_user_list => '載入用戶列表失敗';
 
   @override
-  String get no_users_in_this_category => '此分類下沒有用戶';
+  String get no_users_in_this_category => '空列表';
 
   @override
   String get analysis_log => '分析日誌';

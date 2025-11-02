@@ -279,7 +279,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => UserDetailPage(user: user),
+                    builder: (context) => UserDetailPage(user: user, ownerId: activeAccount.id),
                   ),
                 );
               },

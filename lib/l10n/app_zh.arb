@@ -62,7 +62,7 @@
   "no_json_data_available": "无 JSON 数据",
   "temporarily_restricted": "暂时受限",
   "failed_to_load_user_list": "加载用户列表失败",
-  "no_users_in_this_category": "此分类下没有用户",
+  "no_users_in_this_category": "列表为空",
   "analysis_log": "分析日志",
   "no_active_account_error": "无法运行分析：没有活动的账号。",
   "analysis_failed_error": "分析失败",

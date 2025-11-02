@@ -30,7 +30,7 @@ class AnalysisReportRepository {
       "AnalysisReportRepository: Getting users for category '$categoryKey' for owner '$ownerId' (Limit: $limit, Offset: $offset)...",
     );
     try {
-      List<_ParseParams> paramsList = [];
+      List<ParseParams> paramsList = [];
 
       if (categoryKey == 'followers' || categoryKey == 'following') {
         final bool isFollower = (categoryKey == 'followers');
@@ -52,7 +52,7 @@ class AnalysisReportRepository {
 
         paramsList = followUsers
             .map(
-              (user) => _ParseParams(
+              (user) => ParseParams(
                 userId: user.userId,
                 dbScreenName: user.screenName,
                 dbName: user.name,
@@ -88,7 +88,7 @@ class AnalysisReportRepository {
 
         paramsList = reportResults
             .map(
-              (report) => _ParseParams(
+              (report) => ParseParams(
                 userId: report.userId,
                 jsonString: report.userSnapshotJson,
               ),
@@ -96,7 +96,7 @@ class AnalysisReportRepository {
             .toList();
       }
 
-      return await compute(_parseListInCompute, paramsList);
+      return await compute(parseListInCompute, paramsList);
     } catch (e, s) {
       logger.e(
         "AnalysisReportRepository: Error in getUsersForCategory '$categoryKey'",
@@ -110,7 +110,7 @@ class AnalysisReportRepository {
 
 // --- 顶层辅助类和函数 (保持不变) ---
 
-class _ParseParams {
+class ParseParams {
   final String userId;
   final String? dbScreenName;
   final String? dbName;
@@ -120,7 +120,7 @@ class _ParseParams {
   final String? dbBio;
   final String? jsonString;
 
-  _ParseParams({
+  ParseParams({
     required this.userId,
     this.dbScreenName,
     this.dbName,
@@ -132,13 +132,13 @@ class _ParseParams {
   });
 }
 
-List<TwitterUser> _parseListInCompute(List<_ParseParams> paramsList) {
+List<TwitterUser> parseListInCompute(List<ParseParams> paramsList) {
   return paramsList
-      .map((params) => _parseFollowUserToTwitterUser(params))
+      .map((params) => parseFollowUserToTwitterUser(params))
       .toList();
 }
 
-TwitterUser _parseFollowUserToTwitterUser(_ParseParams params) {
+TwitterUser parseFollowUserToTwitterUser(ParseParams params) {
   String? screenName = params.dbScreenName;
   String? name = params.dbName;
   String? avatarUrl = params.dbAvatarUrl;

@@ -176,7 +176,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get failed_to_load_user_list => 'Failed to load user list';
 
   @override
-  String get no_users_in_this_category => 'No users in this category';
+  String get no_users_in_this_category => 'Empty list';
 
   @override
   String get analysis_log => 'Analysis Log';

@@ -432,7 +432,7 @@ abstract class AppLocalizations {
   /// No description provided for @no_users_in_this_category.
   ///
   /// In en, this message translates to:
-  /// **'No users in this category'**
+  /// **'Empty list'**
   String get no_users_in_this_category;
 
   /// No description provided for @analysis_log.

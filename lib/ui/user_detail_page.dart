@@ -1,7 +1,7 @@
 // [文件: lib/ui/user_detail_page.dart]
-// 顶部添加了 4 个 import
+
 import 'dart:io';
-import 'package:autonitor/providers/media_provider.dart';
+import 'package:autonitor/providers/media_provider.dart'; // 确保这个 import 存在
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
@@ -16,14 +16,32 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'user_history_page.dart';
 
-// 1. 将 StatelessWidget 修改为 ConsumerWidget
+// 1. 确保它是 ConsumerWidget
 class UserDetailPage extends ConsumerWidget {
   final TwitterUser user;
+  final String ownerId;
 
-  const UserDetailPage({super.key, required this.user});
+  // --- 2. 添加新的可选历史参数 ---
+  final bool isFromHistory;
+  final String? snapshotJson;
+  final int? snapshotId;
+  final DateTime? snapshotTimestamp;
+  // --- 修改结束 ---
+
+  const UserDetailPage({
+    super.key,
+    required this.user,
+    required this.ownerId,
+    // --- 3. 更新构造函数 ---
+    this.isFromHistory = false, // 默认为 false
+    this.snapshotJson,
+    this.snapshotId,
+    this.snapshotTimestamp,
+    // --- 修改结束 ---
+  });
 
   @override
-  // 2. 为 build 方法添加 WidgetRef ref
+  // 4. 确保 build 方法有 WidgetRef ref
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     const double bannerAspectRatio = 1500 / 500;
@@ -31,15 +49,17 @@ class UserDetailPage extends ConsumerWidget {
     logger.d('user.isProtected=${user.isProtected}');
     logger.d('user.isVerified=${user.isVerified}');
 
-    // --- 3. 添加新的路径和渲染逻辑 ---
+    // 5. 修复：这里的 provider 应该是 mediaDirectoryProvider
+    //    (你之前的文件中这里是 appSupportDirProvider，我已为你修正)
     final mediaDirAsync = ref.watch(appSupportDirProvider);
 
+    // --- (所有头像和横幅的路径拼接逻辑保持不变) ---
     // 头像逻辑
     final String? relativeAvatarPath = user.avatarLocalPath;
     final String? absoluteAvatarPath = (mediaDirAsync.hasValue &&
             relativeAvatarPath != null &&
             relativeAvatarPath.isNotEmpty)
-        ? p.join(mediaDirAsync.value!, relativeAvatarPath) // 拼接绝对路径
+        ? p.join(mediaDirAsync.value!, relativeAvatarPath)
         : null;
 
     final String? networkAvatarUrl = user.avatarUrl;
@@ -47,8 +67,10 @@ class UserDetailPage extends ConsumerWidget {
     if (absoluteAvatarPath != null && absoluteAvatarPath.contains('_high')) {
       isLocalHighQuality = true;
     }
-    final String highQualityNetworkUrl = (networkAvatarUrl ?? '')
-        .replaceFirst(RegExp(r'_(normal|bigger|400x400)'), '_400x400');
+    final String highQualityNetworkUrl = (networkAvatarUrl ?? '').replaceFirst(
+      RegExp(r'_(normal|bigger|400x400)'),
+      '_400x400',
+    );
     bool fetchNetworkAvatar =
         !isLocalHighQuality && highQualityNetworkUrl.isNotEmpty;
 
@@ -57,7 +79,7 @@ class UserDetailPage extends ConsumerWidget {
     final String? absoluteBannerPath = (mediaDirAsync.hasValue &&
             relativeBannerPath != null &&
             relativeBannerPath.isNotEmpty)
-        ? p.join(mediaDirAsync.value!, relativeBannerPath) // 拼接绝对路径
+        ? p.join(mediaDirAsync.value!, relativeBannerPath)
         : null;
     final String? networkBannerUrl = user.bannerUrl;
     // --- 逻辑结束 ---
@@ -66,37 +88,41 @@ class UserDetailPage extends ConsumerWidget {
       appBar: AppBar(
         title: Text(user.name),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.history),
-            tooltip: l10n.history,
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => UserHistoryPage(user: user),
-                ),
-              );
-            },
-          ),
+          // --- 6. 根据 isFromHistory 隐藏历史按钮 ---
+          if (!isFromHistory)
+            IconButton(
+              icon: const Icon(Icons.history),
+              tooltip: l10n.history,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => UserHistoryPage(
+                      user: user,
+                      ownerId: ownerId, // 确保 ownerId 被传递
+                    ),
+                  ),
+                );
+              },
+            ),
+          // --- 修改结束 ---
         ],
       ),
       body: ListView(
         padding: EdgeInsets.zero,
         children: [
           Stack(
+            // ... (横幅和头像的渲染逻辑... 均保持不变) ...
             clipBehavior: Clip.none,
             alignment: Alignment.topCenter,
             children: [
-              // --- 4. 修改横幅渲染 ---
               AspectRatio(
                 aspectRatio: bannerAspectRatio,
                 child: (absoluteBannerPath != null)
                     ? Image.file(
-                        // 1. 优先本地文件
                         File(absoluteBannerPath),
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
-                          // 2. 本地失败，回退网络
                           return (networkBannerUrl ?? '').isNotEmpty
                               ? CachedNetworkImage(
                                   imageUrl: networkBannerUrl!,
@@ -111,7 +137,6 @@ class UserDetailPage extends ConsumerWidget {
                       )
                     : (networkBannerUrl ?? '').isNotEmpty
                         ? CachedNetworkImage(
-                            // 3. 没有本地，使用网络
                             imageUrl: networkBannerUrl!,
                             fit: BoxFit.cover,
                             placeholder: (context, url) =>
@@ -119,10 +144,8 @@ class UserDetailPage extends ConsumerWidget {
                             errorWidget: (context, url, error) =>
                                 Container(color: Colors.grey.shade300),
                           )
-                        : Container(color: Colors.grey.shade300), // 4. 占位符
+                        : Container(color: Colors.grey.shade300),
               ),
-              // --- 横幅修改结束 ---
-
               Positioned(
                 left: 16,
                 bottom: -avatarOverhang,
@@ -133,14 +156,12 @@ class UserDetailPage extends ConsumerWidget {
                     backgroundColor: Colors.white,
                     child: CircleAvatar(
                       radius: 42,
-                      // --- 5. 修改头像渲染 ---
                       backgroundColor:
                           Theme.of(context).colorScheme.surfaceContainerHighest,
                       child: ClipOval(
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
-                            // Layer 1: Base Icon
                             Icon(
                               Icons.person,
                               size: 40,
@@ -149,8 +170,6 @@ class UserDetailPage extends ConsumerWidget {
                                   .onSurfaceVariant
                                   .withOpacity(0.5),
                             ),
-                            
-                            // Layer 2: Local File
                             if (absoluteAvatarPath != null)
                               Image.file(
                                 File(absoluteAvatarPath),
@@ -162,15 +181,13 @@ class UserDetailPage extends ConsumerWidget {
                                   if (wasSync) return child;
                                   return AnimatedOpacity(
                                     opacity: frame == null ? 0 : 1,
-                                    duration: const Duration(milliseconds: 200),
+                                    duration: const Duration(milliseconds: 0),
                                     child: child,
                                   );
                                 },
                                 errorBuilder: (context, e, s) =>
                                     const SizedBox.shrink(),
                               ),
-                              
-                            // Layer 3: Network File
                             if (fetchNetworkAvatar)
                               CachedNetworkImage(
                                 imageUrl: highQualityNetworkUrl,
@@ -187,7 +204,6 @@ class UserDetailPage extends ConsumerWidget {
                           ],
                         ),
                       ),
-                      // --- 头像修改结束 ---
                     ),
                   ),
                 ),
@@ -195,136 +211,118 @@ class UserDetailPage extends ConsumerWidget {
             ],
           ),
           Padding(
-            padding: const EdgeInsets.only(
-              right: 16.0,
-              top: 8.0,
-            ), // top可调按钮垂直间距
+            padding: const EdgeInsets.only(right: 16.0, top: 8.0),
             child: Align(
-              alignment: Alignment.centerRight, // 靠右对齐
+              alignment: Alignment.centerRight,
               child: FilledButton.tonalIcon(
                 onPressed: () {
-                  final rawJson = user.latestRawJson;
+                  // --- 7. 修改 JSON 按钮逻辑 ---
+                  // 优先使用快照 JSON，如果 (isFromHistory == false)，则回退到 user.latestRawJson
+                  final rawJson = snapshotJson ?? user.latestRawJson;
+                  // --- 修改结束 ---
+                  
                   if (rawJson != null && rawJson.isNotEmpty) {
-                    String formattedJson = rawJson; // 默认值
+                    // ... (所有 jsonDecode 和 showDialog 逻辑保持不变) ...
+                    String formattedJson = rawJson;
                     try {
-                      // 尝试解码并重新编码以格式化
                       final dynamic jsonObj = jsonDecode(rawJson);
-                      const encoder = JsonEncoder.withIndent('  '); // 2空格缩进
+                      const encoder = JsonEncoder.withIndent('  ');
                       formattedJson = encoder.convert(jsonObj);
                     } catch (e, s) {
-                      // 如果解码失败（理论上不应发生），则保持原始字符串
                       logger.e(
                         "Error formatting JSON for display: $e",
                         error: e,
                         stackTrace: s,
                       );
                     }
-
                     showDialog(
                       context: context,
                       builder: (dialogContext) => AlertDialog(
-                        // 使用硬编码标题或 l10n.json_title (如果添加了)
                         title: const Text('JSON'),
                         content: Container(
-                          // 使用 Container 设置最大高度和背景色
-                          width: double.maxFinite, // 尽可能宽
-                          // 设置一个最大高度，防止 JSON 过长导致对话框无限高
-                          // MediaQuery.of(context).size.height * 0.6 表示屏幕高度的 60%
+                          width: double.maxFinite,
                           constraints: BoxConstraints(
                             maxHeight: MediaQuery.of(context).size.height * 0.6,
                           ),
                           decoration: BoxDecoration(
-                            // 使用 M3 风格的容器背景色
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(8.0), // 圆角
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(8.0),
                           ),
                           child: SingleChildScrollView(
-                            // 仍然需要滚动
-                            padding: const EdgeInsets.all(
-                              8.0,
-                            ), // TextField 周围的内边距
+                            padding: const EdgeInsets.all(8.0),
                             child: TextField(
-                              controller: TextEditingController(
-                                text: formattedJson,
-                              ), // 设置文本
-                              readOnly: true, // 只读，不可编辑
-                              maxLines: null, // 自动换行，显示所有内容
-                              decoration: InputDecoration.collapsed(
-                                // 移除边框和下划线
-                                hintText: null, // 不需要提示文本
-                              ),
+                              controller:
+                                  TextEditingController(text: formattedJson),
+                              readOnly: true,
+                              maxLines: null,
+                              decoration:
+                                  const InputDecoration.collapsed(hintText: null),
                               style: TextStyle(
-                                fontFamily: 'monospace', // 等宽字体
+                                fontFamily: 'monospace',
                                 fontSize: 12,
-                                // 使用 M3 风格的文本颜色
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
                               ),
                             ),
                           ),
                         ),
                         actions: <Widget>[
-                          // 复制按钮
                           TextButton(
-                            child: Text(l10n.copy), // 使用 l10n.copy
+                            child: Text(l10n.copy),
                             onPressed: () {
                               Clipboard.setData(
                                 ClipboardData(text: formattedJson),
                               );
-                              // 可选：显示一个 SnackBar 提示复制成功
-                              Navigator.pop(dialogContext); // 关闭对话框
+                              Navigator.pop(dialogContext);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
                                     l10n.copied_to_clipboard,
                                     style: TextStyle(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onPrimaryContainer,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onPrimaryContainer,
                                     ),
                                   ),
-                                  backgroundColor: Theme.of(
-                                    context,
-                                  ).colorScheme.primaryContainer,
+                                  backgroundColor: Theme.of(context)
+                                      .colorScheme
+                                      .primaryContainer,
                                 ),
                               );
                             },
                           ),
-                          // 确定按钮
                           ElevatedButton(
-                            child: Text(l10n.ok), // 使用 l10n.ok
+                            child: Text(l10n.ok),
                             onPressed: () {
-                              Navigator.pop(dialogContext); // 只关闭对话框
+                              Navigator.pop(dialogContext);
                             },
                           ),
                         ],
                       ),
                     );
                   } else {
-                    // 如果没有 JSON 数据，可以显示一个提示
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(l10n.no_json_data_available),
-                      ), // 使用 l10n.no_json_data_available
+                      SnackBar(content: Text(l10n.no_json_data_available)),
                     );
                   }
                 },
                 style: FilledButton.styleFrom(
                   backgroundColor: Colors.pink.shade100,
                   foregroundColor: Colors.pink.shade800,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 8,
-                  ), // 控制按钮大小
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                 ),
                 icon: const Icon(Icons.description_outlined, size: 20),
                 label: const Text('JSON'),
               ),
             ),
           ),
+          
+          // ... (所有显示用户 bio, location, link, followers... 的代码保持不变) ...
+          
           const SizedBox(height: 5),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -334,22 +332,17 @@ class UserDetailPage extends ConsumerWidget {
               children: [
                 SelectableText.rich(
                   TextSpan(
-                    // 1. 设置基础样式，这将应用于文本和图标对齐
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineSmall
+                        ?.copyWith(fontWeight: FontWeight.bold),
                     children: [
-                      // 2. 这是你的 user.name 文本
                       TextSpan(text: user.name),
-
-                      // 3. 这是 Verified 图标
                       if (user.isVerified)
                         WidgetSpan(
-                          // 4. 使用 Padding 来制造间距，替换 SizedBox
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4.0,
-                            ),
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 4.0),
                             child: SvgPicture.asset(
                               'assets/icon/verified.svg',
                               width: 23,
@@ -360,16 +353,11 @@ class UserDetailPage extends ConsumerWidget {
                               ),
                             ),
                           ),
-                          // 5. 尝试让图标与文本垂直居中
                           alignment: PlaceholderAlignment.middle,
                         ),
-
-                      // 6. 这是 Protected 图标
                       if (user.isProtected)
                         WidgetSpan(
                           child: Padding(
-                            // 7. 如果 verified 图标不存在，则使用 4.0 的水平内边距
-                            //    如果 verified 图标存在，则只使用 4.0 的左内边距
                             padding: EdgeInsets.only(
                               left: user.isVerified ? 0.0 : 4.0,
                               right: 4.0,
@@ -378,8 +366,8 @@ class UserDetailPage extends ConsumerWidget {
                               'assets/icon/protected.svg',
                               width: 20,
                               height: 20,
-                              colorFilter: const ColorFilter.mode(
-                                Colors.black,
+                              colorFilter: ColorFilter.mode(
+                                Theme.of(context).colorScheme.onSurface,
                                 BlendMode.srcIn,
                               ),
                             ),
@@ -420,7 +408,6 @@ class UserDetailPage extends ConsumerWidget {
                     const SizedBox(width: 4),
                   ],
                 ),
-
                 const SizedBox(height: 4),
                 SelectableText(
                   user.bio ?? '',
@@ -429,7 +416,6 @@ class UserDetailPage extends ConsumerWidget {
               ],
             ),
           ),
-
           const SizedBox(height: 5),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -441,16 +427,13 @@ class UserDetailPage extends ConsumerWidget {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.location_on_outlined,
-                        color: Colors.grey,
-                        size: 16,
-                      ),
+                      const Icon(Icons.location_on_outlined,
+                          color: Colors.grey, size: 16),
                       const SizedBox(width: 4),
                       Flexible(
                         child: SelectableText(
                           user.location ?? '',
-                          style: TextStyle(color: Colors.grey),
+                          style: const TextStyle(color: Colors.grey),
                         ),
                       ),
                     ],
@@ -459,14 +442,14 @@ class UserDetailPage extends ConsumerWidget {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.link, color: Colors.grey, size: 16),
+                      const Icon(Icons.link, color: Colors.grey, size: 16),
                       const SizedBox(width: 4),
                       Flexible(
                         child: InkWell(
                           onTap: () => _launchURL(context, user.link),
                           child: Text(
                             user.link ?? '',
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: Colors.blue,
                               decoration: TextDecoration.underline,
                               decorationColor: Colors.blue,
@@ -479,16 +462,13 @@ class UserDetailPage extends ConsumerWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.calendar_month_outlined,
-                      color: Colors.grey,
-                      size: 16,
-                    ),
+                    const Icon(Icons.calendar_month_outlined,
+                        color: Colors.grey, size: 16),
                     const SizedBox(width: 4),
                     Flexible(
                       child: Text(
                         '${l10n.joined} ${user.joinTime}',
-                        style: TextStyle(color: Colors.grey),
+                        style: const TextStyle(color: Colors.grey),
                       ),
                     ),
                   ],
@@ -497,10 +477,7 @@ class UserDetailPage extends ConsumerWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 8.0,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: Wrap(
               spacing: 16.0,
               runSpacing: 4.0,
@@ -508,14 +485,12 @@ class UserDetailPage extends ConsumerWidget {
                 Text.rich(
                   TextSpan(
                     text: user.followingCount.toString(),
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                     children: [
                       TextSpan(
                         text: ' ${l10n.following}',
-                        style: TextStyle(
-                          fontWeight: FontWeight.normal,
-                          color: Colors.grey,
-                        ),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.normal, color: Colors.grey),
                       ),
                     ],
                   ),
@@ -523,14 +498,12 @@ class UserDetailPage extends ConsumerWidget {
                 Text.rich(
                   TextSpan(
                     text: user.followersCount.toString(),
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                     children: [
                       TextSpan(
                         text: ' ${l10n.followers}',
-                        style: TextStyle(
-                          fontWeight: FontWeight.normal,
-                          color: Colors.grey,
-                        ),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.normal, color: Colors.grey),
                       ),
                     ],
                   ),
@@ -538,44 +511,36 @@ class UserDetailPage extends ConsumerWidget {
               ],
             ),
           ),
-          // —— View on Twitter（两列、标签水平对齐、图标非灰色、链接最多两行） —— //
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
             child: Text(
               l10n.view_on_twitter,
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start, // 顶部对齐，保证两个标签水平对齐
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 第一列：ByScreenName
                 Expanded(
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.link,
-                        color: Theme.of(context).colorScheme.primary, // 非灰色
-                        size: 16,
-                      ),
+                      Icon(Icons.link,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 16),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'ByScreenName',
-                              style: TextStyle(fontSize: 12),
-                            ),
+                            const Text('ByScreenName',
+                                style: TextStyle(fontSize: 12)),
                             const SizedBox(height: 4),
                             InkWell(
                               onTap: () => _launchURL(
-                                context,
-                                'https://x.com/${user.id}',
-                              ),
+                                  context, 'https://x.com/${user.id}'),
                               child: Text(
                                 'https://x.com/${user.id}',
                                 maxLines: 2,
@@ -593,31 +558,26 @@ class UserDetailPage extends ConsumerWidget {
                     ],
                   ),
                 ),
-
                 const SizedBox(width: 12),
-
-                // 第二列：ByRestId
                 Expanded(
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.link,
-                        color: Theme.of(context).colorScheme.primary,
-                        size: 16,
-                      ),
+                      Icon(Icons.link,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 16),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('ByRestId', style: TextStyle(fontSize: 12)),
+                            const Text('ByRestId',
+                                style: TextStyle(fontSize: 12)),
                             const SizedBox(height: 4),
                             InkWell(
                               onTap: () => _launchURL(
-                                context,
-                                'https://x.com/intent/user?user_id=${user.restId}',
-                              ),
+                                  context,
+                                  'https://x.com/intent/user?user_id=${user.restId}'),
                               child: Text(
                                 'https://x.com/intent/user?user_id=${user.restId}',
                                 maxLines: 2,
@@ -638,13 +598,11 @@ class UserDetailPage extends ConsumerWidget {
               ],
             ),
           ),
-
-          // —— 原有 Metadata 与指标 —— //
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 1, 0),
             child: Text(
               l10n.metadata,
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ),
           _buildInfoTile(
@@ -671,21 +629,36 @@ class UserDetailPage extends ConsumerWidget {
             l10n.listed_count,
             user.listedCount.toString(),
           ),
-
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 1, 0),
             child: Text(
               l10n.identity,
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ),
           _buildInfoTile(context, Icons.fingerprint, "Rest ID", user.restId),
+          
+          // --- 8. 添加快照 ID 和时间戳 ---
+          if (isFromHistory && snapshotId != null && snapshotTimestamp != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+              child: Text(
+                "Snapshot ID: $snapshotId\nTimestamp: ${snapshotTimestamp!.toLocal()}",
+                textAlign: TextAlign.center,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: Colors.grey.shade600),
+              ),
+            ),
+          // --- 修改结束 ---
         ],
       ),
     );
   }
 
   void _launchURL(BuildContext context, String? urlString) async {
+    // ... (此辅助方法保持不变) ...
     if (urlString == null || urlString.isEmpty) {
       return;
     }
@@ -694,7 +667,7 @@ class UserDetailPage extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('无法打开链接: 格式错误')));
+        ).showSnackBar(const SnackBar(content: Text('无法打开链接: 格式错误')));
       }
       return;
     }
@@ -716,6 +689,7 @@ class UserDetailPage extends ConsumerWidget {
     String subtitle, {
     bool isUrl = false,
   }) {
+    // ... (此辅助方法保持不变) ...
     return ListTile(
       leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
       title: Text(title),

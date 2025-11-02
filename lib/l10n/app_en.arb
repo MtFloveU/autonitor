@@ -118,7 +118,7 @@
 "@temporarily_restricted": {},
 "failed_to_load_user_list": "Failed to load user list",
 "@failed_to_load_user_list": {},
-"no_users_in_this_category": "No users in this category",
+"no_users_in_this_category": "Empty list",
 "@no_users_in_this_category": {},
 "analysis_log": "Analysis Log",
 "@analysis_log": {},
