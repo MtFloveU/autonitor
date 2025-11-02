@@ -1,3 +1,10 @@
+// [文件: lib/ui/user_detail_page.dart]
+// 顶部添加了 4 个 import
+import 'dart:io';
+import 'package:autonitor/providers/media_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
+
 import 'package:autonitor/services/log_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../l10n/app_localizations.dart';
@@ -9,18 +16,51 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'user_history_page.dart';
 
-class UserDetailPage extends StatelessWidget {
+// 1. 将 StatelessWidget 修改为 ConsumerWidget
+class UserDetailPage extends ConsumerWidget {
   final TwitterUser user;
 
   const UserDetailPage({super.key, required this.user});
 
   @override
-  Widget build(BuildContext context) {
+  // 2. 为 build 方法添加 WidgetRef ref
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     const double bannerAspectRatio = 1500 / 500;
     const double avatarOverhang = 40.0;
     logger.d('user.isProtected=${user.isProtected}');
     logger.d('user.isVerified=${user.isVerified}');
+
+    // --- 3. 添加新的路径和渲染逻辑 ---
+    final mediaDirAsync = ref.watch(appSupportDirProvider);
+
+    // 头像逻辑
+    final String? relativeAvatarPath = user.avatarLocalPath;
+    final String? absoluteAvatarPath = (mediaDirAsync.hasValue &&
+            relativeAvatarPath != null &&
+            relativeAvatarPath.isNotEmpty)
+        ? p.join(mediaDirAsync.value!, relativeAvatarPath) // 拼接绝对路径
+        : null;
+
+    final String? networkAvatarUrl = user.avatarUrl;
+    bool isLocalHighQuality = false;
+    if (absoluteAvatarPath != null && absoluteAvatarPath.contains('_high')) {
+      isLocalHighQuality = true;
+    }
+    final String highQualityNetworkUrl = (networkAvatarUrl ?? '')
+        .replaceFirst(RegExp(r'_(normal|bigger|400x400)'), '_400x400');
+    bool fetchNetworkAvatar =
+        !isLocalHighQuality && highQualityNetworkUrl.isNotEmpty;
+
+    // 横幅逻辑
+    final String? relativeBannerPath = user.bannerLocalPath;
+    final String? absoluteBannerPath = (mediaDirAsync.hasValue &&
+            relativeBannerPath != null &&
+            relativeBannerPath.isNotEmpty)
+        ? p.join(mediaDirAsync.value!, relativeBannerPath) // 拼接绝对路径
+        : null;
+    final String? networkBannerUrl = user.bannerUrl;
+    // --- 逻辑结束 ---
 
     return Scaffold(
       appBar: AppBar(
@@ -45,46 +85,113 @@ class UserDetailPage extends StatelessWidget {
         children: [
           Stack(
             clipBehavior: Clip.none,
-            // --- 修改 1: 设置对齐方式 ---
             alignment: Alignment.topCenter,
             children: [
+              // --- 4. 修改横幅渲染 ---
               AspectRatio(
                 aspectRatio: bannerAspectRatio,
-                child: (user.bannerUrl ?? '').isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: user.bannerUrl!,
+                child: (absoluteBannerPath != null)
+                    ? Image.file(
+                        // 1. 优先本地文件
+                        File(absoluteBannerPath),
                         fit: BoxFit.cover,
-                        // 添加一个占位符，保持灰色背景
-                        placeholder: (context, url) =>
-                            Container(color: Colors.grey.shade300),
-                        // 加载失败时也显示灰色背景
-                        errorWidget: (context, url, error) =>
-                            Container(color: Colors.grey.shade300),
+                        errorBuilder: (context, error, stackTrace) {
+                          // 2. 本地失败，回退网络
+                          return (networkBannerUrl ?? '').isNotEmpty
+                              ? CachedNetworkImage(
+                                  imageUrl: networkBannerUrl!,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) =>
+                                      Container(color: Colors.grey.shade300),
+                                  errorWidget: (context, url, error) =>
+                                      Container(color: Colors.grey.shade300),
+                                )
+                              : Container(color: Colors.grey.shade300);
+                        },
                       )
-                    : Container(color: Colors.grey.shade300),
+                    : (networkBannerUrl ?? '').isNotEmpty
+                        ? CachedNetworkImage(
+                            // 3. 没有本地，使用网络
+                            imageUrl: networkBannerUrl!,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) =>
+                                Container(color: Colors.grey.shade300),
+                            errorWidget: (context, url, error) =>
+                                Container(color: Colors.grey.shade300),
+                          )
+                        : Container(color: Colors.grey.shade300), // 4. 占位符
               ),
+              // --- 横幅修改结束 ---
+
               Positioned(
                 left: 16,
                 bottom: -avatarOverhang,
                 child: Hero(
-                  tag: 'avatar_${user.restId}', // 使用与列表页相同的 tag
+                  tag: 'avatar_${user.restId}',
                   child: CircleAvatar(
                     radius: 45,
                     backgroundColor: Colors.white,
                     child: CircleAvatar(
                       radius: 42,
-                      backgroundImage: user.avatarUrl.isNotEmpty
-                          ? CachedNetworkImageProvider(user.avatarUrl)
-                          : null,
-                      child: user.avatarUrl.isEmpty
-                          ? const Icon(Icons.person, size: 40)
-                          : null,
+                      // --- 5. 修改头像渲染 ---
+                      backgroundColor:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
+                      child: ClipOval(
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            // Layer 1: Base Icon
+                            Icon(
+                              Icons.person,
+                              size: 40,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant
+                                  .withOpacity(0.5),
+                            ),
+                            
+                            // Layer 2: Local File
+                            if (absoluteAvatarPath != null)
+                              Image.file(
+                                File(absoluteAvatarPath),
+                                fit: BoxFit.cover,
+                                width: 84,
+                                height: 84,
+                                frameBuilder:
+                                    (context, child, frame, wasSync) {
+                                  if (wasSync) return child;
+                                  return AnimatedOpacity(
+                                    opacity: frame == null ? 0 : 1,
+                                    duration: const Duration(milliseconds: 200),
+                                    child: child,
+                                  );
+                                },
+                                errorBuilder: (context, e, s) =>
+                                    const SizedBox.shrink(),
+                              ),
+                              
+                            // Layer 3: Network File
+                            if (fetchNetworkAvatar)
+                              CachedNetworkImage(
+                                imageUrl: highQualityNetworkUrl,
+                                fit: BoxFit.cover,
+                                width: 84,
+                                height: 84,
+                                fadeInDuration:
+                                    const Duration(milliseconds: 300),
+                                placeholder: (context, url) =>
+                                    const SizedBox.shrink(),
+                                errorWidget: (context, url, error) =>
+                                    const SizedBox.shrink(),
+                              ),
+                          ],
+                        ),
+                      ),
+                      // --- 头像修改结束 ---
                     ),
                   ),
                 ),
               ),
-
-              // --- 修改 2: 添加透明 SizedBox 撑开 Stack 点击区域 ---
             ],
           ),
           Padding(
@@ -218,28 +325,19 @@ class UserDetailPage extends StatelessWidget {
               ),
             ),
           ),
-
-          // --- 修改 3: 移除之前多余的 SizedBox ---
           const SizedBox(height: 5),
-
-          // --- 新增: 根据最大悬垂物添加必要的间距 ---
-          // SizedBox(height: max(avatarOverhang, buttonOverhang) + 8), // 确保内容总是在头像/按钮下方（已减半间距）
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.baseline,
               textBaseline: TextBaseline.alphabetic,
               children: [
-                // lib/ui/user_detail_page.dart
-                // ...
-                // lib/ui/user_detail_page.dart
-                // ...
                 SelectableText.rich(
                   TextSpan(
                     // 1. 设置基础样式，这将应用于文本和图标对齐
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                     children: [
                       // 2. 这是你的 user.name 文本
                       TextSpan(text: user.name),
@@ -291,8 +389,6 @@ class UserDetailPage extends StatelessWidget {
                     ],
                   ),
                 ),
-                // ...
-                // ...
                 Row(
                   children: [
                     Flexible(
@@ -301,7 +397,9 @@ class UserDetailPage extends StatelessWidget {
                           children: [
                             TextSpan(
                               text: '@',
-                              style: Theme.of(context).textTheme.bodyLarge
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyLarge
                                   ?.copyWith(color: Colors.grey.shade600),
                             ),
                             WidgetSpan(
@@ -309,7 +407,9 @@ class UserDetailPage extends StatelessWidget {
                               baseline: TextBaseline.alphabetic,
                               child: SelectableText(
                                 user.id,
-                                style: Theme.of(context).textTheme.bodyLarge
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyLarge
                                     ?.copyWith(color: Colors.grey.shade600),
                               ),
                             ),

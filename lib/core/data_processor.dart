@@ -6,7 +6,10 @@ import '../services/database.dart';
 import '../services/twitter_api_service.dart';
 import '../services/twitter_api_v1_service.dart';
 import '../utils/diff_utils.dart';
-import 'package:async_locks/async_locks.dart'; // Or use package:async
+import 'package:async_locks/async_locks.dart';
+import '../models/app_settings.dart';
+import '../services/image_history_service.dart';
+import '../repositories/account_repository.dart';
 
 typedef LogCallback = void Function(String message);
 
@@ -16,23 +19,50 @@ class DataProcessor {
   final TwitterApiV1Service _apiServiceV1;
   final String _ownerId;
   final String _ownerCookie;
+  final AccountRepository _accountRepository;
   final LogCallback _log;
+  final AppSettings _settings;
+  final ImageHistoryService _imageService;
 
   DataProcessor({
     required AppDatabase database,
     required TwitterApiService apiServiceGql,
     required TwitterApiV1Service apiServiceV1,
+    required AccountRepository accountRepository,
     required Account ownerAccount,
+    required AppSettings settings,
+    required ImageHistoryService imageService,
     required LogCallback logCallback,
   }) : _database = database,
        _apiServiceGql = apiServiceGql,
        _apiServiceV1 = apiServiceV1,
+       _accountRepository = accountRepository,
        _ownerId = ownerAccount.id,
        _ownerCookie = ownerAccount.cookie,
-       _log = logCallback;
+       _log = logCallback,
+       _settings = settings,
+       _imageService = imageService;
 
   Future<void> runFullProcess() async {
     _log("Starting analysis process for account ID: $_ownerId...");
+    try {
+      _log("Refreshing owner account profile ($_ownerId)...");
+      // 我们需要一个 Account 对象，构造函数里已经有了
+      final ownerAccount = Account(id: _ownerId, cookie: _ownerCookie);
+      // _fetchAndSaveAccountProfile 会处理所有逻辑：
+      // 1. GQL API 调用
+      // 2. JSON Diff 计算
+      // 3. 图像下载 (使用正确的 ownerId: _ownerId, userId: _ownerId)
+      // 4. 数据库保存 (LoggedAccounts 和 AccountProfileHistory)
+      await _accountRepository.refreshAccountProfile(ownerAccount);
+      _log("Owner account profile refresh successful.");
+    } catch (e) {
+      // 如果只是 owner 刷新失败，我们记录错误但继续执行
+      _log(
+        "!!! WARNING: Failed to refresh owner account profile: $e. "
+        "Continuing with follower/following analysis...",
+      );
+    }
 
     try {
       _log("Fetching old relationships from database...");
@@ -43,7 +73,7 @@ class DataProcessor {
       };
       _log("Found ${oldRelationsMap.length} existing relationships.");
 
-      _log("Fetching new followers list from API...");
+      _log("Fetching new followers from API...");
       final Map<String, Map<String, dynamic>> newUserJsons = {};
       final Set<String> newFollowerIds = {};
       final Set<String> newFollowingIds = {};
@@ -74,8 +104,8 @@ class DataProcessor {
       _log(
         "Finished fetching followers. Total unique users so far: ${newUserJsons.length}",
       );
-      _log("Fetching new following list from API...");
 
+      _log("Fetching new following from API...");
       String? nextFollowingCursor;
       do {
         final followingResult = await _apiServiceV1.getFollowing(
@@ -142,20 +172,21 @@ class DataProcessor {
                     final oldRel = oldRelationsMap[removedId];
                     final wasFollower = oldRel?.isFollower ?? false;
                     final wasFollowing = oldRel?.isFollowing ?? false;
-                    if (wasFollower && wasFollowing)
+                    if (wasFollower && wasFollowing) {
                       category = 'mutual_unfollowed';
-                    else if (wasFollower)
+                    } else if (wasFollower) {
                       category = 'normal_unfollowed';
-                    else if (wasFollowing)
-                      category = 'normal_unfollowed'; // <-- Per your request
-                    else
+                    } else if (wasFollowing) {
+                      category = 'normal_unfollowed';
+                    } else {
                       category = 'unknown_removed_state';
+                    }
                   }
                 } else if (typename == 'UserUnavailable') {
                   category = 'suspended';
                 } else if (gqlJson['data']?['user'] == null ||
                     (gqlJson['data']?['user'] is Map &&
-                        gqlJson['data']['user'].isEmpty)) {
+                        (gqlJson['data']['user'] as Map).isEmpty)) {
                   category = 'deactivated';
                 } else {
                   _log(
@@ -178,50 +209,229 @@ class DataProcessor {
         _log("Finished processing removed users.");
       }
 
-      _log("Calculating profile diffs for ${keptIds.length} kept users...");
-      final List<FollowUsersHistoryCompanion> historyToInsert = [];
-      for (final keptId in keptIds) {
-        final newJsonMap = newUserJsons[keptId];
-        final oldJsonString = oldRelationsMap[keptId]?.latestRawJson;
-        final newJsonString = newJsonMap != null
-            ? jsonEncode(newJsonMap)
-            : null;
-        final diffString = calculateReverseDiff(newJsonString, oldJsonString);
-        if (diffString != null && diffString.isNotEmpty) {
-          historyToInsert.add(
-            FollowUsersHistoryCompanion(
-              ownerId: Value(_ownerId),
-              userId: Value(keptId),
-              reverseDiffJson: Value(diffString),
-              timestamp: Value(DateTime.now()),
-            ),
-          );
-        }
-      }
-      _log("Found ${historyToInsert.length} profile changes among kept users.");
-
       _log("Preparing data for database update...");
+
       final List<FollowUsersCompanion> companionsToUpsert = [];
+      final List<FollowUsersHistoryCompanion> historyToInsert = [];
+
+      final List<Map<String, dynamic>> downloadTasks = [];
+      const String suffixRegex = r'_(normal|bigger|400x400)';
+
       for (final userId in newIds) {
         final userJson = newUserJsons[userId]!;
-        // --- MODIFIED: Avatar URL replacement logic ---
-        String? avatarUrl = userJson['profile_image_url_https'] as String?;
-        if (avatarUrl != null) {
-          avatarUrl = avatarUrl.replaceFirst('_normal', '_400x400');
+        final oldRelation = oldRelationsMap[userId];
+
+        if (oldRelation != null) {
+          final oldJsonString = oldRelation.latestRawJson;
+          final newJsonString = jsonEncode(userJson);
+          final diffString = calculateReverseDiff(newJsonString, oldJsonString);
+          if (diffString != null && diffString.isNotEmpty) {
+            historyToInsert.add(
+              FollowUsersHistoryCompanion(
+                ownerId: Value(_ownerId),
+                userId: Value(userId),
+                reverseDiffJson: Value(diffString),
+                timestamp: Value(DateTime.now()),
+              ),
+            );
+          }
         }
-        // --- MODIFICATION END ---
+
+        final String? newAvatarUrl =
+            (userJson['profile_image_url_https'] as String?);
+        final String? oldAvatarUrl = oldRelation?.avatarUrl;
+
+        String? effectiveNewUrl = newAvatarUrl;
+        String? effectiveOldUrl = oldAvatarUrl;
+
+        if (_settings.avatarQuality == AvatarQuality.low) {
+          if (effectiveNewUrl != null) {
+            effectiveNewUrl = effectiveNewUrl.replaceFirst(
+              RegExp(suffixRegex),
+              '_bigger',
+            );
+          }
+          if (effectiveOldUrl != null) {
+            effectiveOldUrl = effectiveOldUrl.replaceFirst(
+              RegExp(suffixRegex),
+              '_bigger',
+            );
+          }
+        } else {
+          if (effectiveNewUrl != null) {
+            effectiveNewUrl = effectiveNewUrl.replaceFirst(
+              RegExp(suffixRegex),
+              '_400x400',
+            );
+          }
+          if (effectiveOldUrl != null) {
+            effectiveOldUrl = effectiveOldUrl.replaceFirst(
+              RegExp(suffixRegex),
+              '_400x400',
+            );
+          }
+        }
+
+        final bool shouldSave = _settings.saveAvatarHistory;
+        final bool avatarUrlChanged = effectiveNewUrl != effectiveOldUrl;
+        final bool localAvatarPathMissing =
+            oldRelation == null ||
+            oldRelation.avatarLocalPath == null ||
+            oldRelation.avatarLocalPath!.isEmpty;
+
+        if (shouldSave &&
+            effectiveNewUrl != null &&
+            effectiveNewUrl.isNotEmpty &&
+            (avatarUrlChanged || localAvatarPathMissing)) {
+          downloadTasks.add({
+            'userId': userId,
+            'newUrl': effectiveNewUrl,
+            'oldUrl': oldAvatarUrl,
+            'mediaType': MediaType.avatar,
+          });
+        }
+
+        final String? newBannerUrl =
+            (userJson['profile_banner_url'] as String?);
+        final String? oldBannerUrl = oldRelation?.bannerUrl;
+
+        final bool shouldSaveBanner = _settings.saveBannerHistory;
+        final bool bannerUrlChanged = newBannerUrl != oldBannerUrl;
+        final bool localBannerPathMissing =
+            oldRelation == null ||
+            oldRelation.bannerLocalPath == null ||
+            oldRelation.bannerLocalPath == '' ||
+            oldRelation.bannerLocalPath!.isEmpty;
+
+        if (shouldSaveBanner &&
+            newBannerUrl?.isNotEmpty == true &&
+            (bannerUrlChanged || localBannerPathMissing)) {
+          downloadTasks.add({
+            'userId': userId,
+            'newUrl': newBannerUrl,
+            'oldUrl': oldBannerUrl,
+            'mediaType': MediaType.banner,
+          });
+        }
+
         companionsToUpsert.add(
           FollowUsersCompanion(
             ownerId: Value(_ownerId),
             userId: Value(userId),
             name: Value(userJson['name'] as String?),
             screenName: Value(userJson['screen_name'] as String?),
-            avatarUrl: Value(avatarUrl), // <-- Use modified URL
+            avatarUrl: Value(newAvatarUrl),
+            bannerUrl: Value(newBannerUrl),
             bio: Value(userJson['description'] as String?),
             latestRawJson: Value(jsonEncode(userJson)),
             isFollower: Value(newFollowerIds.contains(userId)),
             isFollowing: Value(newFollowingIds.contains(userId)),
-            avatarLocalPath: const Value.absent(),
+          ),
+        );
+      }
+
+      final int totalToDownload = downloadTasks.length;
+      _log(
+        "Found $totalToDownload images to download (out of ${newIds.length} users checked).",
+      );
+
+      final group = FutureGroup<Map<String, dynamic>?>();
+      final imageSemaphore = Semaphore(50);
+      int completedDownloads = 0;
+      final counterLock = Semaphore(1);
+
+      for (final task in downloadTasks) {
+        final userId = task['userId']! as String;
+        final newUrl = task['newUrl']! as String;
+        final oldUrl = task['oldUrl'] as String?;
+        final mediaType = task['mediaType']! as MediaType;
+
+        group.add(
+          Future(() async {
+            try {
+              await imageSemaphore.acquire();
+              final String? newLocalPath = await _imageService
+                  .processMediaUpdate(
+                    userId: userId,
+                    ownerId: _ownerId,
+                    mediaType: mediaType,
+                    oldUrl: oldUrl,
+                    newUrl: newUrl,
+                    settings: _settings,
+                  );
+
+              if (newLocalPath != null) {
+                await counterLock.acquire();
+                completedDownloads++;
+                _log(
+                  "Image download progress: $completedDownloads / $totalToDownload",
+                );
+                counterLock.release();
+                return {
+                  'userId': userId,
+                  'path': newLocalPath,
+                  'type': mediaType,
+                };
+              }
+            } catch (e) {
+              _log("Warning: failed to process image for $userId: $e");
+            } finally {
+              imageSemaphore.release();
+            }
+            return null;
+          }),
+        );
+      }
+
+      _log("Starting concurrent download of $totalToDownload images");
+      group.close();
+      final downloadResults = await group.future;
+
+      final Map<String, Map<MediaType, String>> downloadedPaths = {};
+      for (final result in downloadResults) {
+        if (result != null) {
+          final String userId = result['userId'];
+          final MediaType type = result['type'];
+          final String path = result['path'];
+
+          downloadedPaths.putIfAbsent(userId, () => {});
+          downloadedPaths[userId]![type] = path;
+        }
+      }
+      _log(
+        "Finished downloading ${downloadResults.where((r) => r != null).length} images.",
+      );
+
+      final List<FollowUsersCompanion> finalCompanionsToUpsert = [];
+      for (final companion in companionsToUpsert) {
+        final userId = companion.userId.value;
+
+        String? finalAvatarPath;
+        final downloadedAvatar = downloadedPaths[userId]?[MediaType.avatar];
+        if (downloadedAvatar != null) {
+          finalAvatarPath = downloadedAvatar;
+        } else if (oldRelationsMap.containsKey(userId) &&
+            oldRelationsMap[userId]?.avatarUrl == companion.avatarUrl.value) {
+          finalAvatarPath = oldRelationsMap[userId]?.avatarLocalPath;
+        }
+
+        String? finalBannerPath;
+        final downloadedBanner = downloadedPaths[userId]?[MediaType.banner];
+        if (downloadedBanner != null) {
+          finalBannerPath = downloadedBanner;
+        } else if (oldRelationsMap.containsKey(userId) &&
+            oldRelationsMap[userId]?.bannerUrl == companion.bannerUrl.value) {
+          finalBannerPath = oldRelationsMap[userId]?.bannerLocalPath;
+        }
+
+        finalCompanionsToUpsert.add(
+          companion.copyWith(
+            avatarLocalPath: finalAvatarPath == null
+                ? const Value.absent()
+                : Value(finalAvatarPath),
+            bannerLocalPath: finalBannerPath == null
+                ? const Value.absent()
+                : Value(finalBannerPath),
           ),
         );
       }
@@ -240,6 +450,7 @@ class DataProcessor {
           ),
         );
       }
+
       categorizedRemovals.forEach((userId, categoryKey) {
         reportCompanions.add(
           ChangeReportsCompanion(
@@ -251,6 +462,7 @@ class DataProcessor {
           ),
         );
       });
+
       for (final keptId in keptIds) {
         final oldRel = oldRelationsMap[keptId];
         final wasFollower = oldRel?.isFollower ?? false;
@@ -308,10 +520,12 @@ class DataProcessor {
             "Deleted ${removedIds.length} relationships from NetworkRelationships.",
           );
         }
-        if (companionsToUpsert.isNotEmpty) {
-          await _database.batchUpsertNetworkRelationships(companionsToUpsert);
+        if (finalCompanionsToUpsert.isNotEmpty) {
+          await _database.batchUpsertNetworkRelationships(
+            finalCompanionsToUpsert,
+          );
           _log(
-            "Upserted ${companionsToUpsert.length} relationships into NetworkRelationships.",
+            "Upserted ${finalCompanionsToUpsert.length} relationships into NetworkRelationships.",
           );
         }
         if (historyToInsert.isNotEmpty) {
@@ -323,6 +537,7 @@ class DataProcessor {
           "Replaced ChangeReport with ${reportCompanions.length} new entries.",
         );
       });
+
       _log(
         "Analysis process completed successfully for account ID: $_ownerId.",
       );

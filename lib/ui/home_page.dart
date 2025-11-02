@@ -256,6 +256,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                 if (activeAccount == null) return;
                 final user = TwitterUser(
                   avatarUrl: activeAccount.avatarUrl ?? '',
+                  avatarLocalPath: activeAccount.avatarLocalPath ?? '',
+                  bannerLocalPath: activeAccount.bannerLocalPath ?? '',
                   name: activeAccount.name ?? 'Unknown',
                   id: activeAccount.screenName ?? activeAccount.id,
                   restId: activeAccount.id,

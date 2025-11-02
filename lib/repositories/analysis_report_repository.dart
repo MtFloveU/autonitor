@@ -57,6 +57,8 @@ class AnalysisReportRepository {
                 dbScreenName: user.screenName,
                 dbName: user.name,
                 dbAvatarUrl: user.avatarUrl,
+                dbAvatarLocalPath: user.avatarLocalPath,
+                dbBannerLocalPath: user.bannerLocalPath,
                 dbBio: user.bio,
                 jsonString: user.latestRawJson,
               ),
@@ -113,6 +115,8 @@ class _ParseParams {
   final String? dbScreenName;
   final String? dbName;
   final String? dbAvatarUrl;
+  final String? dbAvatarLocalPath;
+  final String? dbBannerLocalPath;
   final String? dbBio;
   final String? jsonString;
 
@@ -121,6 +125,8 @@ class _ParseParams {
     this.dbScreenName,
     this.dbName,
     this.dbAvatarUrl,
+    this.dbAvatarLocalPath,
+    this.dbBannerLocalPath,
     this.dbBio,
     this.jsonString,
   });
@@ -136,6 +142,7 @@ TwitterUser _parseFollowUserToTwitterUser(_ParseParams params) {
   String? screenName = params.dbScreenName;
   String? name = params.dbName;
   String? avatarUrl = params.dbAvatarUrl;
+  String? avatarLocalPath = params.dbAvatarLocalPath;
   String? bio = params.dbBio;
   String? location, link, joinTime, bannerUrl;
   int followersCount = 0,
@@ -154,6 +161,8 @@ TwitterUser _parseFollowUserToTwitterUser(_ParseParams params) {
       name = parsedJson['name'] as String? ?? name;
       screenName = parsedJson['screen_name'] as String? ?? screenName;
       avatarUrl = parsedJson['profile_image_url_https'] as String? ?? avatarUrl;
+      avatarLocalPath = parsedJson['avatar_local_path'] as String? ??
+          avatarLocalPath;
       bio = parsedJson['description'] as String? ?? bio;
       location = parsedJson['location'] as String?;
       joinTime = parsedJson['created_at'] as String?;
@@ -181,10 +190,6 @@ TwitterUser _parseFollowUserToTwitterUser(_ParseParams params) {
           }
         }
       }
-
-      if (avatarUrl != null) {
-        avatarUrl = avatarUrl.replaceFirst('_normal', '_400x400');
-      }
     } catch (e, s) {
       logger.e(
         "AnalysisReportRepository (compute): Error parsing rawJson for user ${params.userId}",
@@ -199,6 +204,8 @@ TwitterUser _parseFollowUserToTwitterUser(_ParseParams params) {
     id: screenName ?? params.userId, // handle
     name: name ?? 'Unknown Name',
     avatarUrl: avatarUrl ?? '',
+    avatarLocalPath: avatarLocalPath ?? '',
+    bannerLocalPath: params.dbBannerLocalPath,
     bio: bio,
     location: location,
     link: link,

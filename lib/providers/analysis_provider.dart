@@ -3,10 +3,15 @@ import 'dart:async';
 import '../core/data_processor.dart';
 import '../models/account.dart';
 import '../services/database.dart';
+import '../services/log_service.dart';
 import '../services/twitter_api_service.dart';
 import '../services/twitter_api_v1_service.dart';
 import '../main.dart';
 import 'auth_provider.dart';
+import '../providers/settings_provider.dart';
+import '../services/image_history_service.dart';
+import '../models/app_settings.dart';
+import '../repositories/account_repository.dart';
 
 // --- 1. Define the state that this service will hold ---
 class AnalysisState {
@@ -47,12 +52,28 @@ class AnalysisService extends StateNotifier<AnalysisState> {
     }
 
     logCallback('Initializing DataProcessor...');
+    final AppSettings settings;
+    final ImageHistoryService imageService;
+    final AccountRepository accountRepository;
+    try {
+      settings = _ref.read(settingsProvider).asData!.value;
+      imageService = _ref.read(imageHistoryServiceProvider);
+      accountRepository = _ref.read(accountRepositoryProvider);
+    } catch (e, s) {
+      logCallback('!!! CRITICAL ERROR: Failed to load settings before analysis.');
+      state = state.copyWith(isRunning: false);
+      logger.e("Failed to load settings/imageService", error: e, stackTrace: s);
+      return;
+    }
     final dataProcessor = DataProcessor(
       database: _database,
       apiServiceGql: _apiServiceGql,
       apiServiceV1: _apiServiceV1,
       ownerAccount: accountToProcess,
       logCallback: logCallback,
+      settings: settings, 
+      imageService: imageService,
+      accountRepository: accountRepository,
     );
     try {
       await dataProcessor.runFullProcess();

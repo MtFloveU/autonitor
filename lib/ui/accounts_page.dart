@@ -197,6 +197,7 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
     try {
       final accountsToRefresh = ref.read(accountsProvider);
       if (accountsToRefresh.isEmpty) {
+        if (mounted) {
         // --- 修改 SnackBar 样式 ---
         scaffoldMessenger.showSnackBar(
           SnackBar(
@@ -209,6 +210,7 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
             backgroundColor: theme.colorScheme.secondaryContainer, // 信息背景颜色
           ),
         );
+        }
         // 注意：因为没有异步操作，需要在这里手动关闭对话框
         if (mounted) Navigator.pop(currentContext);
         setState(() => _isRefreshing = false); // 别忘了重置状态
@@ -237,6 +239,7 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
         });
       }
       // --- 修改 SnackBar 样式 ---
+      if (mounted) {
       scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Text(
@@ -253,9 +256,11 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
               : theme.colorScheme.secondaryContainer,
         ),
       );
+      }
     } catch (e, s) {
       logger.e("Error during _refreshAllAccounts UI call: $e", error: e, stackTrace: s);
       // --- 修改 SnackBar 样式 ---
+      if (mounted) {
       scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Text(
@@ -265,6 +270,7 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
           backgroundColor: theme.colorScheme.error, // 错误背景颜色
         ),
       );
+      }
     } finally {
       // 确保无论如何都重置状态并关闭对话框
       if (mounted) {

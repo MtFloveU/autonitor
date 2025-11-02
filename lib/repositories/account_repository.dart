@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart';
 import 'dart:convert';
@@ -8,20 +9,29 @@ import '../services/secure_storage_service.dart';
 import '../main.dart';
 import '../utils/diff_utils.dart';
 import 'package:autonitor/services/log_service.dart';
+import '../models/app_settings.dart';
+import '../providers/settings_provider.dart';
+import '../services/image_history_service.dart';
 
 final accountRepositoryProvider = Provider<AccountRepository>((ref) {
   final db = ref.watch(databaseProvider);
   final apiService = ref.watch(twitterApiServiceProvider);
   final secureStorage = ref.watch(secureStorageServiceProvider);
-  return AccountRepository(db, apiService, secureStorage);
+  return AccountRepository(db, apiService, secureStorage, ref);
 });
 
 class AccountRepository {
   final AppDatabase _database;
   final TwitterApiService _apiService;
   final SecureStorageService _secureStorage;
+  final Ref _ref;
 
-  AccountRepository(this._database, this._apiService, this._secureStorage);
+  AccountRepository(
+    this._database,
+    this._apiService,
+    this._secureStorage,
+    this._ref,
+  );
 
   String? _parseidFromCookie(String cookie) {
     try {
@@ -174,10 +184,7 @@ class AccountRepository {
         if (core != null && core is Map<String, dynamic>) {
           name = core['name'] as String?;
           screenName = core['screen_name'] as String?;
-          avatarUrl = (result['avatar']['image_url'] as String?)?.replaceFirst(
-            '_normal',
-            '_400x400',
-          );
+          avatarUrl = (result['avatar']['image_url'] as String?);
           joinTime = core['created_at'] as String?;
           logger.i(
             "addAccount: Profile fetched - Name: $name, ScreenName: $screenName, Avatar: $avatarUrl",
@@ -223,13 +230,29 @@ class AccountRepository {
         final locationMap = result['location'] as Map<String, dynamic>?;
         location = locationMap?['location'] as String?;
       } else {
-        logger.w("addAccount: API 返回成功，但 result 数据缺失或格式不正确。");
+        logger.w(
+          "addAccount: The API call succeeded, but the result field is either missing or malformed.",
+        );
       }
     } catch (e, s) {
-      logger.e("addAccount: 调用 API 或解析 Profile 时出错", error: e, stackTrace: s);
+      logger.e(
+        "addAccount: Failed to call the API or parse the Profile.",
+        error: e,
+        stackTrace: s,
+      );
       rethrow;
     }
     try {
+      final settingsValue = _ref.read(settingsProvider);
+      final imageService = _ref.read(imageHistoryServiceProvider);
+
+      final AppSettings settings;
+      if (settingsValue is AsyncData<AppSettings>) {
+        settings = settingsValue.value;
+      } else {
+        logger.e("在 AccountRepository 中读取设置失败，状态为: $settingsValue");
+        throw Exception("无法执行操作，因为设置未准备好: $settingsValue");
+      }
       await _database.transaction(() async {
         final oldProfile = await (_database.select(
           _database.loggedAccounts,
@@ -239,6 +262,26 @@ class AccountRepository {
         logger.i(
           "addAccount: Calculated reverse diff (length: ${diffString?.length ?? 'null'}) for ID: $id",
         );
+        final String? newAvatarLocalPath = await imageService
+            .processMediaUpdate(
+              ownerId: id,
+              userId: id,
+              mediaType: MediaType.avatar,
+              oldUrl: oldProfile?.avatarUrl,
+              newUrl: avatarUrl, // (这是你从 API 获取的 avatarUrl)
+              settings: settings, // 使用我们从 read 读到的 settings
+            );
+
+        // 11. (新) 处理横幅下载
+        final String? newBannerLocalPath = await imageService
+            .processMediaUpdate(
+              ownerId: id,
+              userId: id,
+              mediaType: MediaType.banner,
+              oldUrl: oldProfile?.bannerUrl,
+              newUrl: bannerUrl, // (这是你从 API 获取的 bannerUrl)
+              settings: settings, // 使用我们从 read 读到的 settings
+            );
         final companion = LoggedAccountsCompanion(
           id: Value(id),
           name: name == null ? const Value.absent() : Value(name),
@@ -264,8 +307,17 @@ class AccountRepository {
           isVerified: Value(isVerified),
           isProtected: Value(isProtected),
           latestRawJson: Value(rawJsonString),
-          avatarLocalPath: Value.absent(),
-          bannerLocalPath: Value.absent(),
+          avatarLocalPath: newAvatarLocalPath != null
+              ? Value(newAvatarLocalPath)
+              : (avatarUrl == oldProfile?.avatarUrl
+                    ? Value(oldProfile?.avatarLocalPath)
+                    : const Value.absent()),
+
+          bannerLocalPath: newBannerLocalPath != null
+              ? Value(newBannerLocalPath)
+              : (bannerUrl == oldProfile?.bannerUrl
+                    ? Value(oldProfile?.bannerLocalPath)
+                    : const Value.absent()),
         );
         await _database
             .into(_database.loggedAccounts)

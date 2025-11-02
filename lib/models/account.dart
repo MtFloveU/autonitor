@@ -16,8 +16,12 @@ class Account {
   /// The URL for the user's profile image. Fetched from API.
   final String? avatarUrl;
 
+  final String? avatarLocalPath;
+
   /// The URL for the user's profile banner.
   final String? bannerUrl;
+
+   final String? bannerLocalPath;
 
   /// The user's biography.
   final String? bio;
@@ -50,7 +54,9 @@ class Account {
     this.name,
     this.screenName,
     this.avatarUrl,
+    this.avatarLocalPath,
     this.bannerUrl,
+    this.bannerLocalPath,
     this.bio,
     this.location,
     this.link,
@@ -74,7 +80,9 @@ class Account {
       name: json['name'] as String?,
       screenName: json['screenName'] as String?,
       avatarUrl: json['avatarUrl'] as String?,
+      avatarLocalPath: json['avatarLocalPath'] as String?,
       bannerUrl: json['bannerUrl'] as String?,
+      bannerLocalPath: json['bannerLocalPath'] as String?,
       bio: json['bio'] as String?,
       location: json['location'] as String?,
       link: json['link'] as String?,
@@ -99,7 +107,9 @@ class Account {
       'name': name,
       'screenName': screenName,
       'avatarUrl': avatarUrl,
+      'avatarLocalPath': avatarLocalPath,
       'bannerUrl': bannerUrl,
+      'bannerLocalPath': bannerLocalPath,
       'bio': bio,
       'location': location,
       'link': link,
@@ -123,7 +133,9 @@ class Account {
     String? name,
     String? screenName,
     String? avatarUrl,
+    String? avatarLocalPath,
     String? bannerUrl,
+    String? bannerLocalPath,
     String? bio,
     String? location,
     String? link,
@@ -144,7 +156,9 @@ class Account {
       name: name ?? this.name,
       screenName: screenName ?? this.screenName,
       avatarUrl: avatarUrl ?? this.avatarUrl,
+      avatarLocalPath: avatarLocalPath ?? this.avatarLocalPath,
       bannerUrl: bannerUrl ?? this.bannerUrl,
+      bannerLocalPath: bannerLocalPath ?? this.bannerLocalPath,
       bio: bio ?? this.bio,
       location: location ?? this.location,
       link: link ?? this.link,

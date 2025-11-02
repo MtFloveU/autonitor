@@ -1536,6 +1536,17 @@ class $FollowUsersTable extends FollowUsers
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _bannerUrlMeta = const VerificationMeta(
+    'bannerUrl',
+  );
+  @override
+  late final GeneratedColumn<String> bannerUrl = GeneratedColumn<String>(
+    'banner_url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _bioMeta = const VerificationMeta('bio');
   @override
   late final GeneratedColumn<String> bio = GeneratedColumn<String>(
@@ -1551,6 +1562,17 @@ class $FollowUsersTable extends FollowUsers
   @override
   late final GeneratedColumn<String> avatarLocalPath = GeneratedColumn<String>(
     'avatar_local_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _bannerLocalPathMeta = const VerificationMeta(
+    'bannerLocalPath',
+  );
+  @override
+  late final GeneratedColumn<String> bannerLocalPath = GeneratedColumn<String>(
+    'banner_local_path',
     aliasedName,
     true,
     type: DriftSqlType.string,
@@ -1594,8 +1616,10 @@ class $FollowUsersTable extends FollowUsers
     name,
     screenName,
     avatarUrl,
+    bannerUrl,
     bio,
     avatarLocalPath,
+    bannerLocalPath,
     isFollower,
     isFollowing,
   ];
@@ -1654,6 +1678,12 @@ class $FollowUsersTable extends FollowUsers
         avatarUrl.isAcceptableOrUnknown(data['avatar_url']!, _avatarUrlMeta),
       );
     }
+    if (data.containsKey('banner_url')) {
+      context.handle(
+        _bannerUrlMeta,
+        bannerUrl.isAcceptableOrUnknown(data['banner_url']!, _bannerUrlMeta),
+      );
+    }
     if (data.containsKey('bio')) {
       context.handle(
         _bioMeta,
@@ -1666,6 +1696,15 @@ class $FollowUsersTable extends FollowUsers
         avatarLocalPath.isAcceptableOrUnknown(
           data['avatar_local_path']!,
           _avatarLocalPathMeta,
+        ),
+      );
+    }
+    if (data.containsKey('banner_local_path')) {
+      context.handle(
+        _bannerLocalPathMeta,
+        bannerLocalPath.isAcceptableOrUnknown(
+          data['banner_local_path']!,
+          _bannerLocalPathMeta,
         ),
       );
     }
@@ -1717,6 +1756,10 @@ class $FollowUsersTable extends FollowUsers
         DriftSqlType.string,
         data['${effectivePrefix}avatar_url'],
       ),
+      bannerUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}banner_url'],
+      ),
       bio: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}bio'],
@@ -1724,6 +1767,10 @@ class $FollowUsersTable extends FollowUsers
       avatarLocalPath: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}avatar_local_path'],
+      ),
+      bannerLocalPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}banner_local_path'],
       ),
       isFollower: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
@@ -1749,8 +1796,10 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
   final String? name;
   final String? screenName;
   final String? avatarUrl;
+  final String? bannerUrl;
   final String? bio;
   final String? avatarLocalPath;
+  final String? bannerLocalPath;
   final bool isFollower;
   final bool isFollowing;
   const FollowUser({
@@ -1760,8 +1809,10 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
     this.name,
     this.screenName,
     this.avatarUrl,
+    this.bannerUrl,
     this.bio,
     this.avatarLocalPath,
+    this.bannerLocalPath,
     required this.isFollower,
     required this.isFollowing,
   });
@@ -1782,11 +1833,17 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
     if (!nullToAbsent || avatarUrl != null) {
       map['avatar_url'] = Variable<String>(avatarUrl);
     }
+    if (!nullToAbsent || bannerUrl != null) {
+      map['banner_url'] = Variable<String>(bannerUrl);
+    }
     if (!nullToAbsent || bio != null) {
       map['bio'] = Variable<String>(bio);
     }
     if (!nullToAbsent || avatarLocalPath != null) {
       map['avatar_local_path'] = Variable<String>(avatarLocalPath);
+    }
+    if (!nullToAbsent || bannerLocalPath != null) {
+      map['banner_local_path'] = Variable<String>(bannerLocalPath);
     }
     map['is_follower'] = Variable<bool>(isFollower);
     map['is_following'] = Variable<bool>(isFollowing);
@@ -1807,10 +1864,16 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
       avatarUrl: avatarUrl == null && nullToAbsent
           ? const Value.absent()
           : Value(avatarUrl),
+      bannerUrl: bannerUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(bannerUrl),
       bio: bio == null && nullToAbsent ? const Value.absent() : Value(bio),
       avatarLocalPath: avatarLocalPath == null && nullToAbsent
           ? const Value.absent()
           : Value(avatarLocalPath),
+      bannerLocalPath: bannerLocalPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(bannerLocalPath),
       isFollower: Value(isFollower),
       isFollowing: Value(isFollowing),
     );
@@ -1828,8 +1891,10 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
       name: serializer.fromJson<String?>(json['name']),
       screenName: serializer.fromJson<String?>(json['screenName']),
       avatarUrl: serializer.fromJson<String?>(json['avatarUrl']),
+      bannerUrl: serializer.fromJson<String?>(json['bannerUrl']),
       bio: serializer.fromJson<String?>(json['bio']),
       avatarLocalPath: serializer.fromJson<String?>(json['avatarLocalPath']),
+      bannerLocalPath: serializer.fromJson<String?>(json['bannerLocalPath']),
       isFollower: serializer.fromJson<bool>(json['isFollower']),
       isFollowing: serializer.fromJson<bool>(json['isFollowing']),
     );
@@ -1844,8 +1909,10 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
       'name': serializer.toJson<String?>(name),
       'screenName': serializer.toJson<String?>(screenName),
       'avatarUrl': serializer.toJson<String?>(avatarUrl),
+      'bannerUrl': serializer.toJson<String?>(bannerUrl),
       'bio': serializer.toJson<String?>(bio),
       'avatarLocalPath': serializer.toJson<String?>(avatarLocalPath),
+      'bannerLocalPath': serializer.toJson<String?>(bannerLocalPath),
       'isFollower': serializer.toJson<bool>(isFollower),
       'isFollowing': serializer.toJson<bool>(isFollowing),
     };
@@ -1858,8 +1925,10 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
     Value<String?> name = const Value.absent(),
     Value<String?> screenName = const Value.absent(),
     Value<String?> avatarUrl = const Value.absent(),
+    Value<String?> bannerUrl = const Value.absent(),
     Value<String?> bio = const Value.absent(),
     Value<String?> avatarLocalPath = const Value.absent(),
+    Value<String?> bannerLocalPath = const Value.absent(),
     bool? isFollower,
     bool? isFollowing,
   }) => FollowUser(
@@ -1871,10 +1940,14 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
     name: name.present ? name.value : this.name,
     screenName: screenName.present ? screenName.value : this.screenName,
     avatarUrl: avatarUrl.present ? avatarUrl.value : this.avatarUrl,
+    bannerUrl: bannerUrl.present ? bannerUrl.value : this.bannerUrl,
     bio: bio.present ? bio.value : this.bio,
     avatarLocalPath: avatarLocalPath.present
         ? avatarLocalPath.value
         : this.avatarLocalPath,
+    bannerLocalPath: bannerLocalPath.present
+        ? bannerLocalPath.value
+        : this.bannerLocalPath,
     isFollower: isFollower ?? this.isFollower,
     isFollowing: isFollowing ?? this.isFollowing,
   );
@@ -1890,10 +1963,14 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
           ? data.screenName.value
           : this.screenName,
       avatarUrl: data.avatarUrl.present ? data.avatarUrl.value : this.avatarUrl,
+      bannerUrl: data.bannerUrl.present ? data.bannerUrl.value : this.bannerUrl,
       bio: data.bio.present ? data.bio.value : this.bio,
       avatarLocalPath: data.avatarLocalPath.present
           ? data.avatarLocalPath.value
           : this.avatarLocalPath,
+      bannerLocalPath: data.bannerLocalPath.present
+          ? data.bannerLocalPath.value
+          : this.bannerLocalPath,
       isFollower: data.isFollower.present
           ? data.isFollower.value
           : this.isFollower,
@@ -1912,8 +1989,10 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
           ..write('name: $name, ')
           ..write('screenName: $screenName, ')
           ..write('avatarUrl: $avatarUrl, ')
+          ..write('bannerUrl: $bannerUrl, ')
           ..write('bio: $bio, ')
           ..write('avatarLocalPath: $avatarLocalPath, ')
+          ..write('bannerLocalPath: $bannerLocalPath, ')
           ..write('isFollower: $isFollower, ')
           ..write('isFollowing: $isFollowing')
           ..write(')'))
@@ -1928,8 +2007,10 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
     name,
     screenName,
     avatarUrl,
+    bannerUrl,
     bio,
     avatarLocalPath,
+    bannerLocalPath,
     isFollower,
     isFollowing,
   );
@@ -1943,8 +2024,10 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
           other.name == this.name &&
           other.screenName == this.screenName &&
           other.avatarUrl == this.avatarUrl &&
+          other.bannerUrl == this.bannerUrl &&
           other.bio == this.bio &&
           other.avatarLocalPath == this.avatarLocalPath &&
+          other.bannerLocalPath == this.bannerLocalPath &&
           other.isFollower == this.isFollower &&
           other.isFollowing == this.isFollowing);
 }
@@ -1956,8 +2039,10 @@ class FollowUsersCompanion extends UpdateCompanion<FollowUser> {
   final Value<String?> name;
   final Value<String?> screenName;
   final Value<String?> avatarUrl;
+  final Value<String?> bannerUrl;
   final Value<String?> bio;
   final Value<String?> avatarLocalPath;
+  final Value<String?> bannerLocalPath;
   final Value<bool> isFollower;
   final Value<bool> isFollowing;
   final Value<int> rowid;
@@ -1968,8 +2053,10 @@ class FollowUsersCompanion extends UpdateCompanion<FollowUser> {
     this.name = const Value.absent(),
     this.screenName = const Value.absent(),
     this.avatarUrl = const Value.absent(),
+    this.bannerUrl = const Value.absent(),
     this.bio = const Value.absent(),
     this.avatarLocalPath = const Value.absent(),
+    this.bannerLocalPath = const Value.absent(),
     this.isFollower = const Value.absent(),
     this.isFollowing = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1981,8 +2068,10 @@ class FollowUsersCompanion extends UpdateCompanion<FollowUser> {
     this.name = const Value.absent(),
     this.screenName = const Value.absent(),
     this.avatarUrl = const Value.absent(),
+    this.bannerUrl = const Value.absent(),
     this.bio = const Value.absent(),
     this.avatarLocalPath = const Value.absent(),
+    this.bannerLocalPath = const Value.absent(),
     this.isFollower = const Value.absent(),
     this.isFollowing = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1995,8 +2084,10 @@ class FollowUsersCompanion extends UpdateCompanion<FollowUser> {
     Expression<String>? name,
     Expression<String>? screenName,
     Expression<String>? avatarUrl,
+    Expression<String>? bannerUrl,
     Expression<String>? bio,
     Expression<String>? avatarLocalPath,
+    Expression<String>? bannerLocalPath,
     Expression<bool>? isFollower,
     Expression<bool>? isFollowing,
     Expression<int>? rowid,
@@ -2008,8 +2099,10 @@ class FollowUsersCompanion extends UpdateCompanion<FollowUser> {
       if (name != null) 'name': name,
       if (screenName != null) 'screen_name': screenName,
       if (avatarUrl != null) 'avatar_url': avatarUrl,
+      if (bannerUrl != null) 'banner_url': bannerUrl,
       if (bio != null) 'bio': bio,
       if (avatarLocalPath != null) 'avatar_local_path': avatarLocalPath,
+      if (bannerLocalPath != null) 'banner_local_path': bannerLocalPath,
       if (isFollower != null) 'is_follower': isFollower,
       if (isFollowing != null) 'is_following': isFollowing,
       if (rowid != null) 'rowid': rowid,
@@ -2023,8 +2116,10 @@ class FollowUsersCompanion extends UpdateCompanion<FollowUser> {
     Value<String?>? name,
     Value<String?>? screenName,
     Value<String?>? avatarUrl,
+    Value<String?>? bannerUrl,
     Value<String?>? bio,
     Value<String?>? avatarLocalPath,
+    Value<String?>? bannerLocalPath,
     Value<bool>? isFollower,
     Value<bool>? isFollowing,
     Value<int>? rowid,
@@ -2036,8 +2131,10 @@ class FollowUsersCompanion extends UpdateCompanion<FollowUser> {
       name: name ?? this.name,
       screenName: screenName ?? this.screenName,
       avatarUrl: avatarUrl ?? this.avatarUrl,
+      bannerUrl: bannerUrl ?? this.bannerUrl,
       bio: bio ?? this.bio,
       avatarLocalPath: avatarLocalPath ?? this.avatarLocalPath,
+      bannerLocalPath: bannerLocalPath ?? this.bannerLocalPath,
       isFollower: isFollower ?? this.isFollower,
       isFollowing: isFollowing ?? this.isFollowing,
       rowid: rowid ?? this.rowid,
@@ -2065,11 +2162,17 @@ class FollowUsersCompanion extends UpdateCompanion<FollowUser> {
     if (avatarUrl.present) {
       map['avatar_url'] = Variable<String>(avatarUrl.value);
     }
+    if (bannerUrl.present) {
+      map['banner_url'] = Variable<String>(bannerUrl.value);
+    }
     if (bio.present) {
       map['bio'] = Variable<String>(bio.value);
     }
     if (avatarLocalPath.present) {
       map['avatar_local_path'] = Variable<String>(avatarLocalPath.value);
+    }
+    if (bannerLocalPath.present) {
+      map['banner_local_path'] = Variable<String>(bannerLocalPath.value);
     }
     if (isFollower.present) {
       map['is_follower'] = Variable<bool>(isFollower.value);
@@ -2092,8 +2195,10 @@ class FollowUsersCompanion extends UpdateCompanion<FollowUser> {
           ..write('name: $name, ')
           ..write('screenName: $screenName, ')
           ..write('avatarUrl: $avatarUrl, ')
+          ..write('bannerUrl: $bannerUrl, ')
           ..write('bio: $bio, ')
           ..write('avatarLocalPath: $avatarLocalPath, ')
+          ..write('bannerLocalPath: $bannerLocalPath, ')
           ..write('isFollower: $isFollower, ')
           ..write('isFollowing: $isFollowing, ')
           ..write('rowid: $rowid')
@@ -2872,6 +2977,410 @@ class ChangeReportsCompanion extends UpdateCompanion<ChangeReportEntry> {
   }
 }
 
+class $MediaHistoryTable extends MediaHistory
+    with TableInfo<$MediaHistoryTable, MediaHistoryEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MediaHistoryTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _mediaTypeMeta = const VerificationMeta(
+    'mediaType',
+  );
+  @override
+  late final GeneratedColumn<String> mediaType = GeneratedColumn<String>(
+    'media_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localFilePathMeta = const VerificationMeta(
+    'localFilePath',
+  );
+  @override
+  late final GeneratedColumn<String> localFilePath = GeneratedColumn<String>(
+    'local_file_path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _remoteUrlMeta = const VerificationMeta(
+    'remoteUrl',
+  );
+  @override
+  late final GeneratedColumn<String> remoteUrl = GeneratedColumn<String>(
+    'remote_url',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _timestampMeta = const VerificationMeta(
+    'timestamp',
+  );
+  @override
+  late final GeneratedColumn<DateTime> timestamp = GeneratedColumn<DateTime>(
+    'timestamp',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    mediaType,
+    localFilePath,
+    remoteUrl,
+    timestamp,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'media_history';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MediaHistoryEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('media_type')) {
+      context.handle(
+        _mediaTypeMeta,
+        mediaType.isAcceptableOrUnknown(data['media_type']!, _mediaTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_mediaTypeMeta);
+    }
+    if (data.containsKey('local_file_path')) {
+      context.handle(
+        _localFilePathMeta,
+        localFilePath.isAcceptableOrUnknown(
+          data['local_file_path']!,
+          _localFilePathMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_localFilePathMeta);
+    }
+    if (data.containsKey('remote_url')) {
+      context.handle(
+        _remoteUrlMeta,
+        remoteUrl.isAcceptableOrUnknown(data['remote_url']!, _remoteUrlMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_remoteUrlMeta);
+    }
+    if (data.containsKey('timestamp')) {
+      context.handle(
+        _timestampMeta,
+        timestamp.isAcceptableOrUnknown(data['timestamp']!, _timestampMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_timestampMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  MediaHistoryEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MediaHistoryEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      mediaType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}media_type'],
+      )!,
+      localFilePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_file_path'],
+      )!,
+      remoteUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}remote_url'],
+      )!,
+      timestamp: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}timestamp'],
+      )!,
+    );
+  }
+
+  @override
+  $MediaHistoryTable createAlias(String alias) {
+    return $MediaHistoryTable(attachedDatabase, alias);
+  }
+}
+
+class MediaHistoryEntry extends DataClass
+    implements Insertable<MediaHistoryEntry> {
+  final int id;
+  final String userId;
+  final String mediaType;
+  final String localFilePath;
+  final String remoteUrl;
+  final DateTime timestamp;
+  const MediaHistoryEntry({
+    required this.id,
+    required this.userId,
+    required this.mediaType,
+    required this.localFilePath,
+    required this.remoteUrl,
+    required this.timestamp,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['media_type'] = Variable<String>(mediaType);
+    map['local_file_path'] = Variable<String>(localFilePath);
+    map['remote_url'] = Variable<String>(remoteUrl);
+    map['timestamp'] = Variable<DateTime>(timestamp);
+    return map;
+  }
+
+  MediaHistoryCompanion toCompanion(bool nullToAbsent) {
+    return MediaHistoryCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      mediaType: Value(mediaType),
+      localFilePath: Value(localFilePath),
+      remoteUrl: Value(remoteUrl),
+      timestamp: Value(timestamp),
+    );
+  }
+
+  factory MediaHistoryEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MediaHistoryEntry(
+      id: serializer.fromJson<int>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      mediaType: serializer.fromJson<String>(json['mediaType']),
+      localFilePath: serializer.fromJson<String>(json['localFilePath']),
+      remoteUrl: serializer.fromJson<String>(json['remoteUrl']),
+      timestamp: serializer.fromJson<DateTime>(json['timestamp']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'userId': serializer.toJson<String>(userId),
+      'mediaType': serializer.toJson<String>(mediaType),
+      'localFilePath': serializer.toJson<String>(localFilePath),
+      'remoteUrl': serializer.toJson<String>(remoteUrl),
+      'timestamp': serializer.toJson<DateTime>(timestamp),
+    };
+  }
+
+  MediaHistoryEntry copyWith({
+    int? id,
+    String? userId,
+    String? mediaType,
+    String? localFilePath,
+    String? remoteUrl,
+    DateTime? timestamp,
+  }) => MediaHistoryEntry(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    mediaType: mediaType ?? this.mediaType,
+    localFilePath: localFilePath ?? this.localFilePath,
+    remoteUrl: remoteUrl ?? this.remoteUrl,
+    timestamp: timestamp ?? this.timestamp,
+  );
+  MediaHistoryEntry copyWithCompanion(MediaHistoryCompanion data) {
+    return MediaHistoryEntry(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      mediaType: data.mediaType.present ? data.mediaType.value : this.mediaType,
+      localFilePath: data.localFilePath.present
+          ? data.localFilePath.value
+          : this.localFilePath,
+      remoteUrl: data.remoteUrl.present ? data.remoteUrl.value : this.remoteUrl,
+      timestamp: data.timestamp.present ? data.timestamp.value : this.timestamp,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MediaHistoryEntry(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('mediaType: $mediaType, ')
+          ..write('localFilePath: $localFilePath, ')
+          ..write('remoteUrl: $remoteUrl, ')
+          ..write('timestamp: $timestamp')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, userId, mediaType, localFilePath, remoteUrl, timestamp);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MediaHistoryEntry &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.mediaType == this.mediaType &&
+          other.localFilePath == this.localFilePath &&
+          other.remoteUrl == this.remoteUrl &&
+          other.timestamp == this.timestamp);
+}
+
+class MediaHistoryCompanion extends UpdateCompanion<MediaHistoryEntry> {
+  final Value<int> id;
+  final Value<String> userId;
+  final Value<String> mediaType;
+  final Value<String> localFilePath;
+  final Value<String> remoteUrl;
+  final Value<DateTime> timestamp;
+  const MediaHistoryCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.mediaType = const Value.absent(),
+    this.localFilePath = const Value.absent(),
+    this.remoteUrl = const Value.absent(),
+    this.timestamp = const Value.absent(),
+  });
+  MediaHistoryCompanion.insert({
+    this.id = const Value.absent(),
+    required String userId,
+    required String mediaType,
+    required String localFilePath,
+    required String remoteUrl,
+    required DateTime timestamp,
+  }) : userId = Value(userId),
+       mediaType = Value(mediaType),
+       localFilePath = Value(localFilePath),
+       remoteUrl = Value(remoteUrl),
+       timestamp = Value(timestamp);
+  static Insertable<MediaHistoryEntry> custom({
+    Expression<int>? id,
+    Expression<String>? userId,
+    Expression<String>? mediaType,
+    Expression<String>? localFilePath,
+    Expression<String>? remoteUrl,
+    Expression<DateTime>? timestamp,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (mediaType != null) 'media_type': mediaType,
+      if (localFilePath != null) 'local_file_path': localFilePath,
+      if (remoteUrl != null) 'remote_url': remoteUrl,
+      if (timestamp != null) 'timestamp': timestamp,
+    });
+  }
+
+  MediaHistoryCompanion copyWith({
+    Value<int>? id,
+    Value<String>? userId,
+    Value<String>? mediaType,
+    Value<String>? localFilePath,
+    Value<String>? remoteUrl,
+    Value<DateTime>? timestamp,
+  }) {
+    return MediaHistoryCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      mediaType: mediaType ?? this.mediaType,
+      localFilePath: localFilePath ?? this.localFilePath,
+      remoteUrl: remoteUrl ?? this.remoteUrl,
+      timestamp: timestamp ?? this.timestamp,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (mediaType.present) {
+      map['media_type'] = Variable<String>(mediaType.value);
+    }
+    if (localFilePath.present) {
+      map['local_file_path'] = Variable<String>(localFilePath.value);
+    }
+    if (remoteUrl.present) {
+      map['remote_url'] = Variable<String>(remoteUrl.value);
+    }
+    if (timestamp.present) {
+      map['timestamp'] = Variable<DateTime>(timestamp.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MediaHistoryCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('mediaType: $mediaType, ')
+          ..write('localFilePath: $localFilePath, ')
+          ..write('remoteUrl: $remoteUrl, ')
+          ..write('timestamp: $timestamp')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2882,6 +3391,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $FollowUsersHistoryTable followUsersHistory =
       $FollowUsersHistoryTable(this);
   late final $ChangeReportsTable changeReports = $ChangeReportsTable(this);
+  late final $MediaHistoryTable mediaHistory = $MediaHistoryTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2892,6 +3402,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     followUsers,
     followUsersHistory,
     changeReports,
+    mediaHistory,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -4079,8 +4590,10 @@ typedef $$FollowUsersTableCreateCompanionBuilder =
       Value<String?> name,
       Value<String?> screenName,
       Value<String?> avatarUrl,
+      Value<String?> bannerUrl,
       Value<String?> bio,
       Value<String?> avatarLocalPath,
+      Value<String?> bannerLocalPath,
       Value<bool> isFollower,
       Value<bool> isFollowing,
       Value<int> rowid,
@@ -4093,8 +4606,10 @@ typedef $$FollowUsersTableUpdateCompanionBuilder =
       Value<String?> name,
       Value<String?> screenName,
       Value<String?> avatarUrl,
+      Value<String?> bannerUrl,
       Value<String?> bio,
       Value<String?> avatarLocalPath,
+      Value<String?> bannerLocalPath,
       Value<bool> isFollower,
       Value<bool> isFollowing,
       Value<int> rowid,
@@ -4158,6 +4673,11 @@ class $$FollowUsersTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get bannerUrl => $composableBuilder(
+    column: $table.bannerUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get bio => $composableBuilder(
     column: $table.bio,
     builder: (column) => ColumnFilters(column),
@@ -4165,6 +4685,11 @@ class $$FollowUsersTableFilterComposer
 
   ColumnFilters<String> get avatarLocalPath => $composableBuilder(
     column: $table.avatarLocalPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get bannerLocalPath => $composableBuilder(
+    column: $table.bannerLocalPath,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4236,6 +4761,11 @@ class $$FollowUsersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get bannerUrl => $composableBuilder(
+    column: $table.bannerUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get bio => $composableBuilder(
     column: $table.bio,
     builder: (column) => ColumnOrderings(column),
@@ -4243,6 +4773,11 @@ class $$FollowUsersTableOrderingComposer
 
   ColumnOrderings<String> get avatarLocalPath => $composableBuilder(
     column: $table.avatarLocalPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get bannerLocalPath => $composableBuilder(
+    column: $table.bannerLocalPath,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -4308,11 +4843,19 @@ class $$FollowUsersTableAnnotationComposer
   GeneratedColumn<String> get avatarUrl =>
       $composableBuilder(column: $table.avatarUrl, builder: (column) => column);
 
+  GeneratedColumn<String> get bannerUrl =>
+      $composableBuilder(column: $table.bannerUrl, builder: (column) => column);
+
   GeneratedColumn<String> get bio =>
       $composableBuilder(column: $table.bio, builder: (column) => column);
 
   GeneratedColumn<String> get avatarLocalPath => $composableBuilder(
     column: $table.avatarLocalPath,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get bannerLocalPath => $composableBuilder(
+    column: $table.bannerLocalPath,
     builder: (column) => column,
   );
 
@@ -4384,8 +4927,10 @@ class $$FollowUsersTableTableManager
                 Value<String?> name = const Value.absent(),
                 Value<String?> screenName = const Value.absent(),
                 Value<String?> avatarUrl = const Value.absent(),
+                Value<String?> bannerUrl = const Value.absent(),
                 Value<String?> bio = const Value.absent(),
                 Value<String?> avatarLocalPath = const Value.absent(),
+                Value<String?> bannerLocalPath = const Value.absent(),
                 Value<bool> isFollower = const Value.absent(),
                 Value<bool> isFollowing = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -4396,8 +4941,10 @@ class $$FollowUsersTableTableManager
                 name: name,
                 screenName: screenName,
                 avatarUrl: avatarUrl,
+                bannerUrl: bannerUrl,
                 bio: bio,
                 avatarLocalPath: avatarLocalPath,
+                bannerLocalPath: bannerLocalPath,
                 isFollower: isFollower,
                 isFollowing: isFollowing,
                 rowid: rowid,
@@ -4410,8 +4957,10 @@ class $$FollowUsersTableTableManager
                 Value<String?> name = const Value.absent(),
                 Value<String?> screenName = const Value.absent(),
                 Value<String?> avatarUrl = const Value.absent(),
+                Value<String?> bannerUrl = const Value.absent(),
                 Value<String?> bio = const Value.absent(),
                 Value<String?> avatarLocalPath = const Value.absent(),
+                Value<String?> bannerLocalPath = const Value.absent(),
                 Value<bool> isFollower = const Value.absent(),
                 Value<bool> isFollowing = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -4422,8 +4971,10 @@ class $$FollowUsersTableTableManager
                 name: name,
                 screenName: screenName,
                 avatarUrl: avatarUrl,
+                bannerUrl: bannerUrl,
                 bio: bio,
                 avatarLocalPath: avatarLocalPath,
+                bannerLocalPath: bannerLocalPath,
                 isFollower: isFollower,
                 isFollowing: isFollowing,
                 rowid: rowid,
@@ -5045,6 +5596,225 @@ typedef $$ChangeReportsTableProcessedTableManager =
       ChangeReportEntry,
       PrefetchHooks Function({bool ownerId})
     >;
+typedef $$MediaHistoryTableCreateCompanionBuilder =
+    MediaHistoryCompanion Function({
+      Value<int> id,
+      required String userId,
+      required String mediaType,
+      required String localFilePath,
+      required String remoteUrl,
+      required DateTime timestamp,
+    });
+typedef $$MediaHistoryTableUpdateCompanionBuilder =
+    MediaHistoryCompanion Function({
+      Value<int> id,
+      Value<String> userId,
+      Value<String> mediaType,
+      Value<String> localFilePath,
+      Value<String> remoteUrl,
+      Value<DateTime> timestamp,
+    });
+
+class $$MediaHistoryTableFilterComposer
+    extends Composer<_$AppDatabase, $MediaHistoryTable> {
+  $$MediaHistoryTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mediaType => $composableBuilder(
+    column: $table.mediaType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get localFilePath => $composableBuilder(
+    column: $table.localFilePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get remoteUrl => $composableBuilder(
+    column: $table.remoteUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get timestamp => $composableBuilder(
+    column: $table.timestamp,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MediaHistoryTableOrderingComposer
+    extends Composer<_$AppDatabase, $MediaHistoryTable> {
+  $$MediaHistoryTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mediaType => $composableBuilder(
+    column: $table.mediaType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get localFilePath => $composableBuilder(
+    column: $table.localFilePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get remoteUrl => $composableBuilder(
+    column: $table.remoteUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get timestamp => $composableBuilder(
+    column: $table.timestamp,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MediaHistoryTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MediaHistoryTable> {
+  $$MediaHistoryTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get mediaType =>
+      $composableBuilder(column: $table.mediaType, builder: (column) => column);
+
+  GeneratedColumn<String> get localFilePath => $composableBuilder(
+    column: $table.localFilePath,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get remoteUrl =>
+      $composableBuilder(column: $table.remoteUrl, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get timestamp =>
+      $composableBuilder(column: $table.timestamp, builder: (column) => column);
+}
+
+class $$MediaHistoryTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MediaHistoryTable,
+          MediaHistoryEntry,
+          $$MediaHistoryTableFilterComposer,
+          $$MediaHistoryTableOrderingComposer,
+          $$MediaHistoryTableAnnotationComposer,
+          $$MediaHistoryTableCreateCompanionBuilder,
+          $$MediaHistoryTableUpdateCompanionBuilder,
+          (
+            MediaHistoryEntry,
+            BaseReferences<
+              _$AppDatabase,
+              $MediaHistoryTable,
+              MediaHistoryEntry
+            >,
+          ),
+          MediaHistoryEntry,
+          PrefetchHooks Function()
+        > {
+  $$MediaHistoryTableTableManager(_$AppDatabase db, $MediaHistoryTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MediaHistoryTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MediaHistoryTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MediaHistoryTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> mediaType = const Value.absent(),
+                Value<String> localFilePath = const Value.absent(),
+                Value<String> remoteUrl = const Value.absent(),
+                Value<DateTime> timestamp = const Value.absent(),
+              }) => MediaHistoryCompanion(
+                id: id,
+                userId: userId,
+                mediaType: mediaType,
+                localFilePath: localFilePath,
+                remoteUrl: remoteUrl,
+                timestamp: timestamp,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String userId,
+                required String mediaType,
+                required String localFilePath,
+                required String remoteUrl,
+                required DateTime timestamp,
+              }) => MediaHistoryCompanion.insert(
+                id: id,
+                userId: userId,
+                mediaType: mediaType,
+                localFilePath: localFilePath,
+                remoteUrl: remoteUrl,
+                timestamp: timestamp,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MediaHistoryTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MediaHistoryTable,
+      MediaHistoryEntry,
+      $$MediaHistoryTableFilterComposer,
+      $$MediaHistoryTableOrderingComposer,
+      $$MediaHistoryTableAnnotationComposer,
+      $$MediaHistoryTableCreateCompanionBuilder,
+      $$MediaHistoryTableUpdateCompanionBuilder,
+      (
+        MediaHistoryEntry,
+        BaseReferences<_$AppDatabase, $MediaHistoryTable, MediaHistoryEntry>,
+      ),
+      MediaHistoryEntry,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -5059,4 +5829,6 @@ class $AppDatabaseManager {
       $$FollowUsersHistoryTableTableManager(_db, _db.followUsersHistory);
   $$ChangeReportsTableTableManager get changeReports =>
       $$ChangeReportsTableTableManager(_db, _db.changeReports);
+  $$MediaHistoryTableTableManager get mediaHistory =>
+      $$MediaHistoryTableTableManager(_db, _db.mediaHistory);
 }

@@ -1,10 +1,15 @@
+import 'dart:io';
+
+import 'package:autonitor/services/log_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:autonitor/ui/user_detail_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:path/path.dart' as p;
 import '../l10n/app_localizations.dart';
 import '../providers/report_providers.dart';
+import 'package:autonitor/providers/media_provider.dart';
 
 class UserListPage extends ConsumerStatefulWidget {
   final String ownerId;
@@ -92,6 +97,7 @@ class _UserListPageState extends ConsumerState<UserListPage> {
       categoryKey: widget.categoryKey,
     );
     final userListAsync = ref.watch(userListProvider(param));
+    final mediaDirAsync = ref.watch(appSupportDirProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(getLocalizedTitle(l10n))),
@@ -131,6 +137,32 @@ class _UserListPageState extends ConsumerState<UserListPage> {
                     }
 
                     final user = users[index];
+                    final String? localAvatarPath = user.avatarLocalPath;
+                    final String? networkAvatarUrl = user.avatarUrl;
+                    final String? relativeLocalPath = user.avatarLocalPath;
+                    // 2. 拼接绝对路径
+                    final String? absoluteLocalPath =
+                        (mediaDirAsync.hasValue &&
+                            relativeLocalPath != null &&
+                            relativeLocalPath.isNotEmpty)
+                        ? p.join(mediaDirAsync.value!, relativeLocalPath)
+                        : null;
+                    logger.d(absoluteLocalPath);
+
+                    bool isLocalHighQuality = false;
+                    if (absoluteLocalPath != null &&
+                        absoluteLocalPath.contains('_high')) {
+                      isLocalHighQuality = true;
+                    }
+
+                    final String highQualityNetworkUrl =
+                        (networkAvatarUrl ?? '').replaceFirst(
+                          RegExp(r'_(normal|bigger|400x400)'),
+                          '_400x400',
+                        );
+
+                    bool fetchNetworkLayer =
+                        !isLocalHighQuality && highQualityNetworkUrl.isNotEmpty;
                     return ListTile(
                       leading: Hero(
                         tag: 'avatar_${user.restId}',
@@ -140,20 +172,55 @@ class _UserListPageState extends ConsumerState<UserListPage> {
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
+                              // --- 修改开始: 替换 ClipOval ---
+                              // Layer 1: Base Icon
                               const Icon(Icons.person, size: 24),
-                              if (user.avatarUrl.isNotEmpty)
+
+                              // Layer 2: Local File
+                              if (localAvatarPath != null &&
+                                  localAvatarPath.isNotEmpty)
                                 ClipOval(
-                                  child: CachedNetworkImage(
-                                    imageUrl: user.avatarUrl,
+                                  child: Image.file(
+                                    File(localAvatarPath),
                                     fit: BoxFit.cover,
                                     width: 48,
                                     height: 48,
-                                    placeholder: (context, url) =>
-                                        const SizedBox(),
-                                    errorWidget: (context, url, error) =>
-                                        const SizedBox(),
+                                    // 渐显
+                                    frameBuilder:
+                                        (context, child, frame, wasSync) {
+                                          if (wasSync) return child;
+                                          return AnimatedOpacity(
+                                            opacity: frame == null ? 0 : 1,
+                                            duration: const Duration(
+                                              milliseconds: 0,
+                                            ),
+                                            child: child,
+                                          );
+                                        },
+                                    // 加载失败时显示底层
+                                    errorBuilder: (context, e, s) =>
+                                        const SizedBox.shrink(),
                                   ),
                                 ),
+
+                              // Layer 3: Network File (High Quality)
+                              if (fetchNetworkLayer)
+                                ClipOval(
+                                  child: CachedNetworkImage(
+                                    imageUrl: highQualityNetworkUrl,
+                                    fit: BoxFit.cover,
+                                    width: 48,
+                                    height: 48,
+                                    fadeInDuration: const Duration(
+                                      milliseconds: 300,
+                                    ),
+                                    placeholder: (context, url) =>
+                                        const SizedBox.shrink(),
+                                    errorWidget: (context, url, error) =>
+                                        const SizedBox.shrink(),
+                                  ),
+                                ),
+                              // --- 修改结束 ---
                             ],
                           ),
                         ),
@@ -194,7 +261,11 @@ class _UserListPageState extends ConsumerState<UserListPage> {
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("@${user.id}", maxLines: 1, overflow: TextOverflow.ellipsis,),
+                          Text(
+                            "@${user.id}",
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                           Text(
                             user.bio ?? '',
                             maxLines: 2,

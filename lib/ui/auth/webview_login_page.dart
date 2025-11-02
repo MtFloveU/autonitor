@@ -38,7 +38,11 @@ class _WebViewLoginPageState extends State<WebViewLoginPage> {
         // --- 修改点 1：捕获所有 Error 和 Exception ---
         // [已修改] 捕获 *所有* 异常和错误 (StateError, PlatformException, Error, etc.)
         // 只要 getCookies 失败，就视为空列表，让后续逻辑处理 "No cookie found" 提示。
-        logger.e("Error during getCookies, treating as empty list: $e\n$s", error: e, stackTrace: s);
+        logger.e(
+          "Error during getCookies, treating as empty list: $e\n$s",
+          error: e,
+          stackTrace: s,
+        );
         gotCookies = []; // 手动设置为空列表
       }
 
@@ -76,6 +80,7 @@ class _WebViewLoginPageState extends State<WebViewLoginPage> {
           .join('; ');
 
       // 弹出确认框
+      if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
       final bool? isConfirmed = await showDialog<bool>(
         context: context,
@@ -107,8 +112,14 @@ class _WebViewLoginPageState extends State<WebViewLoginPage> {
       }
     } catch (e, s) {
       // --- 修改点 2：捕获所有 Error 和 Exception ---
-      logger.e("Unhandled error in _onLoginComplete: $e\n$s", error: e, stackTrace: s);
-      if (mounted) Navigator.pop(context); // 关闭加载圈
+      logger.e(
+        "Unhandled error in _onLoginComplete: $e\n$s",
+        error: e,
+        stackTrace: s,
+      );
+      if (mounted) {
+        Navigator.pop(context);
+      } // 关闭加载圈
       if (mounted) {
         // 其他未预料到的错误仍会在这里显示
         ScaffoldMessenger.of(
