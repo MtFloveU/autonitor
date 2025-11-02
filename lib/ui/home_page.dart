@@ -271,6 +271,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                   favouritesCount: activeAccount.favouritesCount,
                   listedCount: activeAccount.listedCount,
                   latestRawJson: activeAccount.latestRawJson,
+                  isProtected: activeAccount.isProtected,
+                  isVerified: activeAccount.isVerified,
                 );
                 Navigator.push(
                   context,

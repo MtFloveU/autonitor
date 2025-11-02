@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../models/twitter_user.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart';
@@ -18,6 +19,8 @@ class UserDetailPage extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     const double bannerAspectRatio = 1500 / 500;
     const double avatarOverhang = 40.0;
+    logger.d('user.isProtected=${user.isProtected}');
+    logger.d('user.isVerified=${user.isVerified}');
 
     return Scaffold(
       appBar: AppBar(
@@ -103,7 +106,11 @@ class UserDetailPage extends StatelessWidget {
                       formattedJson = encoder.convert(jsonObj);
                     } catch (e, s) {
                       // 如果解码失败（理论上不应发生），则保持原始字符串
-                      logger.e("Error formatting JSON for display: $e", error: e, stackTrace: s);
+                      logger.e(
+                        "Error formatting JSON for display: $e",
+                        error: e,
+                        stackTrace: s,
+                      );
                     }
 
                     showDialog(
@@ -220,34 +227,98 @@ class UserDetailPage extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
               children: [
-                SelectableText(
-                  user.name,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text.rich(
+                // lib/ui/user_detail_page.dart
+                // ...
+                // lib/ui/user_detail_page.dart
+                // ...
+                SelectableText.rich(
                   TextSpan(
+                    // 1. 设置基础样式，这将应用于文本和图标对齐
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                     children: [
-                      TextSpan(
-                        text: '@',
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Colors.grey.shade600,
+                      // 2. 这是你的 user.name 文本
+                      TextSpan(text: user.name),
+
+                      // 3. 这是 Verified 图标
+                      if (user.isVerified)
+                        WidgetSpan(
+                          // 4. 使用 Padding 来制造间距，替换 SizedBox
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4.0,
+                            ),
+                            child: SvgPicture.asset(
+                              'assets/icon/verified.svg',
+                              width: 23,
+                              height: 23,
+                              colorFilter: const ColorFilter.mode(
+                                Color(0xFF1DA1F2),
+                                BlendMode.srcIn,
+                              ),
+                            ),
+                          ),
+                          // 5. 尝试让图标与文本垂直居中
+                          alignment: PlaceholderAlignment.middle,
                         ),
-                      ),
-                      WidgetSpan(
-                        alignment: PlaceholderAlignment.baseline,
-                        baseline: TextBaseline.alphabetic,
-                        child: SelectableText(
-                          user.id,
-                          style: Theme.of(context).textTheme.bodyLarge
-                              ?.copyWith(color: Colors.grey.shade600),
+
+                      // 6. 这是 Protected 图标
+                      if (user.isProtected)
+                        WidgetSpan(
+                          child: Padding(
+                            // 7. 如果 verified 图标不存在，则使用 4.0 的水平内边距
+                            //    如果 verified 图标存在，则只使用 4.0 的左内边距
+                            padding: EdgeInsets.only(
+                              left: user.isVerified ? 0.0 : 4.0,
+                              right: 4.0,
+                            ),
+                            child: SvgPicture.asset(
+                              'assets/icon/protected.svg',
+                              width: 20,
+                              height: 20,
+                              colorFilter: const ColorFilter.mode(
+                                Colors.black,
+                                BlendMode.srcIn,
+                              ),
+                            ),
+                          ),
+                          alignment: PlaceholderAlignment.middle,
                         ),
-                      ),
                     ],
                   ),
+                ),
+                // ...
+                // ...
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: '@',
+                              style: Theme.of(context).textTheme.bodyLarge
+                                  ?.copyWith(color: Colors.grey.shade600),
+                            ),
+                            WidgetSpan(
+                              alignment: PlaceholderAlignment.baseline,
+                              baseline: TextBaseline.alphabetic,
+                              child: SelectableText(
+                                user.id,
+                                style: Theme.of(context).textTheme.bodyLarge
+                                    ?.copyWith(color: Colors.grey.shade600),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                  ],
                 ),
 
                 const SizedBox(height: 4),
@@ -258,6 +329,7 @@ class UserDetailPage extends StatelessWidget {
               ],
             ),
           ),
+
           const SizedBox(height: 5),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),

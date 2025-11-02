@@ -418,7 +418,19 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                           onPressed: () {
                             Clipboard.setData(ClipboardData(text: logText));
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(l10n.copied_to_clipboard)),
+                              SnackBar(
+                                content: Text(
+                                  l10n.copied_to_clipboard,
+                                  style: TextStyle(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onPrimaryContainer,
+                                  ),
+                                ),
+                                backgroundColor: Theme.of(
+                                  context,
+                                ).colorScheme.primaryContainer,
+                              ),
                             );
                             Navigator.pop(dialogContext);
                           },

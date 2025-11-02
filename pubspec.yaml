@@ -30,6 +30,7 @@ dependencies:
   async: ^2.13.0
   async_locks: ^4.0.2
   logger: ^2.6.2
+  flutter_svg: ^2.2.1
 
 dev_dependencies:
   flutter_test:
@@ -44,6 +45,8 @@ flutter:
   generate: true
   assets:
     - assets/suspended_banner.png
+    - assets/icon/protected.svg
+    - assets/icon/verified.svg
 
 flutter_launcher_icons:
   android: "launcher_icon"

@@ -1,8 +1,8 @@
-// lib/ui/user_list_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:autonitor/ui/user_detail_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/report_providers.dart';
 
@@ -158,11 +158,43 @@ class _UserListPageState extends ConsumerState<UserListPage> {
                           ),
                         ),
                       ),
-                      title: Text(user.name),
+                      title: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              user.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (user.isVerified)
+                            SvgPicture.asset(
+                              'assets/icon/verified.svg',
+                              width: 18,
+                              height: 18,
+                              colorFilter: const ColorFilter.mode(
+                                Color(0xFF1DA1F2),
+                                BlendMode.srcIn,
+                              ),
+                            ),
+                          if (user.isProtected)
+                            SvgPicture.asset(
+                              'assets/icon/protected.svg',
+                              width: 18,
+                              height: 18,
+                              colorFilter: ColorFilter.mode(
+                                Colors.black,
+                                BlendMode.srcIn,
+                              ),
+                            ),
+                        ],
+                      ),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("@${user.id}"),
+                          Text("@${user.id}", maxLines: 1, overflow: TextOverflow.ellipsis,),
                           Text(
                             user.bio ?? '',
                             maxLines: 2,

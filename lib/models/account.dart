@@ -41,6 +41,9 @@ class Account {
   final int favouritesCount;
   final int listedCount;
 
+  final bool isVerified;
+  final bool isProtected;
+
   Account({
     required this.id,
     required this.cookie,
@@ -59,6 +62,8 @@ class Account {
     this.favouritesCount = 0,
     this.listedCount = 0,
     this.latestRawJson,
+    this.isVerified = false,
+    this.isProtected = false,
   });
 
   /// Creates an Account instance from a JSON map.
@@ -81,6 +86,8 @@ class Account {
       favouritesCount: json['favouritesCount'] ?? 0,
       listedCount: json['listedCount'] ?? 0,
       latestRawJson: json['latestRawJson'] as String?,
+      isVerified: json['verified'] as bool? ?? false,
+      isProtected: json['protected'] as bool? ?? false,
     );
   }
 
@@ -104,6 +111,8 @@ class Account {
       'favouritesCount': favouritesCount,
       'listedCount': listedCount,
       'latestRawJson': latestRawJson,
+      'verified': isVerified,
+      'protected': isProtected,
     };
   }
 
@@ -126,6 +135,8 @@ class Account {
     int? favouritesCount,
     int? listedCount,
     String? latestRawJson,
+    bool? isProtected,
+    bool? isVerified,
   }) {
     return Account(
       id: id ?? this.id,
@@ -145,6 +156,8 @@ class Account {
       favouritesCount: favouritesCount ?? this.favouritesCount,
       listedCount: listedCount ?? this.listedCount,
       latestRawJson: latestRawJson ?? this.latestRawJson,
+      isVerified: isVerified ?? this.isVerified,
+      isProtected: isProtected ?? this.isProtected,
     );
   }
 

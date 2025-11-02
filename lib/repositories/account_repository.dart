@@ -64,21 +64,29 @@ class AccountRepository {
   Future<void> removeAccount(String id) async {
     try {
       await _secureStorage.deleteCookie(id);
-      logger.i("AccountRepository: Deleted cookie from SecureStorage for ID $id.");
+      logger.i(
+        "AccountRepository: Deleted cookie from SecureStorage for ID $id.",
+      );
 
       final deletedRows = await (_database.delete(
         _database.loggedAccounts,
       )..where((tbl) => tbl.id.equals(id))).go();
 
       if (deletedRows > 0) {
-        logger.i("AccountRepository: Deleted profile from database for ID $id.");
+        logger.i(
+          "AccountRepository: Deleted profile from database for ID $id.",
+        );
       } else {
         logger.w(
           "AccountRepository: Tried to delete profile for ID $id, but it was not found.",
         );
       }
     } catch (e, s) {
-      logger.e("AccountRepository: Error removing account ID $id", error: e, stackTrace: s);
+      logger.e(
+        "AccountRepository: Error removing account ID $id",
+        error: e,
+        stackTrace: s,
+      );
       throw Exception('Failed to remove account: $e');
     }
   }
@@ -110,6 +118,8 @@ class AccountRepository {
               favouritesCount: profile.favouritesCount,
               listedCount: profile.listedCount,
               latestRawJson: profile.latestRawJson,
+              isVerified: profile.isVerified ?? false,
+              isProtected: profile.isProtected ?? false,
             ),
           );
         } else {
@@ -120,7 +130,11 @@ class AccountRepository {
       }
       return loadedAccounts;
     } catch (e, s) {
-      logger.e("AccountRepository: Error getting all accounts", error: e, stackTrace: s);
+      logger.e(
+        "AccountRepository: Error getting all accounts",
+        error: e,
+        stackTrace: s,
+      );
       rethrow;
     }
   }
@@ -145,9 +159,11 @@ class AccountRepository {
     int favouritesCount = 0;
     int listedCount = 0;
     String rawJsonString = '{}';
+    bool isVerified = false;
+    bool isProtected = false;
     try {
-      final Map<String, dynamic> userProfileJson =
-          await _apiService.getUserByRestId(id, cookie);
+      final Map<String, dynamic> userProfileJson = await _apiService
+          .getUserByRestId(id, cookie);
       rawJsonString = jsonEncode(userProfileJson);
       final result = userProfileJson['data']?['user']?['result'];
       if (result != null &&
@@ -189,7 +205,11 @@ class AccountRepository {
               }
             }
           } catch (e, s) {
-            logger.w("addAccount: Failed to parse URL entities", error: e, stackTrace: s);
+            logger.w(
+              "addAccount: Failed to parse URL entities",
+              error: e,
+              stackTrace: s,
+            );
           }
           link = finalLink;
           bannerUrl = legacy['profile_banner_url'] as String?;
@@ -197,6 +217,8 @@ class AccountRepository {
           mediaCount = legacy['media_count'] as int? ?? 0;
           favouritesCount = legacy['favourites_count'] as int? ?? 0;
           listedCount = legacy['listed_count'] as int? ?? 0;
+          isVerified = result['verification']['verified'] as bool? ?? false;
+          isProtected = result['privacy']['protected'] as bool? ?? false;
         }
         final locationMap = result['location'] as Map<String, dynamic>?;
         location = locationMap?['location'] as String?;
@@ -239,9 +261,11 @@ class AccountRepository {
           mediaCount: Value(mediaCount),
           favouritesCount: Value(favouritesCount),
           listedCount: Value(listedCount),
+          isVerified: Value(isVerified),
+          isProtected: Value(isProtected),
           latestRawJson: Value(rawJsonString),
-          avatarLocalPath: const Value.absent(),
-          bannerLocalPath: const Value.absent(),
+          avatarLocalPath: Value.absent(),
+          bannerLocalPath: Value.absent(),
         );
         await _database
             .into(_database.loggedAccounts)
@@ -279,11 +303,17 @@ class AccountRepository {
         statusesCount: statusesCount,
         mediaCount: mediaCount,
         favouritesCount: favouritesCount,
+        isVerified: isVerified,
+        isProtected: isProtected,
         listedCount: listedCount,
         latestRawJson: rawJsonString,
       );
     } catch (e, s) {
-      logger.e("addAccount: Error during database transaction for ID $id", error: e, stackTrace: s);
+      logger.e(
+        "addAccount: Error during database transaction for ID $id",
+        error: e,
+        stackTrace: s,
+      );
       throw Exception('Failed to save account data: $e');
     }
   }

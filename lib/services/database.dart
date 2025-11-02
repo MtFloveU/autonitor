@@ -24,6 +24,8 @@ class LoggedAccounts extends Table {
   TextColumn get location => text().nullable()();
   TextColumn get link => text().nullable()();
   TextColumn get joinTime => text().nullable()();
+  BoolColumn get isVerified => boolean().nullable().withDefault(const Constant(false))();
+  BoolColumn get isProtected => boolean().nullable().withDefault(const Constant(false))();
 
   // 统计数值
   IntColumn get followersCount => integer().withDefault(const Constant(0))();

@@ -78,6 +78,36 @@ class $LoggedAccountsTable extends LoggedAccounts
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _isVerifiedMeta = const VerificationMeta(
+    'isVerified',
+  );
+  @override
+  late final GeneratedColumn<bool> isVerified = GeneratedColumn<bool>(
+    'is_verified',
+    aliasedName,
+    true,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_verified" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _isProtectedMeta = const VerificationMeta(
+    'isProtected',
+  );
+  @override
+  late final GeneratedColumn<bool> isProtected = GeneratedColumn<bool>(
+    'is_protected',
+    aliasedName,
+    true,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_protected" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _followersCountMeta = const VerificationMeta(
     'followersCount',
   );
@@ -214,6 +244,8 @@ class $LoggedAccountsTable extends LoggedAccounts
     location,
     link,
     joinTime,
+    isVerified,
+    isProtected,
     followersCount,
     followingCount,
     statusesCount,
@@ -277,6 +309,21 @@ class $LoggedAccountsTable extends LoggedAccounts
       context.handle(
         _joinTimeMeta,
         joinTime.isAcceptableOrUnknown(data['join_time']!, _joinTimeMeta),
+      );
+    }
+    if (data.containsKey('is_verified')) {
+      context.handle(
+        _isVerifiedMeta,
+        isVerified.isAcceptableOrUnknown(data['is_verified']!, _isVerifiedMeta),
+      );
+    }
+    if (data.containsKey('is_protected')) {
+      context.handle(
+        _isProtectedMeta,
+        isProtected.isAcceptableOrUnknown(
+          data['is_protected']!,
+          _isProtectedMeta,
+        ),
       );
     }
     if (data.containsKey('followers_count')) {
@@ -406,6 +453,14 @@ class $LoggedAccountsTable extends LoggedAccounts
         DriftSqlType.string,
         data['${effectivePrefix}join_time'],
       ),
+      isVerified: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_verified'],
+      ),
+      isProtected: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_protected'],
+      ),
       followersCount: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}followers_count'],
@@ -467,6 +522,8 @@ class LoggedAccount extends DataClass implements Insertable<LoggedAccount> {
   final String? location;
   final String? link;
   final String? joinTime;
+  final bool? isVerified;
+  final bool? isProtected;
   final int followersCount;
   final int followingCount;
   final int statusesCount;
@@ -486,6 +543,8 @@ class LoggedAccount extends DataClass implements Insertable<LoggedAccount> {
     this.location,
     this.link,
     this.joinTime,
+    this.isVerified,
+    this.isProtected,
     required this.followersCount,
     required this.followingCount,
     required this.statusesCount,
@@ -519,6 +578,12 @@ class LoggedAccount extends DataClass implements Insertable<LoggedAccount> {
     }
     if (!nullToAbsent || joinTime != null) {
       map['join_time'] = Variable<String>(joinTime);
+    }
+    if (!nullToAbsent || isVerified != null) {
+      map['is_verified'] = Variable<bool>(isVerified);
+    }
+    if (!nullToAbsent || isProtected != null) {
+      map['is_protected'] = Variable<bool>(isProtected);
     }
     map['followers_count'] = Variable<int>(followersCount);
     map['following_count'] = Variable<int>(followingCount);
@@ -559,6 +624,12 @@ class LoggedAccount extends DataClass implements Insertable<LoggedAccount> {
       joinTime: joinTime == null && nullToAbsent
           ? const Value.absent()
           : Value(joinTime),
+      isVerified: isVerified == null && nullToAbsent
+          ? const Value.absent()
+          : Value(isVerified),
+      isProtected: isProtected == null && nullToAbsent
+          ? const Value.absent()
+          : Value(isProtected),
       followersCount: Value(followersCount),
       followingCount: Value(followingCount),
       statusesCount: Value(statusesCount),
@@ -596,6 +667,8 @@ class LoggedAccount extends DataClass implements Insertable<LoggedAccount> {
       location: serializer.fromJson<String?>(json['location']),
       link: serializer.fromJson<String?>(json['link']),
       joinTime: serializer.fromJson<String?>(json['joinTime']),
+      isVerified: serializer.fromJson<bool?>(json['isVerified']),
+      isProtected: serializer.fromJson<bool?>(json['isProtected']),
       followersCount: serializer.fromJson<int>(json['followersCount']),
       followingCount: serializer.fromJson<int>(json['followingCount']),
       statusesCount: serializer.fromJson<int>(json['statusesCount']),
@@ -620,6 +693,8 @@ class LoggedAccount extends DataClass implements Insertable<LoggedAccount> {
       'location': serializer.toJson<String?>(location),
       'link': serializer.toJson<String?>(link),
       'joinTime': serializer.toJson<String?>(joinTime),
+      'isVerified': serializer.toJson<bool?>(isVerified),
+      'isProtected': serializer.toJson<bool?>(isProtected),
       'followersCount': serializer.toJson<int>(followersCount),
       'followingCount': serializer.toJson<int>(followingCount),
       'statusesCount': serializer.toJson<int>(statusesCount),
@@ -642,6 +717,8 @@ class LoggedAccount extends DataClass implements Insertable<LoggedAccount> {
     Value<String?> location = const Value.absent(),
     Value<String?> link = const Value.absent(),
     Value<String?> joinTime = const Value.absent(),
+    Value<bool?> isVerified = const Value.absent(),
+    Value<bool?> isProtected = const Value.absent(),
     int? followersCount,
     int? followingCount,
     int? statusesCount,
@@ -661,6 +738,8 @@ class LoggedAccount extends DataClass implements Insertable<LoggedAccount> {
     location: location.present ? location.value : this.location,
     link: link.present ? link.value : this.link,
     joinTime: joinTime.present ? joinTime.value : this.joinTime,
+    isVerified: isVerified.present ? isVerified.value : this.isVerified,
+    isProtected: isProtected.present ? isProtected.value : this.isProtected,
     followersCount: followersCount ?? this.followersCount,
     followingCount: followingCount ?? this.followingCount,
     statusesCount: statusesCount ?? this.statusesCount,
@@ -690,6 +769,12 @@ class LoggedAccount extends DataClass implements Insertable<LoggedAccount> {
       location: data.location.present ? data.location.value : this.location,
       link: data.link.present ? data.link.value : this.link,
       joinTime: data.joinTime.present ? data.joinTime.value : this.joinTime,
+      isVerified: data.isVerified.present
+          ? data.isVerified.value
+          : this.isVerified,
+      isProtected: data.isProtected.present
+          ? data.isProtected.value
+          : this.isProtected,
       followersCount: data.followersCount.present
           ? data.followersCount.value
           : this.followersCount,
@@ -732,6 +817,8 @@ class LoggedAccount extends DataClass implements Insertable<LoggedAccount> {
           ..write('location: $location, ')
           ..write('link: $link, ')
           ..write('joinTime: $joinTime, ')
+          ..write('isVerified: $isVerified, ')
+          ..write('isProtected: $isProtected, ')
           ..write('followersCount: $followersCount, ')
           ..write('followingCount: $followingCount, ')
           ..write('statusesCount: $statusesCount, ')
@@ -756,6 +843,8 @@ class LoggedAccount extends DataClass implements Insertable<LoggedAccount> {
     location,
     link,
     joinTime,
+    isVerified,
+    isProtected,
     followersCount,
     followingCount,
     statusesCount,
@@ -779,6 +868,8 @@ class LoggedAccount extends DataClass implements Insertable<LoggedAccount> {
           other.location == this.location &&
           other.link == this.link &&
           other.joinTime == this.joinTime &&
+          other.isVerified == this.isVerified &&
+          other.isProtected == this.isProtected &&
           other.followersCount == this.followersCount &&
           other.followingCount == this.followingCount &&
           other.statusesCount == this.statusesCount &&
@@ -800,6 +891,8 @@ class LoggedAccountsCompanion extends UpdateCompanion<LoggedAccount> {
   final Value<String?> location;
   final Value<String?> link;
   final Value<String?> joinTime;
+  final Value<bool?> isVerified;
+  final Value<bool?> isProtected;
   final Value<int> followersCount;
   final Value<int> followingCount;
   final Value<int> statusesCount;
@@ -820,6 +913,8 @@ class LoggedAccountsCompanion extends UpdateCompanion<LoggedAccount> {
     this.location = const Value.absent(),
     this.link = const Value.absent(),
     this.joinTime = const Value.absent(),
+    this.isVerified = const Value.absent(),
+    this.isProtected = const Value.absent(),
     this.followersCount = const Value.absent(),
     this.followingCount = const Value.absent(),
     this.statusesCount = const Value.absent(),
@@ -841,6 +936,8 @@ class LoggedAccountsCompanion extends UpdateCompanion<LoggedAccount> {
     this.location = const Value.absent(),
     this.link = const Value.absent(),
     this.joinTime = const Value.absent(),
+    this.isVerified = const Value.absent(),
+    this.isProtected = const Value.absent(),
     this.followersCount = const Value.absent(),
     this.followingCount = const Value.absent(),
     this.statusesCount = const Value.absent(),
@@ -862,6 +959,8 @@ class LoggedAccountsCompanion extends UpdateCompanion<LoggedAccount> {
     Expression<String>? location,
     Expression<String>? link,
     Expression<String>? joinTime,
+    Expression<bool>? isVerified,
+    Expression<bool>? isProtected,
     Expression<int>? followersCount,
     Expression<int>? followingCount,
     Expression<int>? statusesCount,
@@ -883,6 +982,8 @@ class LoggedAccountsCompanion extends UpdateCompanion<LoggedAccount> {
       if (location != null) 'location': location,
       if (link != null) 'link': link,
       if (joinTime != null) 'join_time': joinTime,
+      if (isVerified != null) 'is_verified': isVerified,
+      if (isProtected != null) 'is_protected': isProtected,
       if (followersCount != null) 'followers_count': followersCount,
       if (followingCount != null) 'following_count': followingCount,
       if (statusesCount != null) 'statuses_count': statusesCount,
@@ -906,6 +1007,8 @@ class LoggedAccountsCompanion extends UpdateCompanion<LoggedAccount> {
     Value<String?>? location,
     Value<String?>? link,
     Value<String?>? joinTime,
+    Value<bool?>? isVerified,
+    Value<bool?>? isProtected,
     Value<int>? followersCount,
     Value<int>? followingCount,
     Value<int>? statusesCount,
@@ -927,6 +1030,8 @@ class LoggedAccountsCompanion extends UpdateCompanion<LoggedAccount> {
       location: location ?? this.location,
       link: link ?? this.link,
       joinTime: joinTime ?? this.joinTime,
+      isVerified: isVerified ?? this.isVerified,
+      isProtected: isProtected ?? this.isProtected,
       followersCount: followersCount ?? this.followersCount,
       followingCount: followingCount ?? this.followingCount,
       statusesCount: statusesCount ?? this.statusesCount,
@@ -965,6 +1070,12 @@ class LoggedAccountsCompanion extends UpdateCompanion<LoggedAccount> {
     }
     if (joinTime.present) {
       map['join_time'] = Variable<String>(joinTime.value);
+    }
+    if (isVerified.present) {
+      map['is_verified'] = Variable<bool>(isVerified.value);
+    }
+    if (isProtected.present) {
+      map['is_protected'] = Variable<bool>(isProtected.value);
     }
     if (followersCount.present) {
       map['followers_count'] = Variable<int>(followersCount.value);
@@ -1015,6 +1126,8 @@ class LoggedAccountsCompanion extends UpdateCompanion<LoggedAccount> {
           ..write('location: $location, ')
           ..write('link: $link, ')
           ..write('joinTime: $joinTime, ')
+          ..write('isVerified: $isVerified, ')
+          ..write('isProtected: $isProtected, ')
           ..write('followersCount: $followersCount, ')
           ..write('followingCount: $followingCount, ')
           ..write('statusesCount: $statusesCount, ')
@@ -2815,6 +2928,8 @@ typedef $$LoggedAccountsTableCreateCompanionBuilder =
       Value<String?> location,
       Value<String?> link,
       Value<String?> joinTime,
+      Value<bool?> isVerified,
+      Value<bool?> isProtected,
       Value<int> followersCount,
       Value<int> followingCount,
       Value<int> statusesCount,
@@ -2837,6 +2952,8 @@ typedef $$LoggedAccountsTableUpdateCompanionBuilder =
       Value<String?> location,
       Value<String?> link,
       Value<String?> joinTime,
+      Value<bool?> isVerified,
+      Value<bool?> isProtected,
       Value<int> followersCount,
       Value<int> followingCount,
       Value<int> statusesCount,
@@ -2971,6 +3088,16 @@ class $$LoggedAccountsTableFilterComposer
 
   ColumnFilters<String> get joinTime => $composableBuilder(
     column: $table.joinTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isVerified => $composableBuilder(
+    column: $table.isVerified,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isProtected => $composableBuilder(
+    column: $table.isProtected,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3150,6 +3277,16 @@ class $$LoggedAccountsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get isVerified => $composableBuilder(
+    column: $table.isVerified,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isProtected => $composableBuilder(
+    column: $table.isProtected,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get followersCount => $composableBuilder(
     column: $table.followersCount,
     builder: (column) => ColumnOrderings(column),
@@ -3237,6 +3374,16 @@ class $$LoggedAccountsTableAnnotationComposer
 
   GeneratedColumn<String> get joinTime =>
       $composableBuilder(column: $table.joinTime, builder: (column) => column);
+
+  GeneratedColumn<bool> get isVerified => $composableBuilder(
+    column: $table.isVerified,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isProtected => $composableBuilder(
+    column: $table.isProtected,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get followersCount => $composableBuilder(
     column: $table.followersCount,
@@ -3407,6 +3554,8 @@ class $$LoggedAccountsTableTableManager
                 Value<String?> location = const Value.absent(),
                 Value<String?> link = const Value.absent(),
                 Value<String?> joinTime = const Value.absent(),
+                Value<bool?> isVerified = const Value.absent(),
+                Value<bool?> isProtected = const Value.absent(),
                 Value<int> followersCount = const Value.absent(),
                 Value<int> followingCount = const Value.absent(),
                 Value<int> statusesCount = const Value.absent(),
@@ -3427,6 +3576,8 @@ class $$LoggedAccountsTableTableManager
                 location: location,
                 link: link,
                 joinTime: joinTime,
+                isVerified: isVerified,
+                isProtected: isProtected,
                 followersCount: followersCount,
                 followingCount: followingCount,
                 statusesCount: statusesCount,
@@ -3449,6 +3600,8 @@ class $$LoggedAccountsTableTableManager
                 Value<String?> location = const Value.absent(),
                 Value<String?> link = const Value.absent(),
                 Value<String?> joinTime = const Value.absent(),
+                Value<bool?> isVerified = const Value.absent(),
+                Value<bool?> isProtected = const Value.absent(),
                 Value<int> followersCount = const Value.absent(),
                 Value<int> followingCount = const Value.absent(),
                 Value<int> statusesCount = const Value.absent(),
@@ -3469,6 +3622,8 @@ class $$LoggedAccountsTableTableManager
                 location: location,
                 link: link,
                 joinTime: joinTime,
+                isVerified: isVerified,
+                isProtected: isProtected,
                 followersCount: followersCount,
                 followingCount: followingCount,
                 statusesCount: statusesCount,

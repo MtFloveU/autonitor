@@ -20,6 +20,8 @@ class TwitterUser {
   final int favouritesCount;
   final int listedCount;
   final String? latestRawJson;
+  final bool isProtected;
+  final bool isVerified;
 
   const TwitterUser({
     required this.avatarUrl,
@@ -38,6 +40,8 @@ class TwitterUser {
     required this.favouritesCount,
     required this.listedCount,
     required this.latestRawJson,
+    required this.isProtected,
+    required this.isVerified,
   });
 
   // 从Map(JSON)创建TwitterUser实例
@@ -59,6 +63,8 @@ class TwitterUser {
       favouritesCount: json['favouritesCount'] ?? 0,
       listedCount: json['listedCount'] ?? 0,
       latestRawJson: json['latestRawJson'] as String?,
+      isProtected: (json['isProtected'] ?? 0) == 1,
+      isVerified: (json['isVerified'] ?? 0) == 1,
     );
   }
 
@@ -78,6 +84,8 @@ class TwitterUser {
       'favouritesCount': favouritesCount,
       'listedCount': listedCount,
       'latestRawJson': latestRawJson,
+      'isProtected': isProtected,
+      'isVerified': isVerified,
     };
   }
 }

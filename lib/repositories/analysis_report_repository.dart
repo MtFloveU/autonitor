@@ -46,7 +46,9 @@ class AnalysisReportRepository {
         // --- 修改：应用分页 ---
         final followUsers = await (query..limit(limit, offset: offset)).get();
 
-        logger.i("AnalysisReportRepository: Fetched ${followUsers.length} users.");
+        logger.i(
+          "AnalysisReportRepository: Fetched ${followUsers.length} users.",
+        );
 
         paramsList = followUsers
             .map(
@@ -142,6 +144,8 @@ TwitterUser _parseFollowUserToTwitterUser(_ParseParams params) {
       mediaCount = 0,
       favouritesCount = 0,
       listedCount = 0;
+  bool isVerified = false;
+  bool isProtected = false;
 
   if (params.jsonString != null && params.jsonString!.isNotEmpty) {
     try {
@@ -161,6 +165,8 @@ TwitterUser _parseFollowUserToTwitterUser(_ParseParams params) {
       mediaCount = parsedJson['media_count'] as int? ?? 0;
       favouritesCount = parsedJson['favourites_count'] as int? ?? 0;
       listedCount = parsedJson['listed_count'] as int? ?? 0;
+      isProtected = parsedJson['protected'] as bool? ?? false;
+      isVerified = parsedJson['ext_is_blue_verified'] as bool? ?? false;
 
       link = parsedJson['url'] as String?; // 默认 t.co 链接
       final entities = parsedJson['entities'] as Map<String, dynamic>?;
@@ -205,5 +211,7 @@ TwitterUser _parseFollowUserToTwitterUser(_ParseParams params) {
     favouritesCount: favouritesCount,
     listedCount: listedCount,
     latestRawJson: params.jsonString,
+    isVerified: isVerified,
+    isProtected: isProtected,
   );
 }
