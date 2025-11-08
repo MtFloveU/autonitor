@@ -254,6 +254,51 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get clear => '清除';
+
+  @override
+  String get api_request_settings => 'API 请求设置';
+
+  @override
+  String get xclient_generator_title => 'XClientTransactionID 生成器';
+
+  @override
+  String get num_ids_to_generate => '要生成的 ID 数量：';
+
+  @override
+  String get url_path_label => 'URL 路径';
+
+  @override
+  String get please_enter_valid_number => '请输入有效的数字（1-100）';
+
+  @override
+  String get path_must_start_with_slash => '路径必须以 / 开头';
+
+  @override
+  String get fetching_resources => '正在获取资源';
+
+  @override
+  String generating_ids_local(int count) {
+    return '正在本地生成 $count 个 ID...';
+  }
+
+  @override
+  String get generation_canceled => '生成已取消。';
+
+  @override
+  String id_generation_failed(String error) {
+    return 'ID 生成失败：$error';
+  }
+
+  @override
+  String get generating => '正在生成...';
+
+  @override
+  String get generate => '生成';
+
+  @override
+  String load_settings_failed(String error) {
+    return '加载设置失败：$error';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -506,4 +551,49 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get clear => '清除';
+
+  @override
+  String get api_request_settings => 'API 請求設定';
+
+  @override
+  String get xclient_generator_title => 'XClientTransactionID 產生器';
+
+  @override
+  String get num_ids_to_generate => '要產生的 ID 數量：';
+
+  @override
+  String get url_path_label => 'URL 路徑';
+
+  @override
+  String get please_enter_valid_number => '請輸入有效的數字（1-100）';
+
+  @override
+  String get path_must_start_with_slash => '路徑必須以 / 開頭';
+
+  @override
+  String get fetching_resources => '正在取得資源';
+
+  @override
+  String generating_ids_local(int count) {
+    return '正在本地產生 $count 個 ID...';
+  }
+
+  @override
+  String get generation_canceled => '產生已取消。';
+
+  @override
+  String id_generation_failed(String error) {
+    return 'ID 產生失敗：$error';
+  }
+
+  @override
+  String get generating => '正在產生...';
+
+  @override
+  String get generate => '產生';
+
+  @override
+  String load_settings_failed(String error) {
+    return '載入設定失敗：$error';
+  }
 }

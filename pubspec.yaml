@@ -15,7 +15,7 @@ dependencies:
   flutter_secure_storage: any
   flutter_inappwebview: ^6.0.0
   http: ^1.2.1
-  dio: ^5.4.3
+  dio: ^5.9.0
   cached_network_image: ^3.4.1
   cupertino_icons: ^1.0.8
   url_launcher: ^6.3.2
@@ -31,6 +31,9 @@ dependencies:
   async_locks: ^4.0.2
   logger: ^2.6.2
   flutter_svg: ^2.2.1
+  cookie_jar: ^4.0.8
+  dio_cookie_manager: ^3.3.0
+  html: ^0.15.6
 
 dev_dependencies:
   flutter_test:

@@ -584,6 +584,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear'**
   String get clear;
+
+  /// No description provided for @api_request_settings.
+  ///
+  /// In en, this message translates to:
+  /// **'API Request Settings'**
+  String get api_request_settings;
+
+  /// Dialog title for XClientTransactionID Generator
+  ///
+  /// In en, this message translates to:
+  /// **'XClientTransactionID Generator'**
+  String get xclient_generator_title;
+
+  /// Label for the count input field in ID generator dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Number of IDs to be generated:'**
+  String get num_ids_to_generate;
+
+  /// Label for the URL Path input field
+  ///
+  /// In en, this message translates to:
+  /// **'URL Path'**
+  String get url_path_label;
+
+  /// Snackbar message shown when invalid number entered
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid number (1-100)'**
+  String get please_enter_valid_number;
+
+  /// Snackbar message shown when path not starting with /
+  ///
+  /// In en, this message translates to:
+  /// **'Path must start with /'**
+  String get path_must_start_with_slash;
+
+  /// Shown when fetching resources before generating IDs
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching resources'**
+  String get fetching_resources;
+
+  /// Message shown during local ID generation
+  ///
+  /// In en, this message translates to:
+  /// **'Generating {count} IDs (local)...'**
+  String generating_ids_local(int count);
+
+  /// Error message when generation canceled
+  ///
+  /// In en, this message translates to:
+  /// **'Generation canceled.'**
+  String get generation_canceled;
+
+  /// Error message when generation failed
+  ///
+  /// In en, this message translates to:
+  /// **'ID Generation Failed: {error}'**
+  String id_generation_failed(String error);
+
+  /// Label for progress state of generation button
+  ///
+  /// In en, this message translates to:
+  /// **'Generating...'**
+  String get generating;
+
+  /// Label for generate button
+  ///
+  /// In en, this message translates to:
+  /// **'Generate'**
+  String get generate;
+
+  /// Shown when failed to load settings
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load settings: {error}'**
+  String load_settings_failed(String error);
 }
 
 class _AppLocalizationsDelegate

@@ -255,4 +255,49 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clear => 'Clear';
+
+  @override
+  String get api_request_settings => 'API Request Settings';
+
+  @override
+  String get xclient_generator_title => 'XClientTransactionID Generator';
+
+  @override
+  String get num_ids_to_generate => 'Number of IDs to be generated:';
+
+  @override
+  String get url_path_label => 'URL Path';
+
+  @override
+  String get please_enter_valid_number => 'Please enter a valid number (1-100)';
+
+  @override
+  String get path_must_start_with_slash => 'Path must start with /';
+
+  @override
+  String get fetching_resources => 'Fetching resources';
+
+  @override
+  String generating_ids_local(int count) {
+    return 'Generating $count IDs (local)...';
+  }
+
+  @override
+  String get generation_canceled => 'Generation canceled.';
+
+  @override
+  String id_generation_failed(String error) {
+    return 'ID Generation Failed: $error';
+  }
+
+  @override
+  String get generating => 'Generating...';
+
+  @override
+  String get generate => 'Generate';
+
+  @override
+  String load_settings_failed(String error) {
+    return 'Failed to load settings: $error';
+  }
 }

@@ -11,6 +11,7 @@ final databaseProvider = Provider<AppDatabase>((ref) {
 });
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const ProviderScope(child: MyApp()));
 }
 

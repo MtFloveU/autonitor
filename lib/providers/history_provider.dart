@@ -25,14 +25,14 @@ class ProfileHistoryParams {
 }
 
 /// 2. 创建 History Provider (现在它非常简单)
-final profileHistoryProvider = AsyncNotifierProvider.family<
+final profileHistoryProvider = AsyncNotifierProvider.family.autoDispose<
     ProfileHistoryNotifier,
     List<HistorySnapshot>,
     ProfileHistoryParams>(() {
   return ProfileHistoryNotifier();
 });
 
-class ProfileHistoryNotifier extends FamilyAsyncNotifier<List<HistorySnapshot>, ProfileHistoryParams> {
+class ProfileHistoryNotifier extends AutoDisposeFamilyAsyncNotifier<List<HistorySnapshot>, ProfileHistoryParams> {
   
   @override
   Future<List<HistorySnapshot>> build(ProfileHistoryParams arg) async {

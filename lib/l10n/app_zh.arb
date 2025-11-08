@@ -94,5 +94,18 @@
   "theme_mode_dark": "深色",
   "log": "日志",
   "view_log": "查看日志",
-  "clear": "清除"
+  "clear": "清除",
+  "api_request_settings": "API 请求设置",
+  "xclient_generator_title": "XClientTransactionID 生成器",
+  "num_ids_to_generate": "要生成的 ID 数量：",
+  "url_path_label": "URL 路径",
+  "please_enter_valid_number": "请输入有效的数字（1-100）",
+  "path_must_start_with_slash": "路径必须以 / 开头",
+  "fetching_resources": "正在获取资源",
+  "generating_ids_local": "正在本地生成 {count} 个 ID...",
+  "generation_canceled": "生成已取消。",
+  "id_generation_failed": "ID 生成失败：{error}",
+  "generating": "正在生成...",
+  "generate": "生成",
+  "load_settings_failed": "加载设置失败：{error}"
 }
