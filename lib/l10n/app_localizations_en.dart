@@ -300,4 +300,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String load_settings_failed(String error) {
     return 'Failed to load settings: $error';
   }
+
+  @override
+  String get xclient_generator_source => 'Source:';
+
+  @override
+  String get refresh => 'Refresh';
+
+  @override
+  String get reset => 'Reset';
+
+  @override
+  String get operation_name => 'Operation:';
+
+  @override
+  String get graphql_path_config => 'GraphQL Endpoint Configuration';
 }

@@ -107,5 +107,10 @@
   "id_generation_failed": "ID 產生失敗：{error}",
   "generating": "正在產生...",
   "generate": "產生",
-  "load_settings_failed": "載入設定失敗：{error}"
+  "load_settings_failed": "載入設定失敗：{error}",
+    "xclient_generator_source": "來源：",
+  "refresh": "刷新",
+  "reset": "重設",
+  "operation_name": "操作：",
+  "graphql_path_config": "GraphQL 端點配置"
 }

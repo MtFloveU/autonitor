@@ -299,6 +299,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String load_settings_failed(String error) {
     return '加载设置失败：$error';
   }
+
+  @override
+  String get xclient_generator_source => '来源：';
+
+  @override
+  String get refresh => '刷新';
+
+  @override
+  String get reset => '重置';
+
+  @override
+  String get operation_name => '操作：';
+
+  @override
+  String get graphql_path_config => 'GraphQL 端点配置';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -596,4 +611,19 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String load_settings_failed(String error) {
     return '載入設定失敗：$error';
   }
+
+  @override
+  String get xclient_generator_source => '來源：';
+
+  @override
+  String get refresh => '刷新';
+
+  @override
+  String get reset => '重設';
+
+  @override
+  String get operation_name => '操作：';
+
+  @override
+  String get graphql_path_config => 'GraphQL 端點配置';
 }

@@ -249,5 +249,28 @@
     "placeholders": {
       "error": { "type": "String", "example": "Network error" }
     }
+  },
+  "xclient_generator_source": "Source:",
+  "@xclient_generator_source": {
+    "description": "Label for the API path source selection"
+  },
+
+  "refresh": "Refresh",
+  "@refresh": {
+    "description": "Button label to refresh API paths from the document"
+  },
+
+  "reset": "Reset",
+  "@reset": {
+    "description": "Button label to reset custom paths to default values"
+  },
+
+  "operation_name": "Operation:",
+  "@operation_name": {
+    "description": "Label for the GraphQL operation name dropdown"
+  },
+  "graphql_path_config": "GraphQL Endpoint Configuration",
+  "@graphql_path_config": {
+    "description": "Label for the GraphQL endpoint configuration"
   }
 }

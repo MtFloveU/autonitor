@@ -1,3 +1,4 @@
+import 'package:autonitor/models/graphql_operation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
@@ -18,7 +19,8 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
   final SettingsService _settingsService;
   final Logger _log;
 
-  SettingsNotifier(this._settingsService, this._log) : super(const AsyncValue.loading()) {
+  SettingsNotifier(this._settingsService, this._log)
+    : super(const AsyncValue.loading()) {
     _load();
   }
 
@@ -31,6 +33,31 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
       state = AsyncValue.error(e, s);
       _log.e('加载设置失败', error: e, stackTrace: s);
     }
+  }
+
+  Future<void> updateCustomGqlPath(String operationName, String newPath) async {
+    final currentState = state;
+    if (currentState is! AsyncData<AppSettings>) return;
+
+    final currentSettings = currentState.value;
+    final newPaths = Map<String, String>.from(currentSettings.customGqlPaths);
+    newPaths[operationName] = newPath;
+
+    final newState = currentSettings.copyWith(customGqlPaths: newPaths);
+    state = AsyncValue.data(newState);
+    await _settingsService.saveSettings(newState);
+  }
+
+  // (新) 用于更新所有路径 (例如：API 刷新成功时)
+  Future<void> updateCustomGqlPaths(Map<String, String> newPaths) async {
+    final currentState = state;
+    if (currentState is! AsyncData<AppSettings>) return;
+
+    final currentSettings = currentState.value;
+    // 直接用新路径覆盖旧路径（因为这是 API 成功获取的结果）
+    final newState = currentSettings.copyWith(customGqlPaths: newPaths);
+    state = AsyncValue.data(newState);
+    await _settingsService.saveSettings(newState);
   }
 
   // In: class SettingsNotifier ...
@@ -123,5 +150,25 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
       state = AsyncValue.error('Failed to save theme: $e', s);
       _log.e('Failed to save themeMode setting', error: e, stackTrace: s);
     }
+  }
+
+  Future<void> resetCustomGqlPaths(Map<String, String> defaultPaths) async {
+    final currentState = state;
+    if (currentState is! AsyncData<AppSettings>) return;
+
+    final currentSettings = currentState.value;
+    final newState = currentSettings.copyWith(customGqlPaths: defaultPaths);
+    state = AsyncValue.data(newState);
+    await _settingsService.saveSettings(newState);
+  }
+
+  Future<void> updateGqlPathSource(PathSource newSource) async {
+    final currentState = state;
+    if (currentState is! AsyncData<AppSettings>) return;
+
+    final currentSettings = currentState.value;
+    final newState = currentSettings.copyWith(gqlPathSource: newSource);
+    state = AsyncValue.data(newState);
+    await _settingsService.saveSettings(newState);
   }
 }

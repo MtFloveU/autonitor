@@ -662,6 +662,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to load settings: {error}'**
   String load_settings_failed(String error);
+
+  /// Label for the API path source selection
+  ///
+  /// In en, this message translates to:
+  /// **'Source:'**
+  String get xclient_generator_source;
+
+  /// Button label to refresh API paths from the document
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get refresh;
+
+  /// Button label to reset custom paths to default values
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get reset;
+
+  /// Label for the GraphQL operation name dropdown
+  ///
+  /// In en, this message translates to:
+  /// **'Operation:'**
+  String get operation_name;
+
+  /// Label for the GraphQL endpoint configuration
+  ///
+  /// In en, this message translates to:
+  /// **'GraphQL Endpoint Configuration'**
+  String get graphql_path_config;
 }
 
 class _AppLocalizationsDelegate

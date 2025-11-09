@@ -1,13 +1,41 @@
 import 'package:autonitor/models/app_settings.dart';
+import 'package:autonitor/models/graphql_operation.dart';
 import 'package:autonitor/providers/x_client_transaction_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/log_provider.dart';
 import '../providers/settings_provider.dart';
 import '../l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
-// 1. (新) 导入 Service 只是为了类型提示
 import '../services/x_client_transaction_service.dart';
+import '../providers/graphql_path_provider.dart';
+
+// Custom InputFormatter to allow only numbers within a given range
+class NumberRangeInputFormatter extends TextInputFormatter {
+  final int min;
+  final int max;
+
+  NumberRangeInputFormatter({required this.min, required this.max});
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.isEmpty) {
+      return newValue;
+    }
+    final int? value = int.tryParse(newValue.text);
+    if (value == null) {
+      return oldValue;
+    }
+    if (value < min || value > max) {
+      return oldValue;
+    }
+    return newValue;
+  }
+}
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -19,13 +47,14 @@ class SettingsPage extends ConsumerStatefulWidget {
 class _SettingsPageState extends ConsumerState<SettingsPage> {
   late TextEditingController _historyLimitController;
 
+  // --- (保留 _showGenerateDialog 的完整代码，不修改) ---
   void _showGenerateDialog() {
     final TextEditingController countController = TextEditingController(
       text: '1',
     );
     // (新) 为 Path 添加 Controller
     final TextEditingController pathController = TextEditingController(
-      text: '/i/api/graphql/Efm7xwLreAw77q2Fq7rX-Q/Followers',
+      text: '/graphql/Efm7xwLreAw77q2Fq7rX-Q/Followers',
     );
     final TextEditingController resultController = TextEditingController();
     final ValueNotifier<bool> isGenerating = ValueNotifier<bool>(false);
@@ -97,7 +126,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           const Text(
-                            'https://x.com',
+                            'https://api.x.com',
                             style: TextStyle(
                               fontFamily: 'monospace',
                               fontSize: 13,
@@ -176,7 +205,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                             : () async {
                                 final input = countController.text.trim();
                                 final count = int.tryParse(input);
+                                // --- (关键修改) 获取当前选中的 Path ---
+                                // 使用旧的 pathController.text，因为您要求不修改此对话框
                                 final path = pathController.text.trim();
+                                // --- (关键修改结束) ---
 
                                 // --- (校验) ---
                                 // 这里的校验仍然是必要的，因为用户可能输入了空字符串
@@ -236,7 +268,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
                                     final id = service.generateTransactionId(
                                       method: 'GET',
-                                      url: "https://x.com$path",
+                                      url: "https://api.x.com$path",
                                     );
 
                                     generatedIds.add("${i + 1}. $id");
@@ -323,6 +355,23 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       isGenerating.dispose();
     });
   }
+  // --- (保留 _showGenerateDialog 的完整代码，不修改) ---
+
+  // --- (新) GraphQL Path 配置对话框入口 ---
+  void _showGqlPathDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        // 使用 ProviderScope.containerOf(context) 来确保在 Dialog 中可以访问 ref
+        return ProviderScope(
+          parent: ProviderScope.containerOf(context),
+          child: const GraphQLPathDialog(),
+        );
+      },
+    );
+  }
+  // --- (新) GraphQL Path 配置对话框入口 结束 ---
 
   @override
   void initState() {
@@ -465,6 +514,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 ),
                 dense: true,
               ),
+              // --- (新) GraphQL Path 配置入口 ---
+              ListTile(
+                leading: const Icon(Icons.api_outlined),
+                title: Text(l10n.graphql_path_config),
+                trailing: const Icon(Icons.open_in_new),
+                onTap: _showGqlPathDialog,
+              ),
+              // --- (新) GraphQL Path 配置入口 结束 ---
               ListTile(
                 leading: const Icon(Icons.build_circle_outlined),
                 title: Text(l10n.xclient_generator_title),
@@ -727,40 +784,209 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 }
 
 // ------------------------------------------------
-// (关键修改) 2. 在文件末尾添加这个类
+// (新) GraphQLPathDialog Widget
 // ------------------------------------------------
-/// 一个自定义的 [TextInputFormatter]，用于限制输入值为 [min] 和 [max] 之间的整数。
-class NumberRangeInputFormatter extends TextInputFormatter {
-  final int min;
-  final int max;
+// ... (保留原有内容)
 
-  NumberRangeInputFormatter({required this.min, required this.max});
+// ------------------------------------------------
+// (修改) GraphQLPathDialog Widget
+// ------------------------------------------------
+class GraphQLPathDialog extends ConsumerStatefulWidget {
+  const GraphQLPathDialog({super.key});
 
   @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    // 允许空字符串（当用户清空输入框时）
-    if (newValue.text.isEmpty) {
-      return newValue;
+  ConsumerState<GraphQLPathDialog> createState() => _GraphQLPathDialogState();
+}
+
+class _GraphQLPathDialogState extends ConsumerState<GraphQLPathDialog> {
+  // 为所有可配置的 Path 创建 Controller Map
+  late final Map<String, TextEditingController> _pathControllers;
+
+  @override
+  void initState() {
+    super.initState();
+    // 初始化 Custom Path Controllers
+    final targetOperations = ref.read(gqlPathProvider.notifier).targetOperations;
+    _pathControllers = {
+      for (var name in targetOperations) name: TextEditingController(),
+    };
+  }
+
+  @override
+  void dispose() {
+    _pathControllers.forEach((key, controller) => controller.dispose());
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final pathState = ref.watch(gqlPathProvider);
+    final pathNotifier = ref.read(gqlPathProvider.notifier);
+
+    // --- 动态更新所有 Controller 的文本 ---
+    final isCustom = pathState.source == PathSource.custom;
+    for (final opName in pathNotifier.targetOperations) {
+      final path = isCustom
+          ? pathState.customPaths[opName] ?? ''
+          : pathNotifier.getCurrentPathForDisplay(opName);
+      if (_pathControllers.containsKey(opName)) {
+        // 仅在文本不同时更新，以避免光标跳动
+        if (_pathControllers[opName]!.text != path) {
+          _pathControllers[opName]!.text = path;
+        }
+      }
     }
+    // --- 动态更新结束 ---
 
-    // 尝试将新文本解析为整数
-    final int? value = int.tryParse(newValue.text);
+    return AlertDialog(
+      title: Text(l10n.graphql_path_config),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // --- Source 选择下拉菜单 ---
+            Row(
+              children: [
+                Expanded(child: Text(l10n.xclient_generator_source)),
+                const SizedBox(width: 8),
+                DropdownButton<PathSource>(
+                  value: pathState.source,
+                  items: PathSource.values
+                      .map((e) => DropdownMenuItem(
+                            value: e,
+                            child: Text(e == PathSource.apiDocument
+                                ? 'TwitterInternalAPIDocument'
+                                : 'Custom'),
+                          ))
+                      .toList(),
+                  onChanged: pathState.isLoading
+                      ? null
+                      : (value) {
+                          if (value != null) {
+                            pathNotifier.setSource(value); // 调用新的持久化方法
+                          }
+                        },
+                ),
+                if (!isCustom)
+                  IconButton(
+                    icon: const Icon(Icons.link_outlined),
+                    onPressed: () {
+                      // ignore: deprecated_member_use
+                      launchUrl(Uri.parse('https://github.com/fa0311/TwitterInternalAPIDocument/tree/develop'));
+                    },
+                  ),
+              ],
+            ),
 
-    // 如果无法解析（例如，只是一个"-")，则保留旧值
-    // (虽然 digitsOnly 已经过滤了，但这是个好习惯)
-    if (value == null) {
-      return oldValue;
-    }
+            if (pathState.error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(
+                  'Error: ${pathState.error}',
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
 
-    // 检查是否在范围内
-    if (value >= min && value <= max) {
-      return newValue; // 接受更改
-    }
+            const SizedBox(height: 12),
 
-    // 如果值超出范围（例如输入 0 或 101），保留旧值
-    return oldValue;
+            // --- API Data Status 提示 ---
+            if (pathState.source == PathSource.apiDocument && !pathState.isApiDataLoaded && !pathState.isLoading)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                ),
+
+            // --- Path 列表 ---
+            ...pathNotifier.targetOperations.map((opName) {
+              final isCustom = pathState.source == PathSource.custom;
+              final controller = _pathControllers[opName]!;
+              
+              // 检查是否应该禁用输入框
+              final bool readOnly = !isCustom || pathState.isLoading;
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      opName,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start, // 顶部对齐
+                      children: [
+                        // --- (新) 移除 Text，改用 prefixText ---
+                        Flexible(
+                          child: TextField(
+                            controller: controller,
+                            readOnly: readOnly,
+                            onChanged: (newPath) {
+                              if (isCustom) {
+                                pathNotifier.updateCustomPath(opName, newPath);
+                              }
+                            },
+                            maxLines: null,
+                            keyboardType: TextInputType.multiline,
+                            decoration: InputDecoration(
+                              border: const OutlineInputBorder(),
+                              // (新) 使用 prefixText
+                              prefixText: 'https://api.x.com',
+                              prefixStyle: const TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: 13,
+                              ),
+                              labelText: isCustom
+                                  ? l10n.url_path_label
+                                  : (l10n.url_path_label),
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 8,
+                                horizontal: 8,
+                              ),
+                            ),
+                            style: const TextStyle(
+                              fontFamily: 'monospace',
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ],
+        ),
+      ),
+      actions: [
+        // --- Refresh/Reset 按钮在左边 ---
+        TextButton(
+          onPressed: pathState.isLoading
+              ? null
+              : pathState.source == PathSource.apiDocument
+                  ? () => pathNotifier.loadApiData(context) // 传递 context
+                  : pathNotifier.resetCustomPaths, // Reset 逻辑
+          child: pathState.isLoading
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                  ),
+                )
+              : Text(pathState.source == PathSource.apiDocument
+                  ? l10n.refresh
+                  : l10n.reset),
+        ),
+        // --- Refresh/Reset 按钮在左边 结束 ---
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.ok),
+        ),
+      ],
+    );
   }
 }

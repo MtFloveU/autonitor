@@ -87,12 +87,12 @@ class TwitterApiService {
       // --- 推荐添加的浏览器 Headers ---
       'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
-      'Referer': 'https://x.com/',
+      'Referer': 'https://api.x.com/',
     };
 
     // 3. 定义 URL
     const String url =
-        'https://x.com/i/api/graphql/q9yeu7UlEs2YVx_-Z8Ps7Q/UserByRestId';
+        'https://api.x.com/graphql/q9yeu7UlEs2YVx_-Z8Ps7Q/UserByRestId';
 
     try {
       // 4. 发送 GET 请求
