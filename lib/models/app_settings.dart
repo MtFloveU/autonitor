@@ -23,8 +23,8 @@ class AppSettings {
   final AvatarQuality avatarQuality;
   final HistoryStrategy historyStrategy;
   final int historyLimitN;
-  final Map<String, String> customGqlPaths;
-  final PathSource gqlPathSource;
+  final Map<String, String> customGqlQueryIds;
+  final QueryIdSource gqlQueryIdSource;
 
   AppSettings({
     this.locale,
@@ -34,8 +34,8 @@ class AppSettings {
     this.avatarQuality = AvatarQuality.low,
     this.historyStrategy = HistoryStrategy.saveAll,
     this.historyLimitN = 5,
-    this.customGqlPaths = const {},
-    this.gqlPathSource = PathSource.apiDocument,
+    this.customGqlQueryIds = const {},
+    this.gqlQueryIdSource = QueryIdSource.apiDocument,
   });
 
   AppSettings copyWith({
@@ -45,8 +45,8 @@ class AppSettings {
     AvatarQuality? avatarQuality,
     HistoryStrategy? historyStrategy,
     int? historyLimitN,
-    Map<String, String>? customGqlPaths,
-    PathSource? gqlPathSource,
+    Map<String, String>? customGqlQueryIds,
+    QueryIdSource? gqlQueryIdSource,
   }) {
     return AppSettings(
       locale: locale,
@@ -56,8 +56,8 @@ class AppSettings {
       avatarQuality: avatarQuality ?? this.avatarQuality,
       historyStrategy: historyStrategy ?? this.historyStrategy,
       historyLimitN: historyLimitN ?? this.historyLimitN,
-      customGqlPaths: customGqlPaths ?? this.customGqlPaths,
-      gqlPathSource: gqlPathSource ?? this.gqlPathSource,
+      customGqlQueryIds: customGqlQueryIds ?? this.customGqlQueryIds,
+      gqlQueryIdSource: gqlQueryIdSource ?? this.gqlQueryIdSource,
     );
   }
 
@@ -70,8 +70,8 @@ class AppSettings {
     'avatarQuality': avatarQuality.toString().split('.').last,
     'historyStrategy': historyStrategy.toString().split('.').last,
     'historyLimitN': historyLimitN,
-    'customGqlPaths': customGqlPaths,
-    'gqlPathSource': gqlPathSource.name,
+    'customGqlQueryIds': customGqlQueryIds,
+    'gqlQueryIdSource': gqlQueryIdSource.name,
   };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) {
@@ -81,10 +81,10 @@ class AppSettings {
     final countryCode = json['countryCode'] as String?;
 
     final Map<String, dynamic>? rawPaths =
-        json['customGqlPaths'] as Map<String, dynamic>?;
+        json['customGqlQueryIds'] as Map<String, dynamic>?;
     final Map<String, String> parsedPaths = rawPaths != null
         ? rawPaths.map((k, v) => MapEntry(k, v.toString()))
-        : defaultSettings.customGqlPaths;
+        : defaultSettings.customGqlQueryIds;
 
     return AppSettings(
       locale: languageCode != null ? Locale(languageCode, countryCode) : null,
@@ -108,10 +108,10 @@ class AppSettings {
       ),
       historyLimitN:
           json['historyLimitN'] as int? ?? defaultSettings.historyLimitN,
-      customGqlPaths: parsedPaths,
-      gqlPathSource: (json['gqlPathSource'] as String?).toEnum(
-        PathSource.values,
-        defaultSettings.gqlPathSource,
+      customGqlQueryIds: parsedPaths,
+      gqlQueryIdSource: (json['gqlQueryIdSource'] as String?).toEnum(
+        QueryIdSource.values,
+        defaultSettings.gqlQueryIdSource,
       ),
     );
   }

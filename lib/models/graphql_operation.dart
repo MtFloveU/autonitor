@@ -1,19 +1,17 @@
 class GraphQLOperation {
   final String queryId;
   final String operationName;
-  final String path;
 
   GraphQLOperation({
     required this.queryId,
     required this.operationName,
-    required this.path,
   });
 
   @override
-  String toString() => '$operationName: $path';
+  String toString() => '$operationName: $queryId';
 }
 
-enum PathSource {
+enum QueryIdSource {
   apiDocument,
   custom,
 }

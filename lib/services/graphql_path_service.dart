@@ -32,12 +32,12 @@ class GraphQLService {
           final String operationName = exports['operationName'];
           if (_targetOperations.contains(operationName)) {
             final String queryId = exports['queryId'];
-            final String path = '/graphql/$queryId/$operationName';
-            operations.add(GraphQLOperation(
-              queryId: queryId,
-              operationName: operationName,
-              path: path,
-            ));
+            operations.add(
+              GraphQLOperation(
+                queryId: queryId,
+                operationName: operationName,
+              ),
+            );
           }
         }
       }
@@ -50,4 +50,6 @@ class GraphQLService {
 }
 
 final dioProvider = Provider((ref) => Dio());
-final graphQLServiceProvider = Provider((ref) => GraphQLService(ref.read(dioProvider)));
+final graphQLServiceProvider = Provider(
+  (ref) => GraphQLService(ref.read(dioProvider)),
+);

@@ -35,27 +35,27 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
     }
   }
 
-  Future<void> updateCustomGqlPath(String operationName, String newPath) async {
+  Future<void> updateCustomGqlQueryId(String operationName, String newQueryId) async {
     final currentState = state;
     if (currentState is! AsyncData<AppSettings>) return;
 
     final currentSettings = currentState.value;
-    final newPaths = Map<String, String>.from(currentSettings.customGqlPaths);
-    newPaths[operationName] = newPath;
+    final newQueryIds = Map<String, String>.from(currentSettings.customGqlQueryIds);
+    newQueryIds[operationName] = newQueryId;
 
-    final newState = currentSettings.copyWith(customGqlPaths: newPaths);
+    final newState = currentSettings.copyWith(customGqlQueryIds: newQueryIds);
     state = AsyncValue.data(newState);
     await _settingsService.saveSettings(newState);
   }
 
   // (新) 用于更新所有路径 (例如：API 刷新成功时)
-  Future<void> updateCustomGqlPaths(Map<String, String> newPaths) async {
+  Future<void> updateCustomGqlQueryIds(Map<String, String> newQueryIds) async {
     final currentState = state;
     if (currentState is! AsyncData<AppSettings>) return;
 
     final currentSettings = currentState.value;
     // 直接用新路径覆盖旧路径（因为这是 API 成功获取的结果）
-    final newState = currentSettings.copyWith(customGqlPaths: newPaths);
+    final newState = currentSettings.copyWith(customGqlQueryIds: newQueryIds);
     state = AsyncValue.data(newState);
     await _settingsService.saveSettings(newState);
   }
@@ -152,22 +152,22 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
     }
   }
 
-  Future<void> resetCustomGqlPaths(Map<String, String> defaultPaths) async {
+  Future<void> resetCustomGqlQueryIds(Map<String, String> defaultPaths) async {
     final currentState = state;
     if (currentState is! AsyncData<AppSettings>) return;
 
     final currentSettings = currentState.value;
-    final newState = currentSettings.copyWith(customGqlPaths: defaultPaths);
+    final newState = currentSettings.copyWith(customGqlQueryIds: defaultPaths);
     state = AsyncValue.data(newState);
     await _settingsService.saveSettings(newState);
   }
 
-  Future<void> updateGqlPathSource(PathSource newSource) async {
+  Future<void> updateGqlQueryIdSource(QueryIdSource newSource) async {
     final currentState = state;
     if (currentState is! AsyncData<AppSettings>) return;
 
     final currentSettings = currentState.value;
-    final newState = currentSettings.copyWith(gqlPathSource: newSource);
+    final newState = currentSettings.copyWith(gqlQueryIdSource: newSource);
     state = AsyncValue.data(newState);
     await _settingsService.saveSettings(newState);
   }

@@ -9,7 +9,7 @@ import '../providers/settings_provider.dart';
 import '../l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import '../services/x_client_transaction_service.dart';
-import '../providers/graphql_path_provider.dart';
+import '../providers/graphql_queryid_provider.dart';
 
 // Custom InputFormatter to allow only numbers within a given range
 class NumberRangeInputFormatter extends TextInputFormatter {
@@ -47,6 +47,8 @@ class SettingsPage extends ConsumerStatefulWidget {
 class _SettingsPageState extends ConsumerState<SettingsPage> {
   late TextEditingController _historyLimitController;
 
+  String selectedMethod = "GET";
+
   // --- (保留 _showGenerateDialog 的完整代码，不修改) ---
   void _showGenerateDialog() {
     final TextEditingController countController = TextEditingController(
@@ -54,7 +56,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
     // (新) 为 Path 添加 Controller
     final TextEditingController pathController = TextEditingController(
-      text: '/graphql/Efm7xwLreAw77q2Fq7rX-Q/Followers',
+      text: 'https://api.x.com/graphql/Efm7xwLreAw77q2Fq7rX-Q/Followers',
     );
     final TextEditingController resultController = TextEditingController();
     final ValueNotifier<bool> isGenerating = ValueNotifier<bool>(false);
@@ -118,71 +120,87 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                         ],
                       ),
 
-                    // (新) Path 输入框
-                    const SizedBox(height: 12),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          const Text(
-                            'https://api.x.com',
-                            style: TextStyle(
+                      // (新) Path 输入框
+                      const SizedBox(height: 12),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            // --- Path 输入框 （左侧） ---
+                            Expanded(
+                              child: TextField(
+                                controller: pathController,
+                                decoration: const InputDecoration(
+                                  border: OutlineInputBorder(),
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.symmetric(
+                                    vertical: 8,
+                                    horizontal: 8,
+                                  ),
+                                ),
+                                style: const TextStyle(
+                                  fontFamily: 'monospace',
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(width: 8),
+
+                            // --- (新增) GET / POST 选择框（右侧） ---
+                            SizedBox(
+                              height: 40,
+                              child: DropdownButton<String>(
+                                value: selectedMethod, // 👈 你需要在外层 state 定义
+                                underline: const SizedBox(),
+                                items: const [
+                                  DropdownMenuItem(
+                                    value: 'GET',
+                                    child: Text('GET'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'POST',
+                                    child: Text('POST'),
+                                  ),
+                                ],
+                                onChanged: (value) {
+                                  setState(() {
+                                    selectedMethod = value!;
+                                  });
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // --- 结果框 (保持不变) ---
+                      Container(
+                        width: double.maxFinite,
+                        constraints: BoxConstraints(
+                          maxHeight: MediaQuery.of(context).size.height * 0.35,
+                        ),
+                        child: SingleChildScrollView(
+                          child: TextField(
+                            controller: resultController,
+                            readOnly: true,
+                            maxLines: null,
+                            decoration: InputDecoration(
+                              border: const OutlineInputBorder(),
+                            ),
+                            style: const TextStyle(
                               fontFamily: 'monospace',
                               fontSize: 13,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          // 关键：让输入框在一行内可伸缩
-                          Flexible(
-                            child: TextField(
-                              controller: pathController,
-                              decoration: InputDecoration(
-                                border: const OutlineInputBorder(),
-                                labelText: l10n.url_path_label,
-                                isDense: true,
-                                // 可选：如果想让边框靠近文字一点
-                                contentPadding: EdgeInsets.symmetric(
-                                  vertical: 8,
-                                  horizontal: 8,
-                                ),
-                              ),
-                              style: const TextStyle(
-                                fontFamily: 'monospace',
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // --- 结果框 (保持不变) ---
-                    Container(
-                      width: double.maxFinite,
-                      constraints: BoxConstraints(
-                        maxHeight: MediaQuery.of(context).size.height * 0.35,
-                      ),
-                      child: SingleChildScrollView(
-                        child: TextField(
-                          controller: resultController,
-                          readOnly: true,
-                          maxLines: null,
-                          decoration: InputDecoration(
-                            border: const OutlineInputBorder(),
-                          ),
-                          style: const TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 13,
-                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
                 actions: [
                   // 1. 取消/关闭按钮 (保持不变)
                   TextButton(
@@ -222,12 +240,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                                   );
                                   return;
                                 }
-                                if (path.isEmpty || !path.startsWith('/')) {
+                                if (Uri.tryParse(path)?.hasScheme != true ||
+                                    Uri.tryParse(path)?.hasAuthority != true ||
+                                    !(Uri.tryParse(path)?.scheme == 'http' ||
+                                        Uri.tryParse(path)?.scheme == 'https')) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text(
-                                        l10n.path_must_start_with_slash,
-                                      ),
+                                      content: Text(l10n.path_must_start_with_slash),
                                     ),
                                   );
                                   return;
@@ -267,8 +286,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                                     }
 
                                     final id = service.generateTransactionId(
-                                      method: 'GET',
-                                      url: "https://api.x.com$path",
+                                      method: selectedMethod,
+                                      url: path,
                                     );
 
                                     generatedIds.add("${i + 1}. $id");
@@ -806,7 +825,9 @@ class _GraphQLPathDialogState extends ConsumerState<GraphQLPathDialog> {
   void initState() {
     super.initState();
     // 初始化 Custom Path Controllers
-    final targetOperations = ref.read(gqlPathProvider.notifier).targetOperations;
+    final targetOperations = ref
+        .read(gqlQueryIdProvider.notifier)
+        .targetOperations;
     _pathControllers = {
       for (var name in targetOperations) name: TextEditingController(),
     };
@@ -821,15 +842,15 @@ class _GraphQLPathDialogState extends ConsumerState<GraphQLPathDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final pathState = ref.watch(gqlPathProvider);
-    final pathNotifier = ref.read(gqlPathProvider.notifier);
+    final pathState = ref.watch(gqlQueryIdProvider);
+    final pathNotifier = ref.read(gqlQueryIdProvider.notifier);
 
     // --- 动态更新所有 Controller 的文本 ---
-    final isCustom = pathState.source == PathSource.custom;
+    final isCustom = pathState.source == QueryIdSource.custom;
     for (final opName in pathNotifier.targetOperations) {
       final path = isCustom
-          ? pathState.customPaths[opName] ?? ''
-          : pathNotifier.getCurrentPathForDisplay(opName);
+          ? pathState.customQueryIds[opName] ?? ''
+          : pathNotifier.getCurrentQueryIdForDisplay(opName);
       if (_pathControllers.containsKey(opName)) {
         // 仅在文本不同时更新，以避免光标跳动
         if (_pathControllers[opName]!.text != path) {
@@ -850,15 +871,19 @@ class _GraphQLPathDialogState extends ConsumerState<GraphQLPathDialog> {
               children: [
                 Expanded(child: Text(l10n.xclient_generator_source)),
                 const SizedBox(width: 8),
-                DropdownButton<PathSource>(
+                DropdownButton<QueryIdSource>(
                   value: pathState.source,
-                  items: PathSource.values
-                      .map((e) => DropdownMenuItem(
-                            value: e,
-                            child: Text(e == PathSource.apiDocument
+                  items: QueryIdSource.values
+                      .map(
+                        (e) => DropdownMenuItem(
+                          value: e,
+                          child: Text(
+                            e == QueryIdSource.apiDocument
                                 ? 'TwitterInternalAPIDocument'
-                                : 'Custom'),
-                          ))
+                                : 'Custom',
+                          ),
+                        ),
+                      )
                       .toList(),
                   onChanged: pathState.isLoading
                       ? null
@@ -873,7 +898,11 @@ class _GraphQLPathDialogState extends ConsumerState<GraphQLPathDialog> {
                     icon: const Icon(Icons.link_outlined),
                     onPressed: () {
                       // ignore: deprecated_member_use
-                      launchUrl(Uri.parse('https://github.com/fa0311/TwitterInternalAPIDocument/tree/develop'));
+                      launchUrl(
+                        Uri.parse(
+                          'https://github.com/fa0311/TwitterInternalAPIDocument/tree/develop',
+                        ),
+                      );
                     },
                   ),
               ],
@@ -891,16 +920,16 @@ class _GraphQLPathDialogState extends ConsumerState<GraphQLPathDialog> {
             const SizedBox(height: 12),
 
             // --- API Data Status 提示 ---
-            if (pathState.source == PathSource.apiDocument && !pathState.isApiDataLoaded && !pathState.isLoading)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                ),
+            if (pathState.source == QueryIdSource.apiDocument &&
+                !pathState.isApiDataLoaded &&
+                !pathState.isLoading)
+              Padding(padding: const EdgeInsets.only(bottom: 8.0)),
 
             // --- Path 列表 ---
             ...pathNotifier.targetOperations.map((opName) {
-              final isCustom = pathState.source == PathSource.custom;
+              final isCustom = pathState.source == QueryIdSource.custom;
               final controller = _pathControllers[opName]!;
-              
+
               // 检查是否应该禁用输入框
               final bool readOnly = !isCustom || pathState.isLoading;
 
@@ -922,9 +951,12 @@ class _GraphQLPathDialogState extends ConsumerState<GraphQLPathDialog> {
                           child: TextField(
                             controller: controller,
                             readOnly: readOnly,
-                            onChanged: (newPath) {
+                            onChanged: (newQueryId) {
                               if (isCustom) {
-                                pathNotifier.updateCustomPath(opName, newPath);
+                                pathNotifier.updateCustomQueryId(
+                                  opName,
+                                  newQueryId,
+                                );
                               }
                             },
                             maxLines: null,
@@ -932,14 +964,10 @@ class _GraphQLPathDialogState extends ConsumerState<GraphQLPathDialog> {
                             decoration: InputDecoration(
                               border: const OutlineInputBorder(),
                               // (新) 使用 prefixText
-                              prefixText: 'https://api.x.com',
                               prefixStyle: const TextStyle(
                                 fontFamily: 'monospace',
                                 fontSize: 13,
                               ),
-                              labelText: isCustom
-                                  ? l10n.url_path_label
-                                  : (l10n.url_path_label),
                               isDense: true,
                               contentPadding: const EdgeInsets.symmetric(
                                 vertical: 8,
@@ -966,20 +994,21 @@ class _GraphQLPathDialogState extends ConsumerState<GraphQLPathDialog> {
         TextButton(
           onPressed: pathState.isLoading
               ? null
-              : pathState.source == PathSource.apiDocument
-                  ? () => pathNotifier.loadApiData(context) // 传递 context
-                  : pathNotifier.resetCustomPaths, // Reset 逻辑
+              : pathState.source == QueryIdSource.apiDocument
+              ? () =>
+                    pathNotifier.loadApiData(context) // 传递 context
+              : pathNotifier.resetCustomQueryIds, // Reset 逻辑
           child: pathState.isLoading
               ? const SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                  ),
+                  child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : Text(pathState.source == PathSource.apiDocument
-                  ? l10n.refresh
-                  : l10n.reset),
+              : Text(
+                  pathState.source == QueryIdSource.apiDocument
+                      ? l10n.refresh
+                      : l10n.reset,
+                ),
         ),
         // --- Refresh/Reset 按钮在左边 结束 ---
         TextButton(

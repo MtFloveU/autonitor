@@ -12,11 +12,13 @@ import 'package:autonitor/services/log_service.dart';
 import '../models/app_settings.dart';
 import '../providers/settings_provider.dart';
 import '../services/image_history_service.dart';
+import '../providers/graphql_queryid_provider.dart';
 
 final accountRepositoryProvider = Provider<AccountRepository>((ref) {
   final db = ref.watch(databaseProvider);
   final apiService = ref.watch(twitterApiServiceProvider);
   final secureStorage = ref.watch(secureStorageServiceProvider);
+
   return AccountRepository(db, apiService, secureStorage, ref);
 });
 
@@ -172,8 +174,11 @@ class AccountRepository {
     bool isVerified = false;
     bool isProtected = false;
     try {
+      final queryId = _ref
+          .read(gqlQueryIdProvider.notifier)
+          .getCurrentQueryIdForDisplay('UserByRestId');
       final Map<String, dynamic> userProfileJson = await _apiService
-          .getUserByRestId(id, cookie);
+          .getUserByRestId(id, cookie, queryId);
       rawJsonString = jsonEncode(userProfileJson);
       final result = userProfileJson['data']?['user']?['result'];
       if (result != null &&
@@ -369,6 +374,13 @@ class AccountRepository {
       throw Exception('Failed to save account data: $e');
     }
   }
+
+  String getCurrentQueryId(String operationName) {
+  return _ref
+      .read(gqlQueryIdProvider.notifier)
+      .getCurrentQueryIdForDisplay(operationName);
+}
+
 
   // --- 稍后我们会把 AccountsNotifier 中的方法逻辑搬到这里 ---
   // 比如：

@@ -3,7 +3,7 @@ import '../models/graphql_operation.dart';
 import '../services/graphql_path_service.dart'; // 远程 API 获取
 import 'settings_provider.dart'; // 访问 AppSettings
 import '../services/log_service.dart';
-import '../models/app_settings.dart'; // 导入 AppSettings 和 PathSource
+import '../models/app_settings.dart'; // 导入 AppSettings 和 QueryIdSource
 import 'package:flutter/material.dart'; // 用于 SnackBar
 
 // 假设这是所有需要配置的 Operation Name 列表 (与 Service 中保持一致)
@@ -15,49 +15,49 @@ const List<String> _targetOperations = [
 ];
 
 // 辅助函数：生成默认路径（与 Service 中的默认值保持一致）
-Map<String, String> _getDefaultPaths() {
+Map<String, String> _getDefaultQueryIds() {
   return {
-    'UserByRestId': '/graphql/q9yeu7UlEs2YVx_-Z8Ps7Q/UserByRestId',
-    'UserByScreenName': '/graphql/pQeI5l8v2eYn0n_v-Qv27A/UserByScreenName',
-    'Followers': '/graphql/Efm7xwLreAw77q2Fq7rX-Q/Followers',
-    'Following': '/graphql/Efm7xwLreAw77q2Fq7rX-Q/Following',
+    'UserByRestId': 'XIpMDIi_YoVzXeoON-cfAQ',
+    'UserByScreenName': 'ZHSN3WlvahPKVvUxVQbg1A',
+    'Followers': 'Efm7xwLreAw77q2Fq7rX-Q',
+    'Following': 'e0UtTAwQqgLKBllQxMgVxQ',
   };
 }
 
 
-class GqlPathState {
-  final PathSource source;
+class GqlQueryIdState {
+  final QueryIdSource source;
   final List<GraphQLOperation> apiOperations; // 从 JSON 获取的列表
   final Map<String, String>
-  customPaths; // operationName -> customPath (来自 Settings)
+  customQueryIds; // operationName -> customQueryId (来自 Settings)
   final String? selectedOperationName; // 当前选中的 Operation Name
   final bool isLoading;
   final String? error;
   final bool isApiDataLoaded; // (新) 标记 API 数据是否已成功加载过
 
-  GqlPathState({
-    this.source = PathSource.apiDocument,
+  GqlQueryIdState({
+    this.source = QueryIdSource.apiDocument,
     this.apiOperations = const [],
-    this.customPaths = const {},
+    this.customQueryIds = const {},
     this.selectedOperationName,
     this.isLoading = false,
     this.error,
     this.isApiDataLoaded = false, // (新) 默认未加载
   });
 
-  GqlPathState copyWith({
-    PathSource? source,
+  GqlQueryIdState copyWith({
+    QueryIdSource? source,
     List<GraphQLOperation>? apiOperations,
-    Map<String, String>? customPaths,
+    Map<String, String>? customQueryIds,
     String? selectedOperationName,
     bool? isLoading,
     String? error,
     bool? isApiDataLoaded, // (新)
   }) {
-    return GqlPathState(
+    return GqlQueryIdState(
       source: source ?? this.source,
       apiOperations: apiOperations ?? this.apiOperations,
-      customPaths: customPaths ?? this.customPaths,
+      customQueryIds: customQueryIds ?? this.customQueryIds,
       selectedOperationName:
           selectedOperationName ?? this.selectedOperationName,
       isLoading: isLoading ?? this.isLoading,
@@ -67,22 +67,22 @@ class GqlPathState {
   }
 }
 
-class GqlPathNotifier extends StateNotifier<GqlPathState> {
+class GqlQueryIdNotifier extends StateNotifier<GqlQueryIdState> {
   final Ref _ref;
   final GraphQLService _graphQLApiService;
 
-  GqlPathNotifier(this._ref, this._graphQLApiService) : super(GqlPathState()) {
-    // 1. 监听 SettingsProvider，以获取最新的 Custom Paths 和 Source
+  GqlQueryIdNotifier(this._ref, this._graphQLApiService) : super(GqlQueryIdState()) {
+    // 1. 监听 SettingsProvider，以获取最新的 Custom QueryIds 和 Source
     _ref.listen<AsyncValue<AppSettings>>(settingsProvider, (previous, next) {
       if (next.hasValue) {
         final settings = next.value!;
-        final newCustomPaths = _ensureAllPathsExist(settings.customGqlPaths);
+        final newCustomQueryIds = _ensureAllQueryIdsExist(settings.customGqlQueryIds);
         final List<GraphQLOperation> persistedApiOps =
-            _convertPersistedPathsToOperations(newCustomPaths);
+            _convertPersistedQueryIdsToOperations(newCustomQueryIds);
         // 从 Settings 中读取 source
         state = state.copyWith(
-          customPaths: newCustomPaths,
-          source: settings.gqlPathSource,
+          customQueryIds: newCustomQueryIds,
+          source: settings.gqlQueryIdSource,
           apiOperations: persistedApiOps,
           isApiDataLoaded: persistedApiOps.length == _targetOperations.length,
         );
@@ -103,25 +103,25 @@ class GqlPathNotifier extends StateNotifier<GqlPathState> {
     }
     final currentSettings = settingsAsync.value!;
 
-    final customPaths = _ensureAllPathsExist(currentSettings.customGqlPaths);
+    final customQueryIds = _ensureAllQueryIdsExist(currentSettings.customGqlQueryIds);
 
     // 默认选择第一个 Operation Name
     final firstOpName = _targetOperations.first;
 
     // 需要定义 persistedApiOps
-    final persistedApiOps = _convertPersistedPathsToOperations(customPaths);
+    final persistedApiOps = _convertPersistedQueryIdsToOperations(customQueryIds);
 
     state = state.copyWith(
-      customPaths: customPaths,
+      customQueryIds: customQueryIds,
       isLoading: false,
       selectedOperationName: firstOpName,
-      source: currentSettings.gqlPathSource,
+      source: currentSettings.gqlQueryIdSource,
       apiOperations: persistedApiOps,
       isApiDataLoaded: persistedApiOps.length == _targetOperations.length,
     );
   }
 
-  List<GraphQLOperation> _convertPersistedPathsToOperations(
+  List<GraphQLOperation> _convertPersistedQueryIdsToOperations(
     Map<String, String> paths,
   ) {
     final List<GraphQLOperation> ops = [];
@@ -136,7 +136,6 @@ class GqlPathNotifier extends StateNotifier<GqlPathState> {
             GraphQLOperation(
               queryId: queryId,
               operationName: opName,
-              path: path,
             ),
           );
         }
@@ -145,9 +144,9 @@ class GqlPathNotifier extends StateNotifier<GqlPathState> {
     return ops;
   }
 
-  // 确保 customPaths 包含所有 targetOperations 的默认值
-  Map<String, String> _ensureAllPathsExist(Map<String, String> paths) {
-    final defaults = _getDefaultPaths();
+  // 确保 customQueryIds 包含所有 targetOperations 的默认值
+  Map<String, String> _ensureAllQueryIdsExist(Map<String, String> paths) {
+    final defaults = _getDefaultQueryIds();
     final Map<String, String> result = Map.from(paths);
     for (final opName in _targetOperations) {
       if (!result.containsKey(opName) || result[opName]!.isEmpty) {
@@ -166,10 +165,10 @@ class GqlPathNotifier extends StateNotifier<GqlPathState> {
 
     try {
       final operations = await _graphQLApiService.fetchAndParseOperations();
-      final Map<String, String> newApiPaths = {
-        for (var op in operations) op.operationName: op.path,
+      final Map<String, String> newApiQueryIds = {
+        for (var op in operations) op.operationName: op.queryId,
       };
-      _ref.read(settingsProvider.notifier).updateCustomGqlPaths(newApiPaths);
+      _ref.read(settingsProvider.notifier).updateCustomGqlQueryIds(newApiQueryIds);
 
       state = state.copyWith(
         apiOperations: operations,
@@ -211,9 +210,9 @@ class GqlPathNotifier extends StateNotifier<GqlPathState> {
     }
   }
 
-  void setSource(PathSource newSource) {
+  void setSource(QueryIdSource newSource) {
     // 1. 更新 Settings (持久化)
-    _ref.read(settingsProvider.notifier).updateGqlPathSource(newSource);
+    _ref.read(settingsProvider.notifier).updateGqlQueryIdSource(newSource);
     // 2. state 会通过 listen 自动更新
   }
 
@@ -222,67 +221,65 @@ class GqlPathNotifier extends StateNotifier<GqlPathState> {
   }
 
   // 更新单个自定义路径并持久化 (调用 SettingsNotifier)
-  void updateCustomPath(String operationName, String newPath) {
+  void updateCustomQueryId(String operationName, String newQueryId) {
     _ref
         .read(settingsProvider.notifier)
-        .updateCustomGqlPath(operationName, newPath);
+        .updateCustomGqlQueryId(operationName, newQueryId);
     // state 会通过 listen 自动更新
   }
 
   // 重置所有自定义路径到默认值 (调用 SettingsNotifier)
-  void resetCustomPaths() {
+  void resetCustomQueryIds() {
     _ref
         .read(settingsProvider.notifier)
-        .resetCustomGqlPaths(_getDefaultPaths());
+        .resetCustomGqlQueryIds(_getDefaultQueryIds());
     // state 会通过 listen 自动更新
   }
 
   // 辅助方法：获取当前选定操作的实际路径 (用于 UI 显示)
-  String getCurrentPathForDisplay(String operationName) {
-    if (state.source == PathSource.apiDocument) {
+  String getCurrentQueryIdForDisplay(String operationName) {
+    if (state.source == QueryIdSource.apiDocument) {
       // 如果 API 数据未加载，或者当前操作不在已加载的列表中，则显示默认路径
       final op = state.apiOperations.firstWhere(
         (e) => e.operationName == operationName,
         orElse: () => GraphQLOperation(
-          queryId: '',
           operationName: '',
-          path:
-              _getDefaultPaths()[operationName] ??
+          queryId:
+              _getDefaultQueryIds()[operationName] ??
               'N/A: API Data Not Available',
         ),
       );
-      return op.path;
+      return op.queryId;
     } else {
-      return state.customPaths[operationName] ?? '';
+      return state.customQueryIds[operationName] ?? '';
     }
   }
 
   // 辅助方法：获取当前选定操作的实际路径 (用于生成 ID)
-  String getCurrentPathForGeneration() {
+  String getCurrentQueryIdForGeneration() {
     final selectedName = state.selectedOperationName;
     if (selectedName == null) return '';
 
-    if (state.source == PathSource.apiDocument) {
+    if (state.source == QueryIdSource.apiDocument) {
       final op = state.apiOperations.firstWhere(
         (e) => e.operationName == selectedName,
         orElse: () => GraphQLOperation(
-          queryId: '',
           operationName: '',
-          path: _getDefaultPaths()[selectedName] ?? '', // 失败时使用默认路径
+          queryId: _getDefaultQueryIds()[selectedName] ?? '', // 失败时使用默认路径
         ),
       );
-      return op.path;
+      return op.queryId;
     } else {
-      return state.customPaths[selectedName] ?? '';
+      return state.customQueryIds[selectedName] ?? '';
     }
   }
 
   List<String> get targetOperations => _targetOperations;
 }
 
-final gqlPathProvider =
-    StateNotifierProvider.autoDispose<GqlPathNotifier, GqlPathState>((ref) {
-      return GqlPathNotifier(
+final gqlQueryIdProvider =
+    StateNotifierProvider.autoDispose<GqlQueryIdNotifier, GqlQueryIdState>((ref) {
+      return GqlQueryIdNotifier(
         ref,
         ref.read(graphQLServiceProvider), // 来自 graphql_path_service.dart
       );

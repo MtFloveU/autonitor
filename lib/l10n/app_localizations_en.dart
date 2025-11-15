@@ -266,9 +266,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get num_ids_to_generate => 'Number of IDs to be generated:';
 
   @override
-  String get url_path_label => 'URL Path';
-
-  @override
   String get please_enter_valid_number => 'Please enter a valid number (1-100)';
 
   @override
@@ -314,5 +311,5 @@ class AppLocalizationsEn extends AppLocalizations {
   String get operation_name => 'Operation:';
 
   @override
-  String get graphql_path_config => 'GraphQL Endpoint Configuration';
+  String get graphql_path_config => 'GQL QueryId Configuration';
 }

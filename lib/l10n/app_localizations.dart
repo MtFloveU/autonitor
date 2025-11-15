@@ -603,12 +603,6 @@ abstract class AppLocalizations {
   /// **'Number of IDs to be generated:'**
   String get num_ids_to_generate;
 
-  /// Label for the URL Path input field
-  ///
-  /// In en, this message translates to:
-  /// **'URL Path'**
-  String get url_path_label;
-
   /// Snackbar message shown when invalid number entered
   ///
   /// In en, this message translates to:
@@ -687,10 +681,10 @@ abstract class AppLocalizations {
   /// **'Operation:'**
   String get operation_name;
 
-  /// Label for the GraphQL endpoint configuration
+  /// Label for the GQL QueryId configuration
   ///
   /// In en, this message translates to:
-  /// **'GraphQL Endpoint Configuration'**
+  /// **'GQL QueryId Configuration'**
   String get graphql_path_config;
 }
 

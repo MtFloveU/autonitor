@@ -265,9 +265,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get num_ids_to_generate => '要生成的 ID 数量：';
 
   @override
-  String get url_path_label => 'URL 路径';
-
-  @override
   String get please_enter_valid_number => '请输入有效的数字（1-100）';
 
   @override
@@ -313,7 +310,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get operation_name => '操作：';
 
   @override
-  String get graphql_path_config => 'GraphQL 端点配置';
+  String get graphql_path_config => 'GQL QueryId 配置';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -577,9 +574,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get num_ids_to_generate => '要產生的 ID 數量：';
 
   @override
-  String get url_path_label => 'URL 路徑';
-
-  @override
   String get please_enter_valid_number => '請輸入有效的數字（1-100）';
 
   @override
@@ -625,5 +619,5 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get operation_name => '操作：';
 
   @override
-  String get graphql_path_config => 'GraphQL 端點配置';
+  String get graphql_path_config => 'GQL QueryId 配置';
 }

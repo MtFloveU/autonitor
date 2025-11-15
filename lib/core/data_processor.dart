@@ -157,8 +157,9 @@ class DataProcessor {
               await semaphore.acquire();
               String category = 'unknown_error';
               try {
+                final queryId = _accountRepository.getCurrentQueryId('UserByRestId');
                 final Map<String, dynamic> gqlJson = await _apiServiceGql
-                    .getUserByRestId(removedId, _ownerCookie);
+                    .getUserByRestId(removedId, _ownerCookie, queryId);
                 final result = gqlJson['data']?['user']?['result'];
                 final typename = result?['__typename'];
 

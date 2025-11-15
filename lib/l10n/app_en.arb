@@ -192,11 +192,6 @@
     "description": "Label for the count input field in ID generator dialog"
   },
 
-  "url_path_label": "URL Path",
-  "@url_path_label": {
-    "description": "Label for the URL Path input field"
-  },
-
   "please_enter_valid_number": "Please enter a valid number (1-100)",
   "@please_enter_valid_number": {
     "description": "Snackbar message shown when invalid number entered"
@@ -269,8 +264,8 @@
   "@operation_name": {
     "description": "Label for the GraphQL operation name dropdown"
   },
-  "graphql_path_config": "GraphQL Endpoint Configuration",
+  "graphql_path_config": "GQL QueryId Configuration",
   "@graphql_path_config": {
-    "description": "Label for the GraphQL endpoint configuration"
+    "description": "Label for the GQL QueryId configuration"
   }
 }
