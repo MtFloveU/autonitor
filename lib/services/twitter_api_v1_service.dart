@@ -15,7 +15,7 @@ class UserListResult {
 class TwitterApiV1Service {
   final Dio _dio;
   // --- 新增：重试相关常量 ---
-  static const int _maxRetries = 10000; // 最多重试次数
+  static const int _maxRetries = 5; // 最多重试次数
   static const Duration _retryDelay = Duration(milliseconds: 500); // 每次重试间隔
   // --- 新增结束 ---
 

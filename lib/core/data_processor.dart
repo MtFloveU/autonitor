@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'package:async/async.dart';
+import 'package:autonitor/providers/graphql_queryid_provider.dart';
+import 'package:autonitor/providers/x_client_transaction_provider.dart';
 import 'package:drift/drift.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/account.dart';
 import '../services/database.dart';
 import '../services/twitter_api_service.dart';
@@ -14,6 +17,7 @@ import '../repositories/account_repository.dart';
 typedef LogCallback = void Function(String message);
 
 class DataProcessor {
+  final Ref _ref;
   final AppDatabase _database;
   final TwitterApiService _apiServiceGql;
   final TwitterApiV1Service _apiServiceV1;
@@ -25,6 +29,7 @@ class DataProcessor {
   final ImageHistoryService _imageService;
 
   DataProcessor({
+    required Ref ref,
     required AppDatabase database,
     required TwitterApiService apiServiceGql,
     required TwitterApiV1Service apiServiceV1,
@@ -33,7 +38,8 @@ class DataProcessor {
     required AppSettings settings,
     required ImageHistoryService imageService,
     required LogCallback logCallback,
-  }) : _database = database,
+  }) : _ref = ref,
+       _database = database,
        _apiServiceGql = apiServiceGql,
        _apiServiceV1 = apiServiceV1,
        _accountRepository = accountRepository,
@@ -64,6 +70,14 @@ class DataProcessor {
       );
     }
 
+    try {
+      _log("Initalizing XClientTransactionID generator...");
+      await _ref.read(transactionIdProvider.notifier).init();
+    } catch (e) {
+      _log(
+        "!!! CRITICAL ERROR: Failed to initialize XClientTransactionID generator: $e",
+      );
+    }
     try {
       _log("Fetching old relationships from database...");
       final List<FollowUser> oldRelationsList = await _database
@@ -106,16 +120,31 @@ class DataProcessor {
       );
 
       _log("Fetching new following from API...");
-      String? nextFollowingCursor;
+      String? nextFollowingCursor = "-1";
+      final followingQueryId = _ref
+          .read(gqlQueryIdProvider.notifier)
+          .getCurrentQueryIdForDisplay('Following');
+      UserListResultGql followingResult;
       do {
-        final followingResult = await _apiServiceV1.getFollowing(
-          _ownerId,
-          _ownerCookie,
-          cursor: nextFollowingCursor,
-        );
+        final transactionId = await _ref
+            .read(transactionIdProvider.notifier)
+            .generate(
+              method: "GET",
+              url: "https://api.x.com/graphql/$followingQueryId/Following",
+            );
+        _log("Generated Transaction ID for Following: $transactionId");
+        followingResult = (await _apiServiceGql.getFollowing(
+          _ownerId, // userId
+          _ownerCookie, // cookie
+          transactionId!,
+          nextFollowingCursor!, // cursor
+          followingQueryId,
+        ));
         for (var userJson in followingResult.users) {
           final userId =
-              userJson['id_str'] as String? ?? userJson['id']?.toString();
+              userJson['result']?['rest_id']?.toString() ??
+              userJson['result']?['id']?.toString();
+
           if (userId != null) {
             newFollowingIds.add(userId);
             if (!newUserJsons.containsKey(userId)) {
@@ -128,8 +157,8 @@ class DataProcessor {
           "Fetched ${followingResult.users.length} following, next cursor: $nextFollowingCursor",
         );
       } while (nextFollowingCursor != null &&
-          nextFollowingCursor != '0' &&
-          nextFollowingCursor.isNotEmpty);
+          nextFollowingCursor.isNotEmpty &&
+          !nextFollowingCursor.startsWith('0|'));
 
       _log(
         "Finished fetching following. Total unique users in combined list: ${newUserJsons.length}",
@@ -157,9 +186,11 @@ class DataProcessor {
               await semaphore.acquire();
               String category = 'unknown_error';
               try {
-                final queryId = _accountRepository.getCurrentQueryId('UserByRestId');
-                final Map<String, dynamic> gqlJson = await _apiServiceGql
-                    .getUserByRestId(removedId, _ownerCookie, queryId);
+                final queryId = _accountRepository.getCurrentQueryId(
+                  'UserByRestId',
+                );
+                final Map<String, dynamic> gqlJson = (await _apiServiceGql
+                    .getUserByRestId(removedId, _ownerCookie, queryId));
                 final result = gqlJson['data']?['user']?['result'];
                 final typename = result?['__typename'];
 

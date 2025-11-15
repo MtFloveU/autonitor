@@ -4,50 +4,77 @@ import '../services/x_client_transaction_service.dart';
 
 // 提供 XClientGenerator 实例
 final xClientGeneratorProvider = Provider<XClientGenerator>((ref) {
-
   return XClientGenerator();
 });
 
+// --- MODIFICATION: Restore xctServiceProvider as a FutureProvider ---
+// This provider now fetches the service *once* and caches it.
 final xctServiceProvider =
-    FutureProvider.autoDispose<XClientTransactionService>((ref) {
-      final generator = ref.watch(xClientGeneratorProvider);
-      return generator.fetchService();
-    });
+    FutureProvider<XClientTransactionService>((ref) async {
+  final generator = ref.read(xClientGeneratorProvider);
+  logger.i(
+    "[xctServiceProvider] Fetching new XClientTransactionService instance...",
+  );
+  return await generator.fetchService();
+});
+// --- END MODIFICATION ---
 
-// AsyncNotifier 管理 ID 状态，并且 generateId 会返回生成的 ID（String）
-class TransactionIdNotifier extends AutoDisposeNotifier<AsyncValue<String?>> {
+// --- MODIFICATION: Changed to Notifier and NotifierProvider ---
+class TransactionIdNotifier extends Notifier<AsyncValue<String?>> {
+  XClientTransactionService? _service;
+
   @override
   AsyncValue<String?> build() {
     return const AsyncData(null);
   }
 
-  /// 生成一个 ID，并返回该 ID（避免 UI 通过 ref.read 竞态读取）
-  Future<String?> generateId({
-    required String method,
-    required String url,
-  }) async {
+  /// 初始化，只执行一次
+  Future<void> init() async {
+    if (_service != null) return; // 已经初始化，不重复
     state = const AsyncLoading();
 
-    final generator = ref.read(xClientGeneratorProvider);
+    try {
+      // --- MODIFICATION: Read from the new FutureProvider ---
+      logger.i("[TransactionIdNotifier] init() awaiting xctServiceProvider...");
+      _service = await ref.read(xctServiceProvider.future); // Awaits the cached service
+      logger.i("[TransactionIdNotifier] init() successfully got service.");
+
+      state = const AsyncData(null);
+    } catch (e, s) {
+      state = AsyncError("Failed to init XClient: $e", s);
+      rethrow; // This rethrow is CRITICAL
+    }
+  }
+
+  /// 按需生成 ID (必须先调用 init())
+  Future<String?> generate({required String method, required String url}) async {
+    if (_service == null) {
+      // This should not happen if init() is called correctly in DataProcessor.
+      final errorMsg =
+          "TransactionIdNotifier.init() must be called before generate().";
+      logger.e(errorMsg);
+      state = AsyncError(errorMsg, StackTrace.current);
+      throw StateError(errorMsg);
+    }
 
     try {
-      final id = await generator.fetchAndGenerateTransactionId(
-        method: method,
-        url: url,
-      );
-
+      // generateTransactionId from the service is synchronous.
+      final id = _service!.generateTransactionId(method: method, url: url);
       state = AsyncData(id);
-      logger.i('[XCT-Generator] Generated id: $id');
-      return id;
+
+      logger.i('[XCT] Generated id: $id');
+      return id; // The async keyword will wrap this in a Future.
     } catch (e, s) {
-      state = AsyncError("Failed to generate ID: $e", s);
+      final errorMsg = "Failed to generate ID: $e";
+      state = AsyncError(errorMsg, s);
+      logger.e(errorMsg, error: e, stackTrace: s);
       rethrow;
     }
   }
 }
 
-// Provider 本体
+// --- MODIFICATION: Changed to NotifierProvider (non-autoDispose) ---
 final transactionIdProvider =
-    AutoDisposeNotifierProvider<TransactionIdNotifier, AsyncValue<String?>>(
-      TransactionIdNotifier.new,
-    );
+    NotifierProvider<TransactionIdNotifier, AsyncValue<String?>>(
+  TransactionIdNotifier.new,
+);

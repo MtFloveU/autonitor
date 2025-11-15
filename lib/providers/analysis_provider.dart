@@ -66,6 +66,7 @@ class AnalysisService extends StateNotifier<AnalysisState> {
       return;
     }
     final dataProcessor = DataProcessor(
+      ref: _ref,
       database: _database,
       apiServiceGql: _apiServiceGql,
       apiServiceV1: _apiServiceV1,
