@@ -97,11 +97,11 @@ class ChangeReports extends Table {
 @DataClassName('MediaHistoryEntry')
 class MediaHistory extends Table {
   IntColumn get id => integer().autoIncrement()();
-  TextColumn get userId => text().named('user_id')();
   TextColumn get mediaType => text().named('media_type')();
   TextColumn get localFilePath => text().named('local_file_path')();
   TextColumn get remoteUrl => text().named('remote_url')();
-  DateTimeColumn get timestamp => dateTime()();
+  BoolColumn get isHighQuality =>
+      boolean().named('is_high_quality').withDefault(const Constant(false))();
 }
 
 @DriftDatabase(

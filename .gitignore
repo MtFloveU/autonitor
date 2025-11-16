@@ -11,6 +11,8 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+prompt.txt
+lib.tar.gz
 
 # IntelliJ related
 *.iml

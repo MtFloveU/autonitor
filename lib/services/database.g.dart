@@ -2996,15 +2996,6 @@ class $MediaHistoryTable extends MediaHistory
       'PRIMARY KEY AUTOINCREMENT',
     ),
   );
-  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
-  @override
-  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
-    'user_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
   static const VerificationMeta _mediaTypeMeta = const VerificationMeta(
     'mediaType',
   );
@@ -3038,25 +3029,28 @@ class $MediaHistoryTable extends MediaHistory
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _timestampMeta = const VerificationMeta(
-    'timestamp',
+  static const VerificationMeta _isHighQualityMeta = const VerificationMeta(
+    'isHighQuality',
   );
   @override
-  late final GeneratedColumn<DateTime> timestamp = GeneratedColumn<DateTime>(
-    'timestamp',
+  late final GeneratedColumn<bool> isHighQuality = GeneratedColumn<bool>(
+    'is_high_quality',
     aliasedName,
     false,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_high_quality" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
   );
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    userId,
     mediaType,
     localFilePath,
     remoteUrl,
-    timestamp,
+    isHighQuality,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3072,14 +3066,6 @@ class $MediaHistoryTable extends MediaHistory
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    }
-    if (data.containsKey('user_id')) {
-      context.handle(
-        _userIdMeta,
-        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_userIdMeta);
     }
     if (data.containsKey('media_type')) {
       context.handle(
@@ -3108,13 +3094,14 @@ class $MediaHistoryTable extends MediaHistory
     } else if (isInserting) {
       context.missing(_remoteUrlMeta);
     }
-    if (data.containsKey('timestamp')) {
+    if (data.containsKey('is_high_quality')) {
       context.handle(
-        _timestampMeta,
-        timestamp.isAcceptableOrUnknown(data['timestamp']!, _timestampMeta),
+        _isHighQualityMeta,
+        isHighQuality.isAcceptableOrUnknown(
+          data['is_high_quality']!,
+          _isHighQualityMeta,
+        ),
       );
-    } else if (isInserting) {
-      context.missing(_timestampMeta);
     }
     return context;
   }
@@ -3129,10 +3116,6 @@ class $MediaHistoryTable extends MediaHistory
         DriftSqlType.int,
         data['${effectivePrefix}id'],
       )!,
-      userId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}user_id'],
-      )!,
       mediaType: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}media_type'],
@@ -3145,9 +3128,9 @@ class $MediaHistoryTable extends MediaHistory
         DriftSqlType.string,
         data['${effectivePrefix}remote_url'],
       )!,
-      timestamp: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}timestamp'],
+      isHighQuality: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_high_quality'],
       )!,
     );
   }
@@ -3161,39 +3144,35 @@ class $MediaHistoryTable extends MediaHistory
 class MediaHistoryEntry extends DataClass
     implements Insertable<MediaHistoryEntry> {
   final int id;
-  final String userId;
   final String mediaType;
   final String localFilePath;
   final String remoteUrl;
-  final DateTime timestamp;
+  final bool isHighQuality;
   const MediaHistoryEntry({
     required this.id,
-    required this.userId,
     required this.mediaType,
     required this.localFilePath,
     required this.remoteUrl,
-    required this.timestamp,
+    required this.isHighQuality,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
-    map['user_id'] = Variable<String>(userId);
     map['media_type'] = Variable<String>(mediaType);
     map['local_file_path'] = Variable<String>(localFilePath);
     map['remote_url'] = Variable<String>(remoteUrl);
-    map['timestamp'] = Variable<DateTime>(timestamp);
+    map['is_high_quality'] = Variable<bool>(isHighQuality);
     return map;
   }
 
   MediaHistoryCompanion toCompanion(bool nullToAbsent) {
     return MediaHistoryCompanion(
       id: Value(id),
-      userId: Value(userId),
       mediaType: Value(mediaType),
       localFilePath: Value(localFilePath),
       remoteUrl: Value(remoteUrl),
-      timestamp: Value(timestamp),
+      isHighQuality: Value(isHighQuality),
     );
   }
 
@@ -3204,11 +3183,10 @@ class MediaHistoryEntry extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return MediaHistoryEntry(
       id: serializer.fromJson<int>(json['id']),
-      userId: serializer.fromJson<String>(json['userId']),
       mediaType: serializer.fromJson<String>(json['mediaType']),
       localFilePath: serializer.fromJson<String>(json['localFilePath']),
       remoteUrl: serializer.fromJson<String>(json['remoteUrl']),
-      timestamp: serializer.fromJson<DateTime>(json['timestamp']),
+      isHighQuality: serializer.fromJson<bool>(json['isHighQuality']),
     );
   }
   @override
@@ -3216,39 +3194,37 @@ class MediaHistoryEntry extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
-      'userId': serializer.toJson<String>(userId),
       'mediaType': serializer.toJson<String>(mediaType),
       'localFilePath': serializer.toJson<String>(localFilePath),
       'remoteUrl': serializer.toJson<String>(remoteUrl),
-      'timestamp': serializer.toJson<DateTime>(timestamp),
+      'isHighQuality': serializer.toJson<bool>(isHighQuality),
     };
   }
 
   MediaHistoryEntry copyWith({
     int? id,
-    String? userId,
     String? mediaType,
     String? localFilePath,
     String? remoteUrl,
-    DateTime? timestamp,
+    bool? isHighQuality,
   }) => MediaHistoryEntry(
     id: id ?? this.id,
-    userId: userId ?? this.userId,
     mediaType: mediaType ?? this.mediaType,
     localFilePath: localFilePath ?? this.localFilePath,
     remoteUrl: remoteUrl ?? this.remoteUrl,
-    timestamp: timestamp ?? this.timestamp,
+    isHighQuality: isHighQuality ?? this.isHighQuality,
   );
   MediaHistoryEntry copyWithCompanion(MediaHistoryCompanion data) {
     return MediaHistoryEntry(
       id: data.id.present ? data.id.value : this.id,
-      userId: data.userId.present ? data.userId.value : this.userId,
       mediaType: data.mediaType.present ? data.mediaType.value : this.mediaType,
       localFilePath: data.localFilePath.present
           ? data.localFilePath.value
           : this.localFilePath,
       remoteUrl: data.remoteUrl.present ? data.remoteUrl.value : this.remoteUrl,
-      timestamp: data.timestamp.present ? data.timestamp.value : this.timestamp,
+      isHighQuality: data.isHighQuality.present
+          ? data.isHighQuality.value
+          : this.isHighQuality,
     );
   }
 
@@ -3256,90 +3232,79 @@ class MediaHistoryEntry extends DataClass
   String toString() {
     return (StringBuffer('MediaHistoryEntry(')
           ..write('id: $id, ')
-          ..write('userId: $userId, ')
           ..write('mediaType: $mediaType, ')
           ..write('localFilePath: $localFilePath, ')
           ..write('remoteUrl: $remoteUrl, ')
-          ..write('timestamp: $timestamp')
+          ..write('isHighQuality: $isHighQuality')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode =>
-      Object.hash(id, userId, mediaType, localFilePath, remoteUrl, timestamp);
+      Object.hash(id, mediaType, localFilePath, remoteUrl, isHighQuality);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is MediaHistoryEntry &&
           other.id == this.id &&
-          other.userId == this.userId &&
           other.mediaType == this.mediaType &&
           other.localFilePath == this.localFilePath &&
           other.remoteUrl == this.remoteUrl &&
-          other.timestamp == this.timestamp);
+          other.isHighQuality == this.isHighQuality);
 }
 
 class MediaHistoryCompanion extends UpdateCompanion<MediaHistoryEntry> {
   final Value<int> id;
-  final Value<String> userId;
   final Value<String> mediaType;
   final Value<String> localFilePath;
   final Value<String> remoteUrl;
-  final Value<DateTime> timestamp;
+  final Value<bool> isHighQuality;
   const MediaHistoryCompanion({
     this.id = const Value.absent(),
-    this.userId = const Value.absent(),
     this.mediaType = const Value.absent(),
     this.localFilePath = const Value.absent(),
     this.remoteUrl = const Value.absent(),
-    this.timestamp = const Value.absent(),
+    this.isHighQuality = const Value.absent(),
   });
   MediaHistoryCompanion.insert({
     this.id = const Value.absent(),
-    required String userId,
     required String mediaType,
     required String localFilePath,
     required String remoteUrl,
-    required DateTime timestamp,
-  }) : userId = Value(userId),
-       mediaType = Value(mediaType),
+    this.isHighQuality = const Value.absent(),
+  }) : mediaType = Value(mediaType),
        localFilePath = Value(localFilePath),
-       remoteUrl = Value(remoteUrl),
-       timestamp = Value(timestamp);
+       remoteUrl = Value(remoteUrl);
   static Insertable<MediaHistoryEntry> custom({
     Expression<int>? id,
-    Expression<String>? userId,
     Expression<String>? mediaType,
     Expression<String>? localFilePath,
     Expression<String>? remoteUrl,
-    Expression<DateTime>? timestamp,
+    Expression<bool>? isHighQuality,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (userId != null) 'user_id': userId,
       if (mediaType != null) 'media_type': mediaType,
       if (localFilePath != null) 'local_file_path': localFilePath,
       if (remoteUrl != null) 'remote_url': remoteUrl,
-      if (timestamp != null) 'timestamp': timestamp,
+      if (isHighQuality != null) 'is_high_quality': isHighQuality,
     });
   }
 
   MediaHistoryCompanion copyWith({
     Value<int>? id,
-    Value<String>? userId,
     Value<String>? mediaType,
     Value<String>? localFilePath,
     Value<String>? remoteUrl,
-    Value<DateTime>? timestamp,
+    Value<bool>? isHighQuality,
   }) {
     return MediaHistoryCompanion(
       id: id ?? this.id,
-      userId: userId ?? this.userId,
       mediaType: mediaType ?? this.mediaType,
       localFilePath: localFilePath ?? this.localFilePath,
       remoteUrl: remoteUrl ?? this.remoteUrl,
-      timestamp: timestamp ?? this.timestamp,
+      isHighQuality: isHighQuality ?? this.isHighQuality,
     );
   }
 
@@ -3348,9 +3313,6 @@ class MediaHistoryCompanion extends UpdateCompanion<MediaHistoryEntry> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<int>(id.value);
-    }
-    if (userId.present) {
-      map['user_id'] = Variable<String>(userId.value);
     }
     if (mediaType.present) {
       map['media_type'] = Variable<String>(mediaType.value);
@@ -3361,8 +3323,8 @@ class MediaHistoryCompanion extends UpdateCompanion<MediaHistoryEntry> {
     if (remoteUrl.present) {
       map['remote_url'] = Variable<String>(remoteUrl.value);
     }
-    if (timestamp.present) {
-      map['timestamp'] = Variable<DateTime>(timestamp.value);
+    if (isHighQuality.present) {
+      map['is_high_quality'] = Variable<bool>(isHighQuality.value);
     }
     return map;
   }
@@ -3371,11 +3333,10 @@ class MediaHistoryCompanion extends UpdateCompanion<MediaHistoryEntry> {
   String toString() {
     return (StringBuffer('MediaHistoryCompanion(')
           ..write('id: $id, ')
-          ..write('userId: $userId, ')
           ..write('mediaType: $mediaType, ')
           ..write('localFilePath: $localFilePath, ')
           ..write('remoteUrl: $remoteUrl, ')
-          ..write('timestamp: $timestamp')
+          ..write('isHighQuality: $isHighQuality')
           ..write(')'))
         .toString();
   }
@@ -5599,20 +5560,18 @@ typedef $$ChangeReportsTableProcessedTableManager =
 typedef $$MediaHistoryTableCreateCompanionBuilder =
     MediaHistoryCompanion Function({
       Value<int> id,
-      required String userId,
       required String mediaType,
       required String localFilePath,
       required String remoteUrl,
-      required DateTime timestamp,
+      Value<bool> isHighQuality,
     });
 typedef $$MediaHistoryTableUpdateCompanionBuilder =
     MediaHistoryCompanion Function({
       Value<int> id,
-      Value<String> userId,
       Value<String> mediaType,
       Value<String> localFilePath,
       Value<String> remoteUrl,
-      Value<DateTime> timestamp,
+      Value<bool> isHighQuality,
     });
 
 class $$MediaHistoryTableFilterComposer
@@ -5626,11 +5585,6 @@ class $$MediaHistoryTableFilterComposer
   });
   ColumnFilters<int> get id => $composableBuilder(
     column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get userId => $composableBuilder(
-    column: $table.userId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5649,8 +5603,8 @@ class $$MediaHistoryTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<DateTime> get timestamp => $composableBuilder(
-    column: $table.timestamp,
+  ColumnFilters<bool> get isHighQuality => $composableBuilder(
+    column: $table.isHighQuality,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -5669,11 +5623,6 @@ class $$MediaHistoryTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get userId => $composableBuilder(
-    column: $table.userId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get mediaType => $composableBuilder(
     column: $table.mediaType,
     builder: (column) => ColumnOrderings(column),
@@ -5689,8 +5638,8 @@ class $$MediaHistoryTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<DateTime> get timestamp => $composableBuilder(
-    column: $table.timestamp,
+  ColumnOrderings<bool> get isHighQuality => $composableBuilder(
+    column: $table.isHighQuality,
     builder: (column) => ColumnOrderings(column),
   );
 }
@@ -5707,9 +5656,6 @@ class $$MediaHistoryTableAnnotationComposer
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get userId =>
-      $composableBuilder(column: $table.userId, builder: (column) => column);
-
   GeneratedColumn<String> get mediaType =>
       $composableBuilder(column: $table.mediaType, builder: (column) => column);
 
@@ -5721,8 +5667,10 @@ class $$MediaHistoryTableAnnotationComposer
   GeneratedColumn<String> get remoteUrl =>
       $composableBuilder(column: $table.remoteUrl, builder: (column) => column);
 
-  GeneratedColumn<DateTime> get timestamp =>
-      $composableBuilder(column: $table.timestamp, builder: (column) => column);
+  GeneratedColumn<bool> get isHighQuality => $composableBuilder(
+    column: $table.isHighQuality,
+    builder: (column) => column,
+  );
 }
 
 class $$MediaHistoryTableTableManager
@@ -5761,34 +5709,30 @@ class $$MediaHistoryTableTableManager
           updateCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
-                Value<String> userId = const Value.absent(),
                 Value<String> mediaType = const Value.absent(),
                 Value<String> localFilePath = const Value.absent(),
                 Value<String> remoteUrl = const Value.absent(),
-                Value<DateTime> timestamp = const Value.absent(),
+                Value<bool> isHighQuality = const Value.absent(),
               }) => MediaHistoryCompanion(
                 id: id,
-                userId: userId,
                 mediaType: mediaType,
                 localFilePath: localFilePath,
                 remoteUrl: remoteUrl,
-                timestamp: timestamp,
+                isHighQuality: isHighQuality,
               ),
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
-                required String userId,
                 required String mediaType,
                 required String localFilePath,
                 required String remoteUrl,
-                required DateTime timestamp,
+                Value<bool> isHighQuality = const Value.absent(),
               }) => MediaHistoryCompanion.insert(
                 id: id,
-                userId: userId,
                 mediaType: mediaType,
                 localFilePath: localFilePath,
                 remoteUrl: remoteUrl,
-                timestamp: timestamp,
+                isHighQuality: isHighQuality,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

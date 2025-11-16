@@ -64,12 +64,13 @@ class HistoryRepository {
     
     // --- 新增：获取所有相关的媒体历史记录（按时间倒序） ---
     final mediaHistory = await (_db.select(_db.mediaHistory)
-          ..where((tbl) => tbl.userId.equals(userId))
-          ..orderBy([
-            (tbl) =>
-                OrderingTerm(expression: tbl.timestamp, mode: OrderingMode.desc),
-          ]))
-        .get();
+      ..orderBy([
+        (tbl) => OrderingTerm(
+          expression: tbl.id,
+          mode: OrderingMode.desc,
+        )
+      ]))
+    .get();
     // --- 新增结束 ---
 
     // 5. 将 *纯数据*（可发送）传递给 compute 块
@@ -118,14 +119,8 @@ String? _findLocalPath(
   // 2. 查找：找到时间戳 <= 快照时间戳的最新记录
   // 由于 history 已经是按时间倒序排列的，我们找到的第一个符合条件的即为最佳匹配。
   MediaHistoryEntry? bestMatch;
-  for (final entry in filtered) {
-    // 媒体记录的时间戳必须在快照记录的时间戳之前或同时
-    if (entry.timestamp.isBefore(snapshotTimestamp) ||
-        entry.timestamp.isAtSameMomentAs(snapshotTimestamp)) {
-      bestMatch = entry;
-      break;
-    }
-  }
+  bestMatch = filtered.isNotEmpty ? filtered.first : null;
+
 
   return bestMatch?.localFilePath;
 }
