@@ -20,13 +20,16 @@ class AnalysisReportRepository {
 
   AnalysisReportRepository(this._database);
 
+  // ... (getUsersForCategory 方法保持不变) ...
   Future<List<TwitterUser>> getUsersForCategory(
     String ownerId,
     String categoryKey, {
     required int limit,
     required int offset,
   }) async {
-    logger.i(
+    // ... (保持原有的查询和分页逻辑不变) ...
+    // 代码省略，与你提供的原文件一致
+     logger.i(
       "AnalysisReportRepository: Getting users for category '$categoryKey' for owner '$ownerId' (Limit: $limit, Offset: $offset)...",
     );
     try {
@@ -43,7 +46,6 @@ class AnalysisReportRepository {
                     : tbl.isFollowing.equals(true)),
           );
 
-        // --- 修改：应用分页 ---
         final followUsers = await (query..limit(limit, offset: offset)).get();
 
         logger.i(
@@ -65,7 +67,6 @@ class AnalysisReportRepository {
             )
             .toList();
       }
-      // 逻辑 2: 获取所有其他差异列表 (历史快照)
       else {
         final reportQuery = _database.select(_database.changeReports)
           ..where(
@@ -74,7 +75,6 @@ class AnalysisReportRepository {
                 tbl.changeType.equals(categoryKey),
           );
 
-        // --- 修改：应用分页 ---
         final reportResults = await (reportQuery..limit(limit, offset: offset))
             .get();
 
@@ -108,7 +108,7 @@ class AnalysisReportRepository {
   }
 }
 
-// --- 顶层辅助类和函数 (保持不变) ---
+// --- 顶层辅助类和函数 ---
 
 class ParseParams {
   final String userId;
@@ -138,87 +138,44 @@ List<TwitterUser> parseListInCompute(List<ParseParams> paramsList) {
       .toList();
 }
 
+/// 核心修改：使用 TwitterUser.fromJson 进行解析，并合并本地路径
 TwitterUser parseFollowUserToTwitterUser(ParseParams params) {
-  String? screenName = params.dbScreenName;
-  String? name = params.dbName;
-  String? avatarUrl = params.dbAvatarUrl;
-  String? avatarLocalPath = params.dbAvatarLocalPath;
-  String? bio = params.dbBio;
-  String? location, link, joinTime, bannerUrl;
-  int followersCount = 0,
-      followingCount = 0,
-      statusesCount = 0,
-      mediaCount = 0,
-      favouritesCount = 0,
-      listedCount = 0;
-  bool isVerified = false;
-  bool isProtected = false;
-
+  // 1. 优先尝试解析标准化的 JSON
   if (params.jsonString != null && params.jsonString!.isNotEmpty) {
     try {
-      final parsedJson = jsonDecode(params.jsonString!) as Map<String, dynamic>;
+      final Map<String, dynamic> jsonMap = jsonDecode(params.jsonString!);
 
-      name = parsedJson['name'] as String? ?? name;
-      screenName = parsedJson['screen_name'] as String? ?? screenName;
-      avatarUrl = parsedJson['profile_image_url_https'] as String? ?? avatarUrl;
-      avatarLocalPath = parsedJson['avatar_local_path'] as String? ??
-          avatarLocalPath;
-      bio = parsedJson['description'] as String? ?? bio;
-      location = parsedJson['location'] as String?;
-      joinTime = parsedJson['created_at'] as String?;
-      bannerUrl = parsedJson['profile_banner_url'] as String?;
-      followersCount = parsedJson['followers_count'] as int? ?? 0;
-      followingCount =
-          parsedJson['friends_count'] as int? ?? 0; // API 1.1 使用 friends_count
-      statusesCount = parsedJson['statuses_count'] as int? ?? 0;
-      mediaCount = parsedJson['media_count'] as int? ?? 0;
-      favouritesCount = parsedJson['favourites_count'] as int? ?? 0;
-      listedCount = parsedJson['listed_count'] as int? ?? 0;
-      isProtected = parsedJson['protected'] as bool? ?? false;
-      isVerified = parsedJson['ext_is_blue_verified'] as bool? ?? false;
-
-      link = parsedJson['url'] as String?; // 默认 t.co 链接
-      final entities = parsedJson['entities'] as Map<String, dynamic>?;
-      final urlBlock = entities?['url'] as Map<String, dynamic>?;
-      final urlsList = urlBlock?['urls'] as List<dynamic>?;
-      if (link != null && urlsList != null && urlsList.isNotEmpty) {
-        for (final item in urlsList) {
-          final urlMap = item as Map<String, dynamic>?;
-          if (urlMap != null && urlMap['url'] == link) {
-            link = urlMap['expanded_url'] as String?; // 替换为 expanded_url
-            break;
-          }
-        }
+      // 2. 关键步骤：将数据库中的本地文件路径合并到 Map 中
+      // 因为 DatabaseUpdater 存入 JSON 时对象可能还没包含下载后的路径
+      // 而数据库列 (follow_users.avatar_local_path) 是文件系统的 Source of Truth
+      if (params.dbAvatarLocalPath != null) {
+        jsonMap['avatar_local_path'] = params.dbAvatarLocalPath;
       }
+      if (params.dbBannerLocalPath != null) {
+        jsonMap['banner_local_path'] = params.dbBannerLocalPath;
+      }
+
+      // 3. 直接使用 fromJson (它已经包含了所有字段类型转换逻辑)
+      return TwitterUser.fromJson(jsonMap);
     } catch (e, s) {
       logger.e(
-        "AnalysisReportRepository (compute): Error parsing rawJson for user ${params.userId}",
+        "AnalysisReportRepository (compute): Error parsing standardized JSON for user ${params.userId}",
         error: e,
         stackTrace: s,
       );
+      // 如果解析失败，降级到下方的 fallback
     }
   }
 
+  // 4. Fallback: 如果 JSON 缺失或损坏，使用 ParseParams 中的数据库列构建最小可用对象
   return TwitterUser(
     restId: params.userId,
-    id: screenName ?? params.userId, // handle
-    name: name ?? 'Unknown Name',
-    avatarUrl: avatarUrl ?? '',
-    avatarLocalPath: avatarLocalPath ?? '',
+    screenName: params.dbScreenName,
+    name: params.dbName,
+    avatarUrl: params.dbAvatarUrl,
+    avatarLocalPath: params.dbAvatarLocalPath,
     bannerLocalPath: params.dbBannerLocalPath,
-    bio: bio,
-    location: location,
-    link: link,
-    joinTime: joinTime ?? '',
-    bannerUrl: bannerUrl,
-    followersCount: followersCount,
-    followingCount: followingCount,
-    statusesCount: statusesCount,
-    mediaCount: mediaCount,
-    favouritesCount: favouritesCount,
-    listedCount: listedCount,
-    latestRawJson: params.jsonString,
-    isVerified: isVerified,
-    isProtected: isProtected,
+    bio: params.dbBio,
+    // 其他字段将使用 TwitterUser 构造函数的默认值 (0, false, null)
   );
 }

@@ -43,7 +43,7 @@ class UserHistoryPage extends ConsumerWidget {
             Text(l10n.user_history_page_title),
             const SizedBox(height: 2),
             Text(
-              '@${user.id}', // <-- 这里显示 @handle 没问题
+              '@${user.screenName}', // <-- 这里显示 @handle 没问题
               style: Theme.of(context)
                   .textTheme
                   .titleSmall
@@ -173,7 +173,7 @@ class UserHistoryPage extends ConsumerWidget {
                       children: [
                         Flexible(
                           child: Text(
-                            snapshotUser.name,
+                            snapshotUser.name ?? 'Unknown Name',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -208,7 +208,7 @@ class UserHistoryPage extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "@${snapshotUser.id}",
+                          "@${snapshotUser.screenName}",
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),

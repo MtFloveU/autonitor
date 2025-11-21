@@ -137,7 +137,7 @@ class DataProcessor {
       // 4. Fetch New Network Data (Delegated)
       final networkData = await _networkFetcher.fetchAllNetworkData();
       _log(
-        "Finished fetching. Total unique users: ${networkData.uniqueUserJsons.length}",
+        "Finished fetching. Total unique users: ${networkData.uniqueUsers.length}",
       );
 
       // 5. Analyze Changes (Delegated)
@@ -154,7 +154,7 @@ class DataProcessor {
 
       // 6. Process Media (Delegated)
       final mediaResult = await _mediaProcessor.processMedia(
-        newUsers: networkData.uniqueUserJsons,
+        newUsers: networkData.uniqueUsers,
         oldRelations: oldRelationsMap,
       );
       _log(

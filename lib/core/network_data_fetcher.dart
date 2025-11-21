@@ -3,17 +3,19 @@ import 'package:autonitor/providers/x_client_transaction_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/twitter_api_service.dart';
 import '../services/twitter_api_v1_service.dart';
+import '../models/twitter_user.dart';
+import '../utils/runid_generator.dart';
 
 typedef LogCallback = void Function(String message);
 
 // Data class to hold the results of the network fetch
 class NetworkFetchResult {
-  final Map<String, Map<String, dynamic>> uniqueUserJsons;
+  final Map<String, TwitterUser> uniqueUsers;
   final Set<String> followerIds;
   final Set<String> followingIds;
 
   NetworkFetchResult({
-    required this.uniqueUserJsons,
+    required this.uniqueUsers,
     required this.followerIds,
     required this.followingIds,
   });
@@ -34,17 +36,18 @@ class NetworkDataFetcher {
     required String ownerId,
     required String ownerCookie,
     required LogCallback log,
-  })  : _apiServiceGql = apiServiceGql,
-        _apiServiceV1 = apiServiceV1,
-        _ref = ref,
-        _ownerId = ownerId,
-        _ownerCookie = ownerCookie,
-        _log = log;
+  }) : _apiServiceGql = apiServiceGql,
+       _apiServiceV1 = apiServiceV1,
+       _ref = ref,
+       _ownerId = ownerId,
+       _ownerCookie = ownerCookie,
+       _log = log;
 
   Future<NetworkFetchResult> fetchAllNetworkData() async {
-    final Map<String, Map<String, dynamic>> newUserJsons = {};
+    final Map<String, TwitterUser> newUsers = {};
     final Set<String> newFollowerIds = {};
     final Set<String> newFollowingIds = {};
+    final String currentRunId = generateRunId();
 
     // Fetch Followers (V1)
     _log("Fetching new followers from API (V1)...");
@@ -59,8 +62,8 @@ class NetworkDataFetcher {
         final userId =
             userJson['id_str'] as String? ?? userJson['id']?.toString();
         if (userId != null) {
-          newUserJsons[userId] = Map<String, dynamic>.from(userJson);
           newFollowerIds.add(userId);
+          newUsers[userId] = TwitterUser.fromV1(userJson, currentRunId);
         }
       }
       nextFollowerCursor = followerResult.nextCursor;
@@ -71,7 +74,7 @@ class NetworkDataFetcher {
         nextFollowerCursor != '0' &&
         nextFollowerCursor.isNotEmpty);
     _log(
-      "Finished fetching followers. Total unique users so far: ${newUserJsons.length}",
+      "Finished fetching followers. Total unique users so far: ${newUsers.length}",
     );
 
     // Fetch Following (GQL)
@@ -104,9 +107,7 @@ class NetworkDataFetcher {
 
         if (userId != null) {
           newFollowingIds.add(userId);
-          if (!newUserJsons.containsKey(userId)) {
-            newUserJsons[userId] = Map<String, dynamic>.from(userJson);
-          }
+          newUsers[userId] = TwitterUser.fromGraphQL(userJson, currentRunId);
         }
       }
       nextFollowingCursor = followingResult.nextCursor;
@@ -117,11 +118,11 @@ class NetworkDataFetcher {
         nextFollowingCursor.isNotEmpty &&
         !nextFollowingCursor.startsWith('0|'));
     _log(
-      "Finished fetching following. Total unique users in combined list: ${newUserJsons.length}",
+      "Finished fetching following. Total unique users in combined list: ${newUsers.length}",
     );
 
     return NetworkFetchResult(
-      uniqueUserJsons: newUserJsons,
+      uniqueUsers: newUsers,
       followerIds: newFollowerIds,
       followingIds: newFollowingIds,
     );

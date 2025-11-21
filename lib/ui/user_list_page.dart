@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:autonitor/services/log_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:autonitor/ui/user_detail_page.dart'; // <--- 这个文件只导入 UserDetailPage
@@ -148,7 +147,6 @@ class _UserListPageState extends ConsumerState<UserListPage> {
                             relativeLocalPath.isNotEmpty)
                         ? p.join(mediaDirAsync.value!, relativeLocalPath)
                         : null;
-                    logger.d(absoluteLocalPath);
 
                     bool isLocalHighQuality = false;
                     if (absoluteLocalPath != null &&
@@ -157,7 +155,7 @@ class _UserListPageState extends ConsumerState<UserListPage> {
                     }
 
                     final String highQualityNetworkUrl =
-                        (user.avatarUrl).replaceFirst(
+                        (user.avatarUrl)!.replaceFirst(
                           RegExp(r'_(normal|bigger|400x400)'),
                           '_400x400',
                         );
@@ -229,7 +227,7 @@ class _UserListPageState extends ConsumerState<UserListPage> {
                         children: [
                           Flexible(
                             child: Text(
-                              user.name,
+                              user.name ?? 'Unknown Name',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -262,7 +260,7 @@ class _UserListPageState extends ConsumerState<UserListPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "@${user.id}",
+                            "@${user.screenName}",
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),

@@ -5,7 +5,7 @@ import 'relationship_analyzer.dart';
 import 'package:drift/drift.dart';
 import '../services/database.dart';
 import '../utils/diff_utils.dart';
-import '../services/image_history_service.dart'; // For MediaType enum
+import '../services/image_history_service.dart';
 
 typedef LogCallback = void Function(String message);
 
@@ -30,11 +30,11 @@ class DatabaseUpdater {
     final List<FollowUsersHistoryCompanion> historyToInsert = [];
     for (final userId in analysisResult.keptIds) {
       final oldRelation = oldRelationsMap[userId];
-      final userJson = networkData.uniqueUserJsons[userId];
+      final newUserObj = networkData.uniqueUsers[userId];
 
-      if (oldRelation != null && userJson != null) {
+      if (oldRelation != null && newUserObj != null) {
         final oldJsonString = oldRelation.latestRawJson;
-        final newJsonString = jsonEncode(userJson);
+        final newJsonString = jsonEncode(newUserObj.toJson());
         final diffString = calculateReverseDiff(newJsonString, oldJsonString);
         if (diffString != null && diffString.isNotEmpty) {
           historyToInsert.add(
@@ -51,18 +51,21 @@ class DatabaseUpdater {
 
     // 2. Prepare User Companions for Upsert
     final List<FollowUsersCompanion> companionsToUpsert = [];
-    for (final userId in networkData.uniqueUserJsons.keys) {
-      final userJson = networkData.uniqueUserJsons[userId]!;
+    for (final userId in networkData.uniqueUsers.keys) {
+      final userObj = networkData.uniqueUsers[userId]!;
+      
+      // [修改] 直接使用对象属性，并存储 toJson() 的结果
       companionsToUpsert.add(
         FollowUsersCompanion(
           ownerId: Value(ownerId),
           userId: Value(userId),
-          name: Value(userJson['name'] as String?),
-          screenName: Value(userJson['screen_name'] as String?),
-          avatarUrl: Value(userJson['profile_image_url_https'] as String?),
-          bannerUrl: Value(userJson['profile_banner_url'] as String?),
-          bio: Value(userJson['description'] as String?),
-          latestRawJson: Value(jsonEncode(userJson)),
+          name: Value(userObj.name),
+          screenName: Value(userObj.screenName),
+          avatarUrl: Value(userObj.avatarUrl),
+          bannerUrl: Value(userObj.bannerUrl),
+          bio: Value(userObj.bio),
+          // [核心修改] 存储标准化后的 JSON
+          latestRawJson: Value(jsonEncode(userObj.toJson())),
           isFollower: Value(networkData.followerIds.contains(userId)),
           isFollowing: Value(networkData.followingIds.contains(userId)),
         ),

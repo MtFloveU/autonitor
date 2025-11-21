@@ -46,8 +46,6 @@ class UserDetailPage extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     const double bannerAspectRatio = 1500 / 500;
     const double avatarOverhang = 40.0;
-    logger.d('user.isProtected=${user.isProtected}');
-    logger.d('user.isVerified=${user.isVerified}');
 
     // 5. 修复：这里的 provider 应该是 mediaDirectoryProvider
     //    (你之前的文件中这里是 appSupportDirProvider，我已为你修正)
@@ -56,7 +54,8 @@ class UserDetailPage extends ConsumerWidget {
     // --- (所有头像和横幅的路径拼接逻辑保持不变) ---
     // 头像逻辑
     final String? relativeAvatarPath = user.avatarLocalPath;
-    final String? absoluteAvatarPath = (mediaDirAsync.hasValue &&
+    final String? absoluteAvatarPath =
+        (mediaDirAsync.hasValue &&
             relativeAvatarPath != null &&
             relativeAvatarPath.isNotEmpty)
         ? p.join(mediaDirAsync.value!, relativeAvatarPath)
@@ -76,7 +75,8 @@ class UserDetailPage extends ConsumerWidget {
 
     // 横幅逻辑
     final String? relativeBannerPath = user.bannerLocalPath;
-    final String? absoluteBannerPath = (mediaDirAsync.hasValue &&
+    final String? absoluteBannerPath =
+        (mediaDirAsync.hasValue &&
             relativeBannerPath != null &&
             relativeBannerPath.isNotEmpty)
         ? p.join(mediaDirAsync.value!, relativeBannerPath)
@@ -86,7 +86,7 @@ class UserDetailPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(user.name),
+        title: Text(user.name as String),
         actions: [
           // --- 6. 根据 isFromHistory 隐藏历史按钮 ---
           if (!isFromHistory)
@@ -136,15 +136,15 @@ class UserDetailPage extends ConsumerWidget {
                         },
                       )
                     : (networkBannerUrl ?? '').isNotEmpty
-                        ? CachedNetworkImage(
-                            imageUrl: networkBannerUrl!,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) =>
-                                Container(color: Colors.grey.shade300),
-                            errorWidget: (context, url, error) =>
-                                Container(color: Colors.grey.shade300),
-                          )
-                        : Container(color: Colors.grey.shade300),
+                    ? CachedNetworkImage(
+                        imageUrl: networkBannerUrl!,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) =>
+                            Container(color: Colors.grey.shade300),
+                        errorWidget: (context, url, error) =>
+                            Container(color: Colors.grey.shade300),
+                      )
+                    : Container(color: Colors.grey.shade300),
               ),
               Positioned(
                 left: 16,
@@ -156,8 +156,9 @@ class UserDetailPage extends ConsumerWidget {
                     backgroundColor: Colors.white,
                     child: CircleAvatar(
                       radius: 42,
-                      backgroundColor:
-                          Theme.of(context).colorScheme.surfaceContainerHighest,
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
                       child: ClipOval(
                         child: Stack(
                           fit: StackFit.expand,
@@ -165,10 +166,9 @@ class UserDetailPage extends ConsumerWidget {
                             Icon(
                               Icons.person,
                               size: 40,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant
-                                  .withOpacity(0.5),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant.withOpacity(0.5),
                             ),
                             if (absoluteAvatarPath != null)
                               Image.file(
@@ -176,8 +176,7 @@ class UserDetailPage extends ConsumerWidget {
                                 fit: BoxFit.cover,
                                 width: 84,
                                 height: 84,
-                                frameBuilder:
-                                    (context, child, frame, wasSync) {
+                                frameBuilder: (context, child, frame, wasSync) {
                                   if (wasSync) return child;
                                   return AnimatedOpacity(
                                     opacity: frame == null ? 0 : 1,
@@ -194,8 +193,9 @@ class UserDetailPage extends ConsumerWidget {
                                 fit: BoxFit.cover,
                                 width: 84,
                                 height: 84,
-                                fadeInDuration:
-                                    const Duration(milliseconds: 300),
+                                fadeInDuration: const Duration(
+                                  milliseconds: 300,
+                                ),
                                 placeholder: (context, url) =>
                                     const SizedBox.shrink(),
                                 errorWidget: (context, url, error) =>
@@ -210,19 +210,24 @@ class UserDetailPage extends ConsumerWidget {
               ),
             ],
           ),
+          // lib/ui/user_detail_page.dart
+
+          // ... inside build() ...
+
+          // 替换原来的 Padding 块
           Padding(
             padding: const EdgeInsets.only(right: 16.0, top: 8.0),
             child: Align(
               alignment: Alignment.centerRight,
               child: FilledButton.tonalIcon(
                 onPressed: () {
-                  // --- 7. 修改 JSON 按钮逻辑 ---
-                  // 优先使用快照 JSON，如果 (isFromHistory == false)，则回退到 user.latestRawJson
-                  final rawJson = snapshotJson ?? user.latestRawJson;
-                  // --- 修改结束 ---
-                  
-                  if (rawJson != null && rawJson.isNotEmpty) {
-                    // ... (所有 jsonDecode 和 showDialog 逻辑保持不变) ...
+                  // --- [修复] JSON 获取逻辑 ---
+                  // 1. 尝试使用传入的快照 JSON (历史模式)
+                  // 2. 如果没有快照，则将当前 TwitterUser 对象序列化为 JSON (实时模式)
+                  String rawJson = snapshotJson ?? jsonEncode(user.toJson());
+
+                  // --- 下面代码保持不变 ---
+                  if (rawJson.isNotEmpty) {
                     String formattedJson = rawJson;
                     try {
                       final dynamic jsonObj = jsonDecode(rawJson);
@@ -230,11 +235,12 @@ class UserDetailPage extends ConsumerWidget {
                       formattedJson = encoder.convert(jsonObj);
                     } catch (e, s) {
                       logger.e(
-                        "Error formatting JSON for display: $e",
+                        "Error formatting JSON: $e",
                         error: e,
                         stackTrace: s,
                       );
                     }
+
                     showDialog(
                       context: context,
                       builder: (dialogContext) => AlertDialog(
@@ -245,26 +251,28 @@ class UserDetailPage extends ConsumerWidget {
                             maxHeight: MediaQuery.of(context).size.height * 0.6,
                           ),
                           decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHighest,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(8.0),
                           ),
                           child: SingleChildScrollView(
                             padding: const EdgeInsets.all(8.0),
                             child: TextField(
-                              controller:
-                                  TextEditingController(text: formattedJson),
+                              controller: TextEditingController(
+                                text: formattedJson,
+                              ),
                               readOnly: true,
                               maxLines: null,
-                              decoration:
-                                  const InputDecoration.collapsed(hintText: null),
+                              decoration: const InputDecoration.collapsed(
+                                hintText: null,
+                              ),
                               style: TextStyle(
                                 fontFamily: 'monospace',
                                 fontSize: 12,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ),
@@ -282,23 +290,21 @@ class UserDetailPage extends ConsumerWidget {
                                   content: Text(
                                     l10n.copied_to_clipboard,
                                     style: TextStyle(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onPrimaryContainer,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onPrimaryContainer,
                                     ),
                                   ),
-                                  backgroundColor: Theme.of(context)
-                                      .colorScheme
-                                      .primaryContainer,
+                                  backgroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.primaryContainer,
                                 ),
                               );
                             },
                           ),
                           ElevatedButton(
                             child: Text(l10n.ok),
-                            onPressed: () {
-                              Navigator.pop(dialogContext);
-                            },
+                            onPressed: () => Navigator.pop(dialogContext),
                           ),
                         ],
                       ),
@@ -312,17 +318,18 @@ class UserDetailPage extends ConsumerWidget {
                 style: FilledButton.styleFrom(
                   backgroundColor: Colors.pink.shade100,
                   foregroundColor: Colors.pink.shade800,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 8,
+                  ),
                 ),
                 icon: const Icon(Icons.description_outlined, size: 20),
                 label: const Text('JSON'),
               ),
             ),
           ),
-          
+
           // ... (所有显示用户 bio, location, link, followers... 的代码保持不变) ...
-          
           const SizedBox(height: 5),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -332,17 +339,17 @@ class UserDetailPage extends ConsumerWidget {
               children: [
                 SelectableText.rich(
                   TextSpan(
-                    style: Theme.of(context)
-                        .textTheme
-                        .headlineSmall
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                     children: [
                       TextSpan(text: user.name),
                       if (user.isVerified)
                         WidgetSpan(
                           child: Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 4.0),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4.0,
+                            ),
                             child: SvgPicture.asset(
                               'assets/icon/verified.svg',
                               width: 23,
@@ -385,19 +392,15 @@ class UserDetailPage extends ConsumerWidget {
                           children: [
                             TextSpan(
                               text: '@',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyLarge
+                              style: Theme.of(context).textTheme.bodyLarge
                                   ?.copyWith(color: Colors.grey.shade600),
                             ),
                             WidgetSpan(
                               alignment: PlaceholderAlignment.baseline,
                               baseline: TextBaseline.alphabetic,
                               child: SelectableText(
-                                user.id,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyLarge
+                                user.screenName ?? '',
+                                style: Theme.of(context).textTheme.bodyLarge
                                     ?.copyWith(color: Colors.grey.shade600),
                               ),
                             ),
@@ -427,8 +430,11 @@ class UserDetailPage extends ConsumerWidget {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.location_on_outlined,
-                          color: Colors.grey, size: 16),
+                      const Icon(
+                        Icons.location_on_outlined,
+                        color: Colors.grey,
+                        size: 16,
+                      ),
                       const SizedBox(width: 4),
                       Flexible(
                         child: SelectableText(
@@ -462,12 +468,15 @@ class UserDetailPage extends ConsumerWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.calendar_month_outlined,
-                        color: Colors.grey, size: 16),
+                    const Icon(
+                      Icons.calendar_month_outlined,
+                      color: Colors.grey,
+                      size: 16,
+                    ),
                     const SizedBox(width: 4),
                     Flexible(
                       child: Text(
-                        '${l10n.joined} ${user.joinTime}',
+                        '${l10n.joined} ${user.joinedTime}',
                         style: const TextStyle(color: Colors.grey),
                       ),
                     ),
@@ -477,7 +486,10 @@ class UserDetailPage extends ConsumerWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 8.0,
+            ),
             child: Wrap(
               spacing: 16.0,
               runSpacing: 4.0,
@@ -490,7 +502,9 @@ class UserDetailPage extends ConsumerWidget {
                       TextSpan(
                         text: ' ${l10n.following}',
                         style: const TextStyle(
-                            fontWeight: FontWeight.normal, color: Colors.grey),
+                          fontWeight: FontWeight.normal,
+                          color: Colors.grey,
+                        ),
                       ),
                     ],
                   ),
@@ -503,7 +517,9 @@ class UserDetailPage extends ConsumerWidget {
                       TextSpan(
                         text: ' ${l10n.followers}',
                         style: const TextStyle(
-                            fontWeight: FontWeight.normal, color: Colors.grey),
+                          fontWeight: FontWeight.normal,
+                          color: Colors.grey,
+                        ),
                       ),
                     ],
                   ),
@@ -527,22 +543,28 @@ class UserDetailPage extends ConsumerWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.link,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 16),
+                      Icon(
+                        Icons.link,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 16,
+                      ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('ByScreenName',
-                                style: TextStyle(fontSize: 12)),
+                            const Text(
+                              'ByScreenName',
+                              style: TextStyle(fontSize: 12),
+                            ),
                             const SizedBox(height: 4),
                             InkWell(
                               onTap: () => _launchURL(
-                                  context, 'https://x.com/${user.id}'),
+                                context,
+                                'https://x.com/${user.screenName}',
+                              ),
                               child: Text(
-                                'https://x.com/${user.id}',
+                                'https://x.com/${user.screenName}',
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
@@ -563,21 +585,26 @@ class UserDetailPage extends ConsumerWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.link,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 16),
+                      Icon(
+                        Icons.link,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 16,
+                      ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('ByRestId',
-                                style: TextStyle(fontSize: 12)),
+                            const Text(
+                              'ByRestId',
+                              style: TextStyle(fontSize: 12),
+                            ),
                             const SizedBox(height: 4),
                             InkWell(
                               onTap: () => _launchURL(
-                                  context,
-                                  'https://x.com/intent/user?user_id=${user.restId}'),
+                                context,
+                                'https://x.com/intent/user?user_id=${user.restId}',
+                              ),
                               child: Text(
                                 'https://x.com/intent/user?user_id=${user.restId}',
                                 maxLines: 2,
@@ -637,7 +664,7 @@ class UserDetailPage extends ConsumerWidget {
             ),
           ),
           _buildInfoTile(context, Icons.fingerprint, "Rest ID", user.restId),
-          
+
           // --- 8. 添加快照 ID 和时间戳 ---
           if (isFromHistory && snapshotId != null && snapshotTimestamp != null)
             Padding(
@@ -645,10 +672,9 @@ class UserDetailPage extends ConsumerWidget {
               child: Text(
                 "Snapshot ID: $snapshotId\nTimestamp: ${snapshotTimestamp!.toLocal()}",
                 textAlign: TextAlign.center,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: Colors.grey.shade600),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
               ),
             ),
           // --- 修改结束 ---

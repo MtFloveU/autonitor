@@ -51,7 +51,7 @@ class RelationshipAnalyzer {
     required Map<String, FollowUser> oldRelationsMap,
     required NetworkFetchResult networkData,
   }) {
-    final Set<String> newIds = networkData.uniqueUserJsons.keys.toSet();
+    final Set<String> newIds = networkData.uniqueUsers.keys.toSet();
     final Set<String> oldIds = oldRelationsMap.keys.toSet();
 
     final Set<String> addedIds = newIds.difference(oldIds);
@@ -187,7 +187,7 @@ class RelationshipAnalyzer {
           changeType: Value('new_followers_following'),
           timestamp: Value(now),
           userSnapshotJson:
-              Value(jsonEncode(networkData.uniqueUserJsons[addedId]!)),
+              Value(jsonEncode(networkData.uniqueUsers[addedId]!)),
         ),
       );
     }
@@ -219,7 +219,7 @@ class RelationshipAnalyzer {
             changeType: Value('be_followed_back'),
             timestamp: Value(now),
             userSnapshotJson:
-                Value(jsonEncode(networkData.uniqueUserJsons[keptId]!)),
+                Value(jsonEncode(networkData.uniqueUsers[keptId]!)),
           ),
         );
       } else if (wasFollower &&
@@ -233,7 +233,7 @@ class RelationshipAnalyzer {
             changeType: Value('oneway_unfollowed'),
             timestamp: Value(now),
             userSnapshotJson:
-                Value(jsonEncode(networkData.uniqueUserJsons[keptId]!)),
+                Value(jsonEncode(networkData.uniqueUsers[keptId]!)),
           ),
         );
       } else if (wasFollower &&
@@ -247,7 +247,7 @@ class RelationshipAnalyzer {
             changeType: Value('oneway_unfollowed'),
             timestamp: Value(now),
             userSnapshotJson:
-                Value(jsonEncode(networkData.uniqueUserJsons[keptId]!)),
+                Value(jsonEncode(networkData.uniqueUsers[keptId]!)),
           ),
         );
       }
