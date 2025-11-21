@@ -158,7 +158,7 @@ class DataProcessor {
         oldRelations: oldRelationsMap,
       );
       _log(
-        "Finished downloading ${mediaResult.downloadedPaths.length} images.",
+        "Finished downloading ${mediaResult.newDownloadCount} images.",
       );
 
       // 7. Save to Database (Delegated)

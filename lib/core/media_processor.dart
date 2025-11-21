@@ -1,17 +1,37 @@
 import 'package:async/async.dart';
 import 'package:async_locks/async_locks.dart';
-import 'package:autonitor/models/twitter_user.dart';
 import '../models/app_settings.dart';
-import '../services/database.dart';
+import '../services/database.dart'; // 为了 FollowUser (如果还用到)
 import '../services/image_history_service.dart';
+import '../models/twitter_user.dart'; // [新增]
 
 typedef LogCallback = void Function(String message);
 
 // 数据类，保存处理结果
 class MediaProcessingResult {
+  // 包含所有用户的媒体路径（无论是新下载的还是数据库已有的）
   final Map<String, Map<MediaType, String>> downloadedPaths;
+  final int newDownloadCount;
 
-  MediaProcessingResult({required this.downloadedPaths});
+  MediaProcessingResult({
+    required this.downloadedPaths,
+    required this.newDownloadCount,
+  });
+}
+
+// 内部辅助类：下载候选任务
+class _MediaCandidate {
+  final String userId;
+  final String remoteUrl;
+  final MediaType mediaType;
+  final bool isHighQuality;
+
+  _MediaCandidate({
+    required this.userId,
+    required this.remoteUrl,
+    required this.mediaType,
+    required this.isHighQuality,
+  });
 }
 
 class MediaProcessor {
@@ -29,131 +49,168 @@ class MediaProcessor {
        _log = log;
 
   Future<MediaProcessingResult> processMedia({
+    // [修改] 适配 TwitterUser
     required Map<String, TwitterUser> newUsers,
     required Map<String, FollowUser> oldRelations,
   }) async {
-    final List<Map<String, dynamic>> downloadTasks = [];
+    final List<_MediaCandidate> candidates = [];
 
+    // 1. 收集所有潜在的媒体任务
     for (final userId in newUsers.keys) {
-      final userObj = newUsers[userId]!;
+      final user = newUsers[userId]!;
 
       // --- Avatar ---
-      final String? avatarUrl = userObj.avatarUrl;
-      if (avatarUrl != null &&
-          avatarUrl.isNotEmpty &&
+      if (user.avatarUrl != null &&
+          user.avatarUrl!.isNotEmpty &&
           _settings.saveAvatarHistory) {
-        downloadTasks.add({
-          'userId': userId,
-          'remoteUrl': avatarUrl,
-          'mediaType': MediaType.avatar,
-          'isHighQuality': _settings.avatarQuality == AvatarQuality.high,
-        });
+        candidates.add(
+          _MediaCandidate(
+            userId: userId,
+            remoteUrl: user.avatarUrl!,
+            mediaType: MediaType.avatar,
+            isHighQuality: _settings.avatarQuality == AvatarQuality.high,
+          ),
+        );
       }
 
       // --- Banner ---
-      final String? bannerUrl = userObj.bannerUrl;
-      if (bannerUrl != null &&
-          bannerUrl.isNotEmpty &&
+      if (user.bannerUrl != null &&
+          user.bannerUrl!.isNotEmpty &&
           _settings.saveBannerHistory) {
-        downloadTasks.add({
-          'userId': userId,
-          'remoteUrl': bannerUrl,
-          'mediaType': MediaType.banner,
-          'isHighQuality': true, // 横幅无需区分质量
-        });
+        candidates.add(
+          _MediaCandidate(
+            userId: userId,
+            remoteUrl: user.bannerUrl!,
+            mediaType: MediaType.banner,
+            isHighQuality: true, // 横幅默认高质量
+          ),
+        );
       }
     }
 
-    return _runDownloadTasks(downloadTasks);
+    // 2. 执行筛选和下载
+    return _processCandidates(candidates);
   }
 
-  Future<MediaProcessingResult> _runDownloadTasks(
-    List<Map<String, dynamic>> downloadTasks,
+  Future<MediaProcessingResult> _processCandidates(
+    List<_MediaCandidate> candidates,
   ) async {
-    final int totalToDownload = downloadTasks.length;
-    _log("Found $totalToDownload media items to download.");
+    _log("Checking status for media items...");
 
-    if (totalToDownload == 0) {
-      return MediaProcessingResult(downloadedPaths: {});
-    }
+    final Map<String, Map<MediaType, String>> finalPaths = {};
+    final List<_MediaCandidate> toDownload = [];
 
-    final group = FutureGroup<Map<String, dynamic>?>();
-    final semaphore = Semaphore(50);
-    int completed = 0;
-    final counterLock = Semaphore(1);
+    // --- 阶段 A: 并发检查数据库 (Filter Phase) ---
+    final checkSemaphore = Semaphore(50); // 限制并发查库数
+    final checkGroup = FutureGroup<void>();
 
-    for (final task in downloadTasks) {
-      final String userId = task['userId']!;
-      final String remoteUrl = task['remoteUrl']!;
-      final MediaType mediaType = task['mediaType']!;
-      final bool isHighQuality = task['isHighQuality']!;
-
-      group.add(
+    for (final candidate in candidates) {
+      checkGroup.add(
         Future(() async {
-          await semaphore.acquire();
+          await checkSemaphore.acquire();
           try {
-            final existingRecord = await _imageService.getMediaRecord(
-              remoteUrl,
+            final existing = await _imageService.getMediaRecord(
+              candidate.remoteUrl,
             );
-            String? localPath;
+            bool needsDownload = true;
 
-            if (existingRecord != null) {
-              if (!existingRecord.isHighQuality && isHighQuality) {
-                // 已存在低质量，当前请求高质量 -> 覆盖下载
-                localPath = await _imageService.downloadAndSave(
-                  remoteUrl: remoteUrl,
-                  mediaType: mediaType,
-                  isHighQuality: true,
-                );
+            if (existing != null) {
+              // 如果已存在，检查是否需要升级画质
+              if (!existing.isHighQuality && candidate.isHighQuality) {
+                needsDownload = true; // 需要升级 -> 加入下载队列
               } else {
-                // 已存在高质量或低质量不需要覆盖 -> 使用现有路径
-                localPath = existingRecord.localFilePath;
+                needsDownload = false; // 不需要下载 -> 直接使用现有路径
+                _addPathToResult(
+                  finalPaths,
+                  candidate.userId,
+                  candidate.mediaType,
+                  existing.localFilePath,
+                );
               }
-            } else {
-              // 没有记录 -> 正常下载
-              localPath = await _imageService.downloadAndSave(
-                remoteUrl: remoteUrl,
-                mediaType: mediaType,
-                isHighQuality: isHighQuality,
-              );
             }
 
-            if (localPath != null) {
-              await counterLock.acquire();
-              completed++;
-              _log("Download progress: $completed / $totalToDownload");
-              counterLock.release();
-              return {'userId': userId, 'type': mediaType, 'path': localPath};
+            if (needsDownload) {
+              toDownload.add(candidate);
             }
-          } catch (e) {
-            _log("Failed to download media for $userId: $e");
           } finally {
-            semaphore.release();
+            checkSemaphore.release();
           }
-          return null;
         }),
       );
     }
 
-    group.close();
-    final results = await group.future;
+    checkGroup.close();
+    await checkGroup.future;
 
-    final Map<String, Map<MediaType, String>> downloadedPaths = {};
-    for (final result in results) {
-      if (result != null) {
-        final String userId = result['userId'];
-        final MediaType type = result['type'];
-        final String path = result['path'];
+    // --- 阶段 B: 执行下载 (Download Phase) ---
+    _log("Found ${toDownload.length} new media items to download.");
 
-        downloadedPaths.putIfAbsent(userId, () => {});
-        downloadedPaths[userId]![type] = path;
-      }
+    if (toDownload.isEmpty) {
+      return MediaProcessingResult(
+        downloadedPaths: finalPaths,
+        newDownloadCount: 0,
+      );
     }
 
-    _log(
-      "Finished downloading ${results.where((r) => r != null).length} items.",
-    );
+    final downloadSemaphore = Semaphore(20); // 限制并发下载数
+    final downloadGroup = FutureGroup<void>();
+    int completed = 0;
+    final counterLock = Semaphore(1); // 简单的计数锁
 
-    return MediaProcessingResult(downloadedPaths: downloadedPaths);
+    for (final task in toDownload) {
+      downloadGroup.add(
+        Future(() async {
+          await downloadSemaphore.acquire();
+          try {
+            // 执行实际下载逻辑
+            final localPath = await _imageService.downloadAndSave(
+              remoteUrl: task.remoteUrl,
+              mediaType: task.mediaType,
+              isHighQuality: task.isHighQuality,
+            );
+
+            if (localPath != null) {
+              _addPathToResult(
+                finalPaths,
+                task.userId,
+                task.mediaType,
+                localPath,
+              );
+
+              // 更新进度日志
+              await counterLock.acquire();
+              completed++;
+              _log("Download progress: $completed / ${toDownload.length}");
+
+              counterLock.release();
+            }
+          } catch (e) {
+            _log("Failed to download media for ${task.userId}: $e");
+          } finally {
+            downloadSemaphore.release();
+          }
+        }),
+      );
+    }
+
+    downloadGroup.close();
+    await downloadGroup.future;
+
+    _log("Finished processing media.");
+    return MediaProcessingResult(
+      downloadedPaths: finalPaths,
+      newDownloadCount: completed,
+    );
+  }
+
+  // 线程安全的 Map 写入辅助方法（在 Dart 单线程模型下，非 await 间隙是安全的）
+  void _addPathToResult(
+    Map<String, Map<MediaType, String>> paths,
+    String userId,
+    MediaType type,
+    String path,
+  ) {
+    paths.putIfAbsent(userId, () => {});
+    paths[userId]![type] = path;
   }
 }
