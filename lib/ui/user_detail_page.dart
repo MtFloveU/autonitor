@@ -163,13 +163,6 @@ class UserDetailPage extends ConsumerWidget {
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
-                            Icon(
-                              Icons.person,
-                              size: 40,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant.withOpacity(0.5),
-                            ),
                             if (absoluteAvatarPath != null)
                               Image.file(
                                 File(absoluteAvatarPath),

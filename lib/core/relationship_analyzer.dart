@@ -9,7 +9,6 @@ import '../repositories/account_repository.dart';
 
 typedef LogCallback = void Function(String message);
 
-// Data class to hold the results of the analysis
 class RelationshipAnalysisResult {
   final Set<String> addedIds;
   final Set<String> removedIds;
@@ -66,13 +65,7 @@ class RelationshipAnalyzer {
       "Calculated differences: ${addedIds.length} added, ${removedIds.length} removed, ${keptIds.length} kept.",
     );
 
-    // This logic was originally in DataProcessor, now it's here.
     final List<FollowUsersHistoryCompanion> historyToInsert = [];
-    // ... logic for diffString ...
-    // Note: This diff logic should be in `database_updater.dart`
-    // I will leave it here for now as per original structure,
-    // but it's a candidate for moving.
-    // For now, let's assume it's part of the "analysis".
 
     return _processRemovalsAndGenerateReports(
       oldRelationsMap,
@@ -80,7 +73,7 @@ class RelationshipAnalyzer {
       addedIds,
       removedIds,
       keptIds,
-      historyToInsert, // This is currently empty, needs to be populated
+      historyToInsert,
     );
   }
 
@@ -88,7 +81,7 @@ class RelationshipAnalyzer {
     Set<String> removedIds,
   ) async {
     _log(
-      "Processing ${removedIds.length} removed users to determine status...",
+      "Processing ${removedIds.length} users to determine status...",
     );
     final Map<String, String> categorizedRemovals = {};
     if (removedIds.isEmpty) {
@@ -118,10 +111,7 @@ class RelationshipAnalyzer {
               if (interstitial != null && interstitial.isNotEmpty) {
                 category = 'temporarily_restricted';
               } else {
-                // We need oldRel info here. This is a problem.
-                // We'll pass oldRelationsMap to this function.
-                // For now, let's use a placeholder.
-                category = 'normal_unfollowed'; // Placeholder
+                category = 'normal_unfollowed';
               }
             } else if (typename == 'UserUnavailable') {
               category = 'suspended';
@@ -136,7 +126,7 @@ class RelationshipAnalyzer {
               category = 'unknown_gql_response';
             }
           } catch (e) {
-            _log("Error fetching GraphQL for removed user $removedId: $e");
+            _log("Error fetching GraphQL for user $removedId: $e");
             category = 'unknown_error';
           } finally {
             categorizedRemovals[removedId] = category;
@@ -159,10 +149,25 @@ class RelationshipAnalyzer {
     Set<String> keptIds,
     List<FollowUsersHistoryCompanion> historyToInsert,
   ) async {
-    // This is a more complex categorization that requires old state
     final categorizedRemovals = await _categorizeRemovals(removedIds);
+    final Set<String> potentialRestrictedIds = {};
 
-    // Refine 'normal_unfollowed' based on old state
+    for (final keptId in keptIds) {
+      final oldRel = oldRelationsMap[keptId];
+      final newUser = networkData.uniqueUsers[keptId]!;
+
+      final wasFollower = oldRel?.isFollower ?? false;
+      final isNowFollower = networkData.followerIds.contains(keptId);
+
+      if (wasFollower && !isNowFollower) {
+        if (newUser.followingCount == 0 && newUser.followersCount > 0) {
+          potentialRestrictedIds.add(keptId);
+        }
+      }
+    }
+
+    final restrictedChecks = await _categorizeRemovals(potentialRestrictedIds);
+
     categorizedRemovals.forEach((userId, category) {
       if (category == 'normal_unfollowed') {
         final oldRel = oldRelationsMap[userId];
@@ -188,7 +193,7 @@ class RelationshipAnalyzer {
           changeType: Value('new_followers_following'),
           timestamp: Value(now),
           userSnapshotJson: Value(
-            jsonEncode(networkData.uniqueUsers[addedId]!),
+            jsonEncode(networkData.uniqueUsers[addedId]!.toJson()),
           ),
         ),
       );
@@ -215,56 +220,39 @@ class RelationshipAnalyzer {
 
       String? changeType;
 
-      if (!wasFollower && wasFollowing && isNowFollower && isNowFollowing) {
+      if (restrictedChecks.containsKey(keptId) &&
+          restrictedChecks[keptId] == 'temporarily_restricted') {
+        changeType = 'temporarily_restricted';
+      } else if (!wasFollower &&
+          wasFollowing &&
+          isNowFollower &&
+          isNowFollowing) {
         changeType = 'be_followed_back';
-      } else if (wasFollower && wasFollowing && isNowFollower && !isNowFollowing) {
-        changeType = 'oneway_unfollowed';
-      } else if (wasFollower && wasFollowing && !isNowFollower && isNowFollowing) {
-        changeType = 'oneway_unfollowed';
-      }
-
-      if (!wasFollower && wasFollowing && isNowFollower && isNowFollowing) {
-        reportCompanions.add(
-          ChangeReportsCompanion(
-            ownerId: Value(_ownerId),
-            userId: Value(keptId),
-            changeType: Value('be_followed_back'),
-            timestamp: Value(now),
-            userSnapshotJson: Value(null),
-          ),
-        );
       } else if (wasFollower &&
           wasFollowing &&
           isNowFollower &&
           !isNowFollowing) {
-        reportCompanions.add(
-          ChangeReportsCompanion(
-            ownerId: Value(_ownerId),
-            userId: Value(keptId),
-            changeType: Value('oneway_unfollowed'),
-            timestamp: Value(now),
-            userSnapshotJson: Value(
-              jsonEncode(networkData.uniqueUsers[keptId]!),
-            ),
-          ),
-        );
+        changeType = 'oneway_unfollowed';
       } else if (wasFollower &&
           wasFollowing &&
           !isNowFollower &&
           isNowFollowing) {
+        changeType = 'oneway_unfollowed';
+      }
+
+      if (changeType != null) {
         reportCompanions.add(
           ChangeReportsCompanion(
             ownerId: Value(_ownerId),
             userId: Value(keptId),
-            changeType: Value('oneway_unfollowed'),
+            changeType: Value(changeType),
             timestamp: Value(now),
-            userSnapshotJson: Value(
-              jsonEncode(networkData.uniqueUsers[keptId]!),
-            ),
+            userSnapshotJson: Value(null),
           ),
         );
+
         if (changeType != 'be_followed_back') {
-          keptStatusUpdates[keptId] = changeType!;
+          keptStatusUpdates[keptId] = changeType;
         }
       }
     }
@@ -276,8 +264,7 @@ class RelationshipAnalyzer {
       reports: reportCompanions,
       categorizedRemovals: categorizedRemovals,
       keptUserStatusUpdates: keptStatusUpdates,
-      historyToInsert:
-          historyToInsert, // This is still not populated, see DatabaseUpdater
+      historyToInsert: historyToInsert,
     );
   }
 }

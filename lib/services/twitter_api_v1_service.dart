@@ -54,7 +54,7 @@ class TwitterApiV1Service {
     String listTypeLogName,
   ) async {
     final Map<String, dynamic> queryParameters = {
-      'include_profile_interstitial_type': 0, 'include_blocking': 0,
+      'include_profile_interstitial_type': 1, 'include_blocking': 0,
       'include_blocked_by': 0, 'include_followed_by': 1,
       'include_want_retweets': 0, 'include_mute_edge': 0,
       'include_can_dm': 1, 'include_can_media_tag': 1,

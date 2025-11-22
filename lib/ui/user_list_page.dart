@@ -173,8 +173,6 @@ class _UserListPageState extends ConsumerState<UserListPage> {
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
-                              // Layer 1: Base Icon
-                              const Icon(Icons.person, size: 24),
 
                               // Layer 2: Local File
                               if (absoluteLocalPath != null)

@@ -129,87 +129,110 @@ class ImageHistoryService {
     required String? newUrl,
     required AppSettings settings,
   }) async {
-    String? effectiveNewUrl = newUrl;
-    String? effectiveOldUrl = oldUrl;
-    const String suffixRegex = r'_(normal|bigger|400x400)';
-
-    if (mediaType == MediaType.avatar) {
-      if (settings.avatarQuality == AvatarQuality.low) {
-        if (effectiveNewUrl != null) {
-          effectiveNewUrl = effectiveNewUrl.replaceFirst(
-            RegExp(suffixRegex),
-            '_bigger',
-          );
-        }
-        if (effectiveOldUrl != null) {
-          effectiveOldUrl = effectiveOldUrl.replaceFirst(
-            RegExp(suffixRegex),
-            '_bigger',
-          );
-        }
-      } else {
-        if (effectiveNewUrl != null) {
-          effectiveNewUrl = effectiveNewUrl.replaceFirst(
-            RegExp(suffixRegex),
-            '_400x400',
-          );
-        }
-        if (effectiveOldUrl != null) {
-          effectiveOldUrl = effectiveOldUrl.replaceFirst(
-            RegExp(suffixRegex),
-            '_400x400',
-          );
-        }
-      }
-    }
+    // 1. 基础校验
+    if (newUrl == null || newUrl.isEmpty) return null;
 
     final bool shouldSave =
         (mediaType == MediaType.avatar && settings.saveAvatarHistory) ||
         (mediaType == MediaType.banner && settings.saveBannerHistory);
     if (!shouldSave) return null;
-    if (effectiveNewUrl == null || effectiveNewUrl.isEmpty) {
-      return null;
+
+    // 2. 确定是否需要高质量
+    // Banner 始终高质量；Avatar 根据设置决定
+    final bool wantHighQuality = (mediaType == MediaType.banner) ||
+        (mediaType == MediaType.avatar &&
+            settings.avatarQuality == AvatarQuality.high);
+
+    // [核心修复] 3. 使用【原始 URL】检查数据库
+    // 这样能确保我们用的是最稳定的 Key，与 downloadAndSave 逻辑保持一致
+    final existingRecord = await getMediaRecord(newUrl);
+
+    if (existingRecord != null) {
+      // 3a. 检查是否需要升级画质
+      // 如果我们想要 High，但数据库里是 Low -> 需要下载覆盖 (Upgrade)
+      // 否则 (我们需要 Low，或者数据库已经是 High) -> 直接复用，跳过下载
+      if (!(wantHighQuality && !existingRecord.isHighQuality)) {
+        // 不需要更新，直接返回现有路径
+        return existingRecord.localFilePath;
+      }
+      // 如果走到这里，说明需要升级画质 (Overwrite 现有文件)
     }
 
-    logger.i("Change detected for $userId ($mediaType): $effectiveNewUrl");
+    // 4. 计算实际下载用的 URL (Effective URL)
+    String effectiveNewUrl = newUrl;
+    const String suffixRegex = r'_(normal|bigger|400x400)';
 
-    final basePath = await _getMediaHistoryPath();
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final fileExtension = p
-        .extension(effectiveNewUrl.split('?').first)
-        .replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
-    String qualitySuffix = '';
     if (mediaType == MediaType.avatar) {
-      // 仅为头像添加质量后缀
-      qualitySuffix = (settings.avatarQuality == AvatarQuality.high)
-          ? '_high'
-          : '_low';
+      if (settings.avatarQuality == AvatarQuality.low) {
+        effectiveNewUrl = newUrl.replaceFirst(
+          RegExp(suffixRegex),
+          '_bigger',
+        );
+      } else {
+        effectiveNewUrl = newUrl.replaceFirst(
+          RegExp(suffixRegex),
+          '_400x400',
+        );
+      }
     }
-    final fileName =
-        '${ownerId}_${userId}_${mediaType.name}_$timestamp$qualitySuffix${fileExtension.isNotEmpty ? fileExtension : '.jpg'}';
-    final absoluteSavePath = p.join(basePath, fileName);
 
+    logger.i(
+      "Downloading new media for $userId ($mediaType) [Upgrade: ${existingRecord != null}]: $effectiveNewUrl",
+    );
+
+    // 5. 确定保存路径
+    String relativeFilePath;
+    String absoluteSavePath;
+
+    if (existingRecord != null) {
+      // [优化] 如果记录存在（只是画质升级），复用旧路径，覆盖旧文件
+      // 注意：existingRecord.localFilePath 是相对路径 (e.g. "media_history/xxx.jpg")
+      relativeFilePath = existingRecord.localFilePath;
+      
+      final supportDir = await getApplicationSupportDirectory();
+      absoluteSavePath = p.join(supportDir.path, relativeFilePath);
+    } else {
+      // [新建] 生成新路径
+      final basePath = await _getMediaHistoryPath();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final fileExtension = p
+          .extension(newUrl.split('?').first)
+          .replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+      
+      // 文件名格式：ownerId_userId_type_timestamp.jpg
+      final fileName =
+          '${ownerId}_${userId}_${mediaType.name}_$timestamp${fileExtension.isNotEmpty ? fileExtension : '.jpg'}';
+      
+      absoluteSavePath = p.join(basePath, fileName);
+      relativeFilePath = p.join(_kMediaHistoryDirName, fileName);
+    }
+
+    // 6. 执行下载
     final success = await _downloadImage(effectiveNewUrl, absoluteSavePath);
 
     if (!success) {
-      logger.w("Failed to download $effectiveNewUrl. Aborting history save.");
-      return null;
+      logger.w("Failed to download $effectiveNewUrl.");
+      // 如果是升级失败，虽然新图没下来，但旧图可能还在（或者是坏的），
+      // 为了安全起见，如果下载失败，我们返回 null 或者旧路径？
+      // 这里选择返回 null 表示本次更新操作没能获取到新资源
+      return existingRecord?.localFilePath; 
     }
 
-    final relativeFilePath = p.join(_kMediaHistoryDirName, fileName);
-
+    // 7. 更新/插入数据库
+    // [核心修复] 存储【原始 URL】(newUrl)，并更新 isHighQuality 标志
     final historyCompanion = MediaHistoryCompanion(
+      id: existingRecord != null ? Value(existingRecord.id) : const Value.absent(),
       mediaType: Value(mediaType.name),
       localFilePath: Value(relativeFilePath),
-      remoteUrl: Value(effectiveNewUrl),
-      isHighQuality: Value(
-        mediaType == MediaType.avatar &&
-            settings.avatarQuality == AvatarQuality.high,
-      ),
+      remoteUrl: Value(newUrl), // 存原始 URL !!!
+      isHighQuality: Value(wantHighQuality),
     );
-    await _db.insertMediaHistory(historyCompanion);
 
-    // 6. TODO: 在这里实现“清理策略” (saveLatest, saveLastN)
+    if (existingRecord != null) {
+      await _db.update(_db.mediaHistory).replace(historyCompanion);
+    } else {
+      await _db.insertMediaHistory(historyCompanion);
+    }
 
     return relativeFilePath;
   }

@@ -126,7 +126,6 @@ class UserHistoryPage extends ConsumerWidget {
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
-                            const Icon(Icons.person, size: 24),
                             if (absoluteLocalPath != null)
                               ClipOval(
                                 child: Image.file(

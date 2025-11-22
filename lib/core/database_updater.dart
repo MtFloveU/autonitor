@@ -144,7 +144,6 @@ _PrepareDataResult _prepareDatabaseData(_PrepareDataParams params) {
         if (oldRel.latestRawJson != null) {
           userObj = TwitterUser.fromJson(jsonDecode(oldRel.latestRawJson!));
         } else {
-          // 极端情况：没有 JSON，创建一个仅含 ID 的对象
           userObj = TwitterUser(
             restId: removedId,
             screenName: oldRel.screenName,
@@ -162,11 +161,19 @@ _PrepareDataResult _prepareDatabaseData(_PrepareDataParams params) {
       // [关键] 更新状态，并标记为非关注/非粉丝
       // 这样它就变成了和普通用户一样的 TwitterUser 对象
       final status = params.categorizedRemovals[removedId];
-      userObj = userObj.copyWith(
-        status: status,
-        isFollowing: false,
-        isFollower: false,
-      );
+      if (status == 'suspended' || status == 'deactivated') {
+        userObj = userObj.copyWith(
+          status: status,
+          isFollowing: oldRel.isFollowing,
+          isFollower: oldRel.isFollower,
+        );
+      } else {
+        userObj = userObj.copyWith(
+          status: status,
+          isFollowing: false,
+          isFollower: false,
+        );
+      }
 
       allUsersToUpdate[removedId] = userObj;
     }

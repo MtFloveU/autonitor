@@ -73,7 +73,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                     children: [
                       Container(
                         alignment: Alignment.center,
-                        child: const Icon(Icons.person, size: 24),
                       ),
                       if (account.avatarUrl != null &&
                           account.avatarUrl!.isNotEmpty)
@@ -296,7 +295,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                             child: Stack(
                               alignment: Alignment.center,
                               children: [
-                                const Icon(Icons.person, size: 24),
                                 if (activeAccount?.avatarUrl != null &&
                                     activeAccount!.avatarUrl!.isNotEmpty)
                                   ClipOval(

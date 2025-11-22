@@ -322,7 +322,6 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    const Icon(Icons.person, size: 24),
                     if (account.avatarUrl != null &&
                         account.avatarUrl!.isNotEmpty)
                       ClipOval(

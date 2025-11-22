@@ -20,21 +20,19 @@ class AnalysisReportRepository {
 
   AnalysisReportRepository(this._database);
 
-  // ... (getUsersForCategory 方法保持不变) ...
   Future<List<TwitterUser>> getUsersForCategory(
     String ownerId,
     String categoryKey, {
     required int limit,
     required int offset,
   }) async {
-    // ... (保持原有的查询和分页逻辑不变) ...
-    // 代码省略，与你提供的原文件一致
     logger.i(
       "AnalysisReportRepository: Getting users for category '$categoryKey' for owner '$ownerId' (Limit: $limit, Offset: $offset)...",
     );
     try {
       List<ParseParams> paramsList = [];
 
+      // 逻辑 1: 关注者/正在关注 (直接查 FollowUsers)
       if (categoryKey == 'followers' || categoryKey == 'following') {
         final bool isFollower = (categoryKey == 'followers');
         final query = _database.select(_database.followUsers)
@@ -66,7 +64,9 @@ class AnalysisReportRepository {
               ),
             )
             .toList();
-      } else {
+      } 
+      // 逻辑 2: 其他分类 (先查 ChangeReports，再反查 FollowUsers)
+      else {
         final reportQuery = _database.select(_database.changeReports)
           ..where(
             (tbl) =>
@@ -77,10 +77,17 @@ class AnalysisReportRepository {
         final reportResults = await (reportQuery..limit(limit, offset: offset))
             .get();
 
-        if (reportResults.isEmpty) return [];
+        logger.i(
+          "AnalysisReportRepository: Fetched ${reportResults.length} user snapshots from ChangeReport for '$categoryKey'.",
+        );
+
+        if (reportResults.isEmpty) {
+          return []; 
+        }
 
         final userIds = reportResults.map((r) => r.userId).toList();
 
+        // 关键：去 followUsers 表查询最新数据（此时包含 Removed 用户）
         final usersQuery = _database.select(_database.followUsers)
           ..where(
             (tbl) => tbl.ownerId.equals(ownerId) & tbl.userId.isIn(userIds),
@@ -88,8 +95,10 @@ class AnalysisReportRepository {
 
         final userResults = await usersQuery.get();
 
+        // 创建 Map 方便匹配
         final userMap = {for (var u in userResults) u.userId: u};
 
+        // 保持 Report 的顺序组装结果
         for (var report in reportResults) {
           final user = userMap[report.userId];
           if (user != null) {
@@ -113,7 +122,17 @@ class AnalysisReportRepository {
         }
       }
 
-      return await compute(parseListInCompute, paramsList);
+      // [解析步骤]
+      final List<TwitterUser> parsedUsers = await compute(parseListInCompute, paramsList);
+
+      // [过滤逻辑] 仅在 "关注/粉丝" 列表隐藏非 normal 用户
+      // 其他列表（如 Suspended, Deactivated）不受影响，依然显示所有状态
+      if (categoryKey == 'followers' || categoryKey == 'following') {
+        return parsedUsers.where((u) => u.status == 'normal').toList();
+      }
+
+      return parsedUsers;
+
     } catch (e, s) {
       logger.e(
         "AnalysisReportRepository: Error in getUsersForCategory '$categoryKey'",
@@ -125,7 +144,7 @@ class AnalysisReportRepository {
   }
 }
 
-// --- 顶层辅助类和函数 ---
+// --- 辅助类和函数 (解析逻辑，包含我们之前修复的本地路径注入) ---
 
 class ParseParams {
   final String userId;
@@ -155,16 +174,12 @@ List<TwitterUser> parseListInCompute(List<ParseParams> paramsList) {
       .toList();
 }
 
-/// 核心修改：使用 TwitterUser.fromJson 进行解析，并合并本地路径
 TwitterUser parseFollowUserToTwitterUser(ParseParams params) {
-  // 1. 优先尝试解析标准化的 JSON
   if (params.jsonString != null && params.jsonString!.isNotEmpty) {
     try {
       final Map<String, dynamic> jsonMap = jsonDecode(params.jsonString!);
 
-      // 2. 关键步骤：将数据库中的本地文件路径合并到 Map 中
-      // 因为 DatabaseUpdater 存入 JSON 时对象可能还没包含下载后的路径
-      // 而数据库列 (follow_users.avatar_local_path) 是文件系统的 Source of Truth
+      // [关键] 注入本地路径 (使用 snake_case)
       if (params.dbAvatarLocalPath != null) {
         jsonMap['avatar_local_path'] = params.dbAvatarLocalPath;
       }
@@ -172,7 +187,6 @@ TwitterUser parseFollowUserToTwitterUser(ParseParams params) {
         jsonMap['banner_local_path'] = params.dbBannerLocalPath;
       }
 
-      // 3. 直接使用 fromJson (它已经包含了所有字段类型转换逻辑)
       return TwitterUser.fromJson(jsonMap);
     } catch (e, s) {
       logger.e(
@@ -180,11 +194,10 @@ TwitterUser parseFollowUserToTwitterUser(ParseParams params) {
         error: e,
         stackTrace: s,
       );
-      // 如果解析失败，降级到下方的 fallback
     }
   }
 
-  // 4. Fallback: 如果 JSON 缺失或损坏，使用 ParseParams 中的数据库列构建最小可用对象
+  // Fallback: 仅当 JSON 损坏时使用数据库列构建最小对象
   return TwitterUser(
     restId: params.userId,
     screenName: params.dbScreenName,
@@ -193,6 +206,5 @@ TwitterUser parseFollowUserToTwitterUser(ParseParams params) {
     avatarLocalPath: params.dbAvatarLocalPath,
     bannerLocalPath: params.dbBannerLocalPath,
     bio: params.dbBio,
-    // 其他字段将使用 TwitterUser 构造函数的默认值 (0, false, null)
   );
 }
