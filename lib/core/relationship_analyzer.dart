@@ -16,6 +16,7 @@ class RelationshipAnalysisResult {
   final Set<String> keptIds;
   final List<ChangeReportsCompanion> reports;
   final Map<String, String> categorizedRemovals;
+  final Map<String, String> keptUserStatusUpdates;
   final List<FollowUsersHistoryCompanion> historyToInsert;
 
   RelationshipAnalysisResult({
@@ -24,6 +25,7 @@ class RelationshipAnalysisResult {
     required this.keptIds,
     required this.reports,
     required this.categorizedRemovals,
+    required this.keptUserStatusUpdates,
     required this.historyToInsert,
   });
 }
@@ -41,19 +43,21 @@ class RelationshipAnalyzer {
     required String ownerId,
     required String ownerCookie,
     required LogCallback log,
-  })  : _apiServiceGql = apiServiceGql,
-        _accountRepository = accountRepository,
-        _ownerId = ownerId,
-        _ownerCookie = ownerCookie,
-        _log = log;
+  }) : _apiServiceGql = apiServiceGql,
+       _accountRepository = accountRepository,
+       _ownerId = ownerId,
+       _ownerCookie = ownerCookie,
+       _log = log;
 
   Future<RelationshipAnalysisResult> analyze({
     required Map<String, FollowUser> oldRelationsMap,
     required NetworkFetchResult networkData,
   }) {
     final Set<String> newIds = networkData.uniqueUsers.keys.toSet();
-    final Set<String> oldIds = oldRelationsMap.keys.toSet();
-
+    final Set<String> oldIds = oldRelationsMap.values
+        .where((u) => u.isFollower || u.isFollowing)
+        .map((u) => u.userId)
+        .toSet();
     final Set<String> addedIds = newIds.difference(oldIds);
     final Set<String> removedIds = oldIds.difference(newIds);
     final Set<String> keptIds = newIds.intersection(oldIds);
@@ -102,12 +106,8 @@ class RelationshipAnalyzer {
             final queryId = _accountRepository.getCurrentQueryId(
               'UserByRestId',
             );
-            final Map<String, dynamic> gqlJson =
-                (await _apiServiceGql.getUserByRestId(
-              removedId,
-              _ownerCookie,
-              queryId,
-            ));
+            final Map<String, dynamic> gqlJson = (await _apiServiceGql
+                .getUserByRestId(removedId, _ownerCookie, queryId));
             final result = gqlJson['data']?['user']?['result'];
             final typename = result?['__typename'];
 
@@ -178,6 +178,7 @@ class RelationshipAnalyzer {
 
     final List<ChangeReportsCompanion> reportCompanions = [];
     final now = DateTime.now();
+    final Map<String, String> keptStatusUpdates = {};
 
     for (final addedId in addedIds) {
       reportCompanions.add(
@@ -186,8 +187,9 @@ class RelationshipAnalyzer {
           userId: Value(addedId),
           changeType: Value('new_followers_following'),
           timestamp: Value(now),
-          userSnapshotJson:
-              Value(jsonEncode(networkData.uniqueUsers[addedId]!)),
+          userSnapshotJson: Value(
+            jsonEncode(networkData.uniqueUsers[addedId]!),
+          ),
         ),
       );
     }
@@ -199,7 +201,7 @@ class RelationshipAnalyzer {
           userId: Value(userId),
           changeType: Value(categoryKey),
           timestamp: Value(now),
-          userSnapshotJson: Value(oldRelationsMap[userId]?.latestRawJson),
+          userSnapshotJson: Value(null),
         ),
       );
     });
@@ -211,6 +213,16 @@ class RelationshipAnalyzer {
       final isNowFollower = networkData.followerIds.contains(keptId);
       final isNowFollowing = networkData.followingIds.contains(keptId);
 
+      String? changeType;
+
+      if (!wasFollower && wasFollowing && isNowFollower && isNowFollowing) {
+        changeType = 'be_followed_back';
+      } else if (wasFollower && wasFollowing && isNowFollower && !isNowFollowing) {
+        changeType = 'oneway_unfollowed';
+      } else if (wasFollower && wasFollowing && !isNowFollower && isNowFollowing) {
+        changeType = 'oneway_unfollowed';
+      }
+
       if (!wasFollower && wasFollowing && isNowFollower && isNowFollowing) {
         reportCompanions.add(
           ChangeReportsCompanion(
@@ -218,8 +230,7 @@ class RelationshipAnalyzer {
             userId: Value(keptId),
             changeType: Value('be_followed_back'),
             timestamp: Value(now),
-            userSnapshotJson:
-                Value(jsonEncode(networkData.uniqueUsers[keptId]!)),
+            userSnapshotJson: Value(null),
           ),
         );
       } else if (wasFollower &&
@@ -232,8 +243,9 @@ class RelationshipAnalyzer {
             userId: Value(keptId),
             changeType: Value('oneway_unfollowed'),
             timestamp: Value(now),
-            userSnapshotJson:
-                Value(jsonEncode(networkData.uniqueUsers[keptId]!)),
+            userSnapshotJson: Value(
+              jsonEncode(networkData.uniqueUsers[keptId]!),
+            ),
           ),
         );
       } else if (wasFollower &&
@@ -246,10 +258,14 @@ class RelationshipAnalyzer {
             userId: Value(keptId),
             changeType: Value('oneway_unfollowed'),
             timestamp: Value(now),
-            userSnapshotJson:
-                Value(jsonEncode(networkData.uniqueUsers[keptId]!)),
+            userSnapshotJson: Value(
+              jsonEncode(networkData.uniqueUsers[keptId]!),
+            ),
           ),
         );
+        if (changeType != 'be_followed_back') {
+          keptStatusUpdates[keptId] = changeType!;
+        }
       }
     }
 
@@ -259,6 +275,7 @@ class RelationshipAnalyzer {
       keptIds: keptIds,
       reports: reportCompanions,
       categorizedRemovals: categorizedRemovals,
+      keptUserStatusUpdates: keptStatusUpdates,
       historyToInsert:
           historyToInsert, // This is still not populated, see DatabaseUpdater
     );

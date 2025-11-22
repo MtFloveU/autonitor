@@ -16,6 +16,8 @@ class TwitterUser {
   final String? automatedScreenName;
   final String? joinedTime;
   final String? link;
+  final String? status;
+  final String? keptIdsStatus;
   final bool isVerified;
   final bool isProtected;
   final int followersCount;
@@ -47,6 +49,8 @@ class TwitterUser {
     this.automatedScreenName,
     this.joinedTime,
     this.link,
+    this.status,
+    this.keptIdsStatus,
     this.isVerified = false,
     this.isProtected = false,
     this.followersCount = 0,
@@ -95,6 +99,8 @@ class TwitterUser {
       automatedScreenName: json['automated_screen_name'] as String?,
       joinedTime: json['joined_time'] as String?,
       link: json['link'] as String?,
+      status: json['status'] as String? ?? 'normal',
+      keptIdsStatus: json['kept_ids_status'] as String? ?? 'normal',
       isVerified: parseBool(json['is_verified']),
       isProtected: parseBool(json['is_protected']),
       followersCount: parseInt(json['followers_count']),
@@ -196,7 +202,8 @@ class TwitterUser {
       isFollower: relationship['followed_by'] == true,
       canDm: dm['can_dm'] == true,
       canMediaTag: media['can_media_tag'] == true,
-      parodyCommentaryFanLabel: result['parody_commentary_fan_label']?.toString(),
+      parodyCommentaryFanLabel: result['parody_commentary_fan_label']
+          ?.toString(),
       automatedScreenName:
           (result['affiliates_highlighted_label']?['label']?['longDescription']?['entities']
                       as List?)
@@ -224,6 +231,8 @@ class TwitterUser {
       'automated_screen_name': automatedScreenName,
       'joined_time': joinedTime,
       'link': link,
+      'status': status,
+      'kept_ids_status': keptIdsStatus,
       'is_verified': isVerified,
       'is_protected': isProtected,
       'followers_count': followersCount,
@@ -237,5 +246,74 @@ class TwitterUser {
       'can_dm': canDm,
       'can_media_tag': canMediaTag,
     };
+  }
+
+  TwitterUser copyWith({
+    String? restId,
+    String? name,
+    String? screenName,
+    String? avatarUrl,
+    String? avatarLocalPath,
+    String? bannerUrl,
+    String? bannerLocalPath,
+    String? bio,
+    String? location,
+    String? pinnedTweetIdStr,
+    String? parodyCommentaryFanLabel,
+    String? birthdateYear,
+    String? birthdateMonth,
+    String? birthdateDay,
+    String? automatedScreenName,
+    String? joinedTime,
+    String? link,
+    String? status,
+    String? keptIdsStatus,
+    bool? isVerified,
+    bool? isProtected,
+    int? followersCount,
+    int? followingCount,
+    int? statusesCount,
+    int? listedCount,
+    int? favouritesCount,
+    int? mediaCount,
+    bool? isFollowing,
+    bool? isFollower,
+    bool? canDm,
+    bool? canMediaTag,
+  }) {
+    return TwitterUser(
+      restId: restId ?? this.restId,
+      name: name ?? this.name,
+      screenName: screenName ?? this.screenName,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      avatarLocalPath: avatarLocalPath ?? this.avatarLocalPath,
+      bannerUrl: bannerUrl ?? this.bannerUrl,
+      bannerLocalPath: bannerLocalPath ?? this.bannerLocalPath,
+      bio: bio ?? this.bio,
+      location: location ?? this.location,
+      pinnedTweetIdStr: pinnedTweetIdStr ?? this.pinnedTweetIdStr,
+      parodyCommentaryFanLabel:
+          parodyCommentaryFanLabel ?? this.parodyCommentaryFanLabel,
+      birthdateYear: birthdateYear ?? this.birthdateYear,
+      birthdateMonth: birthdateMonth ?? this.birthdateMonth,
+      birthdateDay: birthdateDay ?? this.birthdateDay,
+      automatedScreenName: automatedScreenName ?? this.automatedScreenName,
+      joinedTime: joinedTime ?? this.joinedTime,
+      link: link ?? this.link,
+      status: status ?? this.status,
+      keptIdsStatus: keptIdsStatus ?? this.keptIdsStatus,
+      isVerified: isVerified ?? this.isVerified,
+      isProtected: isProtected ?? this.isProtected,
+      followersCount: followersCount ?? this.followersCount,
+      followingCount: followingCount ?? this.followingCount,
+      statusesCount: statusesCount ?? this.statusesCount,
+      listedCount: listedCount ?? this.listedCount,
+      favouritesCount: favouritesCount ?? this.favouritesCount,
+      mediaCount: mediaCount ?? this.mediaCount,
+      isFollowing: isFollowing ?? this.isFollowing,
+      isFollower: isFollower ?? this.isFollower,
+      canDm: canDm ?? this.canDm,
+      canMediaTag: canMediaTag ?? this.canMediaTag,
+    );
   }
 }

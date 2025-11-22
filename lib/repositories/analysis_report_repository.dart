@@ -29,7 +29,7 @@ class AnalysisReportRepository {
   }) async {
     // ... (保持原有的查询和分页逻辑不变) ...
     // 代码省略，与你提供的原文件一致
-     logger.i(
+    logger.i(
       "AnalysisReportRepository: Getting users for category '$categoryKey' for owner '$ownerId' (Limit: $limit, Offset: $offset)...",
     );
     try {
@@ -66,8 +66,7 @@ class AnalysisReportRepository {
               ),
             )
             .toList();
-      }
-      else {
+      } else {
         final reportQuery = _database.select(_database.changeReports)
           ..where(
             (tbl) =>
@@ -78,22 +77,40 @@ class AnalysisReportRepository {
         final reportResults = await (reportQuery..limit(limit, offset: offset))
             .get();
 
-        logger.i(
-          "AnalysisReportRepository: Fetched ${reportResults.length} user snapshots from ChangeReport for '$categoryKey'.",
-        );
+        if (reportResults.isEmpty) return [];
 
-        if (reportResults.isEmpty) {
-          return [];
-        }
+        final userIds = reportResults.map((r) => r.userId).toList();
 
-        paramsList = reportResults
-            .map(
-              (report) => ParseParams(
-                userId: report.userId,
-                jsonString: report.userSnapshotJson,
+        final usersQuery = _database.select(_database.followUsers)
+          ..where(
+            (tbl) => tbl.ownerId.equals(ownerId) & tbl.userId.isIn(userIds),
+          );
+
+        final userResults = await usersQuery.get();
+
+        final userMap = {for (var u in userResults) u.userId: u};
+
+        for (var report in reportResults) {
+          final user = userMap[report.userId];
+          if (user != null) {
+            paramsList.add(
+              ParseParams(
+                userId: user.userId,
+                dbScreenName: user.screenName,
+                dbName: user.name,
+                dbAvatarUrl: user.avatarUrl,
+                dbAvatarLocalPath: user.avatarLocalPath,
+                dbBannerLocalPath: user.bannerLocalPath,
+                dbBio: user.bio,
+                jsonString: user.latestRawJson,
               ),
-            )
-            .toList();
+            );
+          } else {
+            logger.w(
+              "User ${report.userId} found in ChangeReport but not in followUsers table.",
+            );
+          }
+        }
       }
 
       return await compute(parseListInCompute, paramsList);
