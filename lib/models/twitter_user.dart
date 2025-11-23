@@ -66,23 +66,8 @@ class TwitterUser {
   });
 
   factory TwitterUser.fromJson(Map<String, dynamic> json) {
-    bool parseBool(dynamic v) {
-      if (v == null) return false;
-      if (v is bool) return v;
-      if (v is num) return v != 0;
-      final s = v.toString().toLowerCase();
-      return s == 'true' || s == '1' || s == 'yes';
-    }
-
-    int parseInt(dynamic v) {
-      if (v == null) return 0;
-      if (v is int) return v;
-      if (v is double) return v.toInt();
-      return int.tryParse(v.toString()) ?? 0;
-    }
-
     return TwitterUser(
-      restId: json['rest_id']?.toString() ?? '',
+      restId: json['rest_id'] as String? ?? '',
       name: json['name'] as String?,
       screenName: json['screen_name'] as String?,
       avatarUrl: json['avatar_url'] as String?,
@@ -99,20 +84,20 @@ class TwitterUser {
       automatedScreenName: json['automated_screen_name'] as String?,
       joinedTime: json['joined_time'] as String?,
       link: json['link'] as String?,
+      isVerified: json['is_verified'] as bool? ?? false,
+      isProtected: json['is_protected'] as bool? ?? false,
+      followersCount: json['followers_count'] as int? ?? 0,
+      followingCount: json['following_count'] as int? ?? 0,
+      statusesCount: json['statuses_count'] as int? ?? 0,
+      listedCount: json['listed_count'] as int? ?? 0,
+      favouritesCount: json['favourites_count'] as int? ?? 0,
+      mediaCount: json['media_count'] as int? ?? 0,
+      isFollowing: json['is_following'] as bool? ?? false,
+      isFollower: json['is_follower'] as bool? ?? false,
+      canDm: json['can_dm'] as bool? ?? false,
+      canMediaTag: json['can_media_tag'] as bool? ?? false,
       status: json['status'] as String? ?? 'normal',
       keptIdsStatus: json['kept_ids_status'] as String? ?? 'normal',
-      isVerified: parseBool(json['is_verified']),
-      isProtected: parseBool(json['is_protected']),
-      followersCount: parseInt(json['followers_count']),
-      followingCount: parseInt(json['following_count']),
-      statusesCount: parseInt(json['statuses_count']),
-      listedCount: parseInt(json['listed_count']),
-      favouritesCount: parseInt(json['favourites_count']),
-      mediaCount: parseInt(json['media_count']),
-      isFollowing: parseBool(json['is_following']),
-      isFollower: parseBool(json['is_follower']),
-      canDm: parseBool(json['can_dm']),
-      canMediaTag: parseBool(json['can_media_tag']),
     );
   }
 

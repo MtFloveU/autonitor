@@ -28,8 +28,12 @@
 "@close": {},
 "view_on_twitter": "View on Twitter",
 "@view_on_twitter": {},
-"metadata": "Metadata",
+"metadata": "Statistics",
 "@metadata": {},
+"user_content": "User Content",
+"@user_content": {},
+"pinned_tweet_id": "Pinned Tweet ID",
+"@pinned_tweet_id": {},
 "tweets": "Tweets",
 "@tweets": {},
 "media_count": "Media Count",
@@ -267,5 +271,23 @@
   "graphql_path_config": "GQL QueryId Configuration",
   "@graphql_path_config": {
     "description": "Label for the GQL QueryId configuration"
+  },
+  "follows_you": "Follows you",
+  "@follows_you": {
+    "description": ""
+  },
+  "not_follow": "Not Follow",
+  "@not_follow": {
+    "description": ""
+  },
+  "automated_by": "Automated by @{automatedScreenName}",
+  "@automated_by": {
+    "description": "",
+    "placeholders": {
+      "automatedScreenName": {
+        "type": "String",
+        "description": "The automated screen name"
+      }
+    }
   }
 }

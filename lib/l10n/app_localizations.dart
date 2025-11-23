@@ -180,8 +180,20 @@ abstract class AppLocalizations {
   /// No description provided for @metadata.
   ///
   /// In en, this message translates to:
-  /// **'Metadata'**
+  /// **'Statistics'**
   String get metadata;
+
+  /// No description provided for @user_content.
+  ///
+  /// In en, this message translates to:
+  /// **'User Content'**
+  String get user_content;
+
+  /// No description provided for @pinned_tweet_id.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned Tweet ID'**
+  String get pinned_tweet_id;
 
   /// No description provided for @tweets.
   ///
@@ -686,6 +698,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'GQL QueryId Configuration'**
   String get graphql_path_config;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Follows you'**
+  String get follows_you;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Not Follow'**
+  String get not_follow;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Automated by @{automatedScreenName}'**
+  String automated_by(String automatedScreenName);
 }
 
 class _AppLocalizationsDelegate

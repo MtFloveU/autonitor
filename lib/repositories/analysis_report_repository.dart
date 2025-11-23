@@ -5,7 +5,6 @@ import '../services/database.dart';
 import '../models/twitter_user.dart';
 import '../main.dart';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:autonitor/services/log_service.dart';
 
 final analysisReportRepositoryProvider = Provider<AnalysisReportRepository>((
@@ -64,7 +63,7 @@ class AnalysisReportRepository {
               ),
             )
             .toList();
-      } 
+      }
       // 逻辑 2: 其他分类 (先查 ChangeReports，再反查 FollowUsers)
       else {
         final reportQuery = _database.select(_database.changeReports)
@@ -82,7 +81,7 @@ class AnalysisReportRepository {
         );
 
         if (reportResults.isEmpty) {
-          return []; 
+          return [];
         }
 
         final userIds = reportResults.map((r) => r.userId).toList();
@@ -123,7 +122,9 @@ class AnalysisReportRepository {
       }
 
       // [解析步骤]
-      final List<TwitterUser> parsedUsers = await compute(parseListInCompute, paramsList);
+      final List<TwitterUser> parsedUsers = paramsList
+          .map((params) => parseFollowUserToTwitterUser(params))
+          .toList();
 
       // [过滤逻辑] 仅在 "关注/粉丝" 列表隐藏非 normal 用户
       // 其他列表（如 Suspended, Deactivated）不受影响，依然显示所有状态
@@ -132,7 +133,6 @@ class AnalysisReportRepository {
       }
 
       return parsedUsers;
-
     } catch (e, s) {
       logger.e(
         "AnalysisReportRepository: Error in getUsersForCategory '$categoryKey'",

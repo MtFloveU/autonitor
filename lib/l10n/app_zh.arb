@@ -13,7 +13,9 @@
   "view_cookie": "查看 Cookie",
   "close": "关闭",
   "view_on_twitter": "在 Twitter 上查看",
-  "metadata": "元数据",
+  "metadata": "统计信息",
+  "pinned_tweet_id": "置顶推文 ID",
+  "user_content": "用户内容",
   "tweets": "推文",
   "media_count": "媒体数量",
   "likes": "点赞数量",
@@ -107,9 +109,12 @@
   "generating": "正在生成...",
   "generate": "生成",
   "load_settings_failed": "加载设置失败：{error}",
-    "xclient_generator_source": "来源：",
+  "xclient_generator_source": "来源：",
   "refresh": "刷新",
   "reset": "重置",
   "operation_name": "操作：",
-  "graphql_path_config": "GQL QueryId 配置"
+  "graphql_path_config": "GQL QueryId 配置",
+  "follows_you": "关注了你",
+  "not_follow": "未关注",
+  "automated_by": "由 @{automatedScreenName} 自动发推"
 }

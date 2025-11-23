@@ -50,6 +50,8 @@ flutter:
     - assets/suspended_banner.png
     - assets/icon/protected.svg
     - assets/icon/verified.svg
+    - assets/icon/bot.svg
+    - assets/icon/mask.svg
 
 flutter_launcher_icons:
   android: "launcher_icon"

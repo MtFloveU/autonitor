@@ -48,7 +48,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get view_on_twitter => '在 Twitter 上查看';
 
   @override
-  String get metadata => '元数据';
+  String get metadata => '统计信息';
+
+  @override
+  String get user_content => '用户内容';
+
+  @override
+  String get pinned_tweet_id => '置顶推文 ID';
 
   @override
   String get tweets => '推文';
@@ -311,6 +317,17 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get graphql_path_config => 'GQL QueryId 配置';
+
+  @override
+  String get follows_you => '关注了你';
+
+  @override
+  String get not_follow => '未关注';
+
+  @override
+  String automated_by(String automatedScreenName) {
+    return '由 @$automatedScreenName 自动发推';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -357,7 +374,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get view_on_twitter => '在 Twitter 上查看';
 
   @override
-  String get metadata => '元數據';
+  String get metadata => '統計';
+
+  @override
+  String get user_content => '用戶內容';
+
+  @override
+  String get pinned_tweet_id => '訂選推文 ID';
 
   @override
   String get tweets => '推文';
@@ -620,4 +643,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get graphql_path_config => 'GQL QueryId 配置';
+
+  @override
+  String get follows_you => '跟隨你';
+
+  @override
+  String get not_follow => '未跟隨';
+
+  @override
+  String automated_by(String automatedScreenName) {
+    return '由 @$automatedScreenName 自動發推';
+  }
 }

@@ -80,7 +80,7 @@ final cacheProvider = FutureProvider.autoDispose<CacheData?>((ref) async {
   }
 });
 
-const int _kUserListPageSize = 30;
+const int _kUserListPageSize = 10;
 
 class UserListNotifier
     extends AutoDisposeFamilyAsyncNotifier<List<TwitterUser>, UserListParam> {
@@ -118,12 +118,6 @@ class UserListNotifier
   }
 
   Future<void> fetchMore() async {
-    if (state.isLoading || !_hasMore) {
-      logger.i(
-        "UserListNotifier: fetchMore() skipped, isLoading=${state.isLoading}, hasMore=$_hasMore",
-      );
-      return;
-    }
 
     logger.i(
       "UserListNotifier: fetchMore() started, current users=${_users.length}",

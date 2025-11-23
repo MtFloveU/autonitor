@@ -48,7 +48,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get view_on_twitter => 'View on Twitter';
 
   @override
-  String get metadata => 'Metadata';
+  String get metadata => 'Statistics';
+
+  @override
+  String get user_content => 'User Content';
+
+  @override
+  String get pinned_tweet_id => 'Pinned Tweet ID';
 
   @override
   String get tweets => 'Tweets';
@@ -312,4 +318,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get graphql_path_config => 'GQL QueryId Configuration';
+
+  @override
+  String get follows_you => 'Follows you';
+
+  @override
+  String get not_follow => 'Not Follow';
+
+  @override
+  String automated_by(String automatedScreenName) {
+    return 'Automated by @$automatedScreenName';
+  }
 }

@@ -13,7 +13,9 @@
   "view_cookie": "查看 Cookie",
   "close": "關閉",
   "view_on_twitter": "在 Twitter 上查看",
-  "metadata": "元數據",
+  "metadata": "統計",
+  "user_content": "用戶內容",
+  "pinned_tweet_id": "訂選推文 ID",
   "tweets": "推文",
   "media_count": "媒體數量",
   "likes": "讚數",
@@ -111,5 +113,8 @@
   "refresh": "刷新",
   "reset": "重設",
   "operation_name": "操作：",
-  "graphql_path_config": "GQL QueryId 配置"
+  "graphql_path_config": "GQL QueryId 配置",
+  "follows_you": "跟隨你",
+  "not_follow": "未跟隨",
+  "automated_by": "由 @{automatedScreenName} 自動發推"
 }
