@@ -1,7 +1,11 @@
+import 'dart:io';
+
+import 'package:autonitor/providers/media_provider.dart';
 import 'package:autonitor/ui/auth/webview_login_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
 import '../providers/auth_provider.dart';
 import '../l10n/app_localizations.dart';
 import '../models/account.dart';
@@ -198,18 +202,18 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
       final accountsToRefresh = ref.read(accountsProvider);
       if (accountsToRefresh.isEmpty) {
         if (mounted) {
-        // --- 修改 SnackBar 样式 ---
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text(
-              'No accounts to refresh.', // Add l10n later
-              style: TextStyle(
-                color: theme.colorScheme.onSecondaryContainer,
-              ), // 信息文本颜色
+          // --- 修改 SnackBar 样式 ---
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Text(
+                'No accounts to refresh.', // Add l10n later
+                style: TextStyle(
+                  color: theme.colorScheme.onSecondaryContainer,
+                ), // 信息文本颜色
+              ),
+              backgroundColor: theme.colorScheme.secondaryContainer, // 信息背景颜色
             ),
-            backgroundColor: theme.colorScheme.secondaryContainer, // 信息背景颜色
-          ),
-        );
+          );
         }
         // 注意：因为没有异步操作，需要在这里手动关闭对话框
         if (mounted) Navigator.pop(currentContext);
@@ -235,41 +239,49 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
       if (hasFailures) {
         summary += ', $failureCount failed.'; // Add l10n later
         results.where((r) => !r.success).forEach((failure) {
-          logger.e("Refresh failed for ${failure.accountId}: ${failure.error}", error: Exception(failure.error), stackTrace: StackTrace.current);
+          logger.e(
+            "Refresh failed for ${failure.accountId}: ${failure.error}",
+            error: Exception(failure.error),
+            stackTrace: StackTrace.current,
+          );
         });
       }
       // --- 修改 SnackBar 样式 ---
       if (mounted) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            summary,
-            // 根据是否有失败使用不同颜色
-            style: TextStyle(
-              color: hasFailures
-                  ? theme.colorScheme.onErrorContainer
-                  : theme.colorScheme.onSecondaryContainer,
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              summary,
+              // 根据是否有失败使用不同颜色
+              style: TextStyle(
+                color: hasFailures
+                    ? theme.colorScheme.onErrorContainer
+                    : theme.colorScheme.onSecondaryContainer,
+              ),
             ),
+            backgroundColor: hasFailures
+                ? theme.colorScheme.errorContainer
+                : theme.colorScheme.secondaryContainer,
           ),
-          backgroundColor: hasFailures
-              ? theme.colorScheme.errorContainer
-              : theme.colorScheme.secondaryContainer,
-        ),
-      );
+        );
       }
     } catch (e, s) {
-      logger.e("Error during _refreshAllAccounts UI call: $e", error: e, stackTrace: s);
+      logger.e(
+        "Error during _refreshAllAccounts UI call: $e",
+        error: e,
+        stackTrace: s,
+      );
       // --- 修改 SnackBar 样式 ---
       if (mounted) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            'An unexpected error occurred during refresh.', // Add l10n later
-            style: TextStyle(color: theme.colorScheme.onError), // 错误文本颜色
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'An unexpected error occurred during refresh.', // Add l10n later
+              style: TextStyle(color: theme.colorScheme.onError), // 错误文本颜色
+            ),
+            backgroundColor: theme.colorScheme.error, // 错误背景颜色
           ),
-          backgroundColor: theme.colorScheme.error, // 错误背景颜色
-        ),
-      );
+        );
       }
     } finally {
       // 确保无论如何都重置状态并关闭对话框
@@ -312,6 +324,14 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
             );
           }
           final account = accounts[index - 1];
+          final mediaDir = ref.watch(appSupportDirProvider).value;
+          final relativePath = account.avatarLocalPath;
+          final String? absolutePath =
+              (mediaDir != null &&
+                  relativePath != null &&
+                  relativePath.isNotEmpty)
+              ? p.join(mediaDir, relativePath)
+              : null;
 
           return Card(
             margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
@@ -323,7 +343,8 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                   alignment: Alignment.center,
                   children: [
                     if (account.avatarUrl != null &&
-                        account.avatarUrl!.isNotEmpty)
+                        account.avatarUrl!.isNotEmpty &&
+                        account.avatarLocalPath == null)
                       ClipOval(
                         child: CachedNetworkImage(
                           imageUrl: account.avatarUrl!,
@@ -334,6 +355,18 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                           fadeOutDuration: const Duration(milliseconds: 100),
                           errorWidget: (context, url, error) =>
                               const SizedBox(),
+                        ),
+                      ),
+                    if (account.avatarUrl != null &&
+                        account.avatarUrl!.isNotEmpty &&
+                        account.avatarLocalPath != null &&
+                        absolutePath != null)
+                      ClipOval(
+                        child: Image.file(
+                          File(absolutePath),
+                          fit: BoxFit.cover,
+                          width: 48,
+                          height: 48,
                         ),
                       ),
                   ],

@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'package:path/path.dart' as p;
+import '../providers/media_provider.dart';
 import 'package:autonitor/services/log_service.dart';
 import 'package:autonitor/ui/user_detail_page.dart';
 import 'package:autonitor/models/twitter_user.dart';
@@ -21,18 +24,14 @@ class HomePage extends ConsumerStatefulWidget {
 }
 
 class _HomePageState extends ConsumerState<HomePage> {
-  // 辅助方法：格式化 ISO 8601 时间字符串
   String _getFormattedLastUpdate(
     BuildContext context,
     AppLocalizations l10n,
     String isoString,
   ) {
-    if (isoString.isEmpty) {
-      return l10n.last_updated_at("N/A");
-    }
+    if (isoString.isEmpty) return l10n.last_updated_at("N/A");
     try {
       final dateTime = DateTime.parse(isoString).toLocal();
-      // 格式: YYYY-MM-DD HH:MM
       final formattedDate =
           "${dateTime.year.toString().padLeft(4, '0')}-"
           "${dateTime.month.toString().padLeft(2, '0')}-"
@@ -64,6 +63,16 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
             ),
             ...allAccounts.map((account) {
+              _calculateDisplayDataForHome(
+                TwitterUser(
+                  avatarUrl: account.avatarUrl,
+                  avatarLocalPath: account.avatarLocalPath,
+                  restId: account.id,
+                  screenName: account.screenName,
+                  name: account.screenName,
+                ),
+              );
+
               return ListTile(
                 leading: SizedBox(
                   width: 48,
@@ -71,31 +80,56 @@ class _HomePageState extends ConsumerState<HomePage> {
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      Container(
-                        alignment: Alignment.center,
-                      ),
-                      if (account.avatarUrl != null &&
-                          account.avatarUrl!.isNotEmpty)
-                        ClipOval(
-                          child: CachedNetworkImage(
-                            imageUrl: account.avatarUrl!,
-                            fadeInDuration: const Duration(milliseconds: 300),
-                            placeholder: (context, url) =>
-                                const SizedBox.shrink(),
-                            errorWidget: (context, url, error) =>
-                                const SizedBox.shrink(),
-                            imageBuilder: (context, imageProvider) => Container(
-                              width: 48,
-                              height: 48,
-                              decoration: BoxDecoration(
-                                image: DecorationImage(
-                                  image: imageProvider,
-                                  fit: BoxFit.cover,
+                      Container(alignment: Alignment.center),
+                      // Calculate absolutePath for the account avatar
+                      Builder(
+                        builder: (context) {
+                          final mediaDir = ref
+                              .watch(appSupportDirProvider)
+                              .value;
+                          final relativePath = account.avatarLocalPath;
+                          final String? absolutePath =
+                              (mediaDir != null &&
+                                  relativePath != null &&
+                                  relativePath.isNotEmpty)
+                              ? p.join(mediaDir, relativePath)
+                              : null;
+                          if (account.avatarUrl != null &&
+                              account.avatarUrl!.isNotEmpty &&
+                              account.avatarLocalPath == null) {
+                            return ClipOval(
+                              child: CachedNetworkImage(
+                                imageUrl: account.avatarUrl!,
+                                fit: BoxFit.cover,
+                                width: 48,
+                                height: 48,
+                                fadeInDuration: const Duration(
+                                  milliseconds: 300,
                                 ),
+                                fadeOutDuration: const Duration(
+                                  milliseconds: 100,
+                                ),
+                                errorWidget: (context, url, error) =>
+                                    const SizedBox(),
                               ),
-                            ),
-                          ),
-                        ),
+                            );
+                          }
+                          if (account.avatarUrl != null &&
+                              account.avatarUrl!.isNotEmpty &&
+                              account.avatarLocalPath != null &&
+                              absolutePath != null) {
+                            return ClipOval(
+                              child: Image.file(
+                                File(absolutePath),
+                                fit: BoxFit.cover,
+                                width: 48,
+                                height: 48,
+                              ),
+                            );
+                          }
+                          return const SizedBox();
+                        },
+                      ),
                       if (account.id == activeAccount?.id)
                         Positioned(
                           right: 0,
@@ -154,6 +188,20 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
+  _UserDisplayData _calculateDisplayDataForHome(TwitterUser user) {
+    final String? absoluteLocalPath = user.avatarLocalPath?.isNotEmpty == true
+        ? user.avatarLocalPath
+        : null;
+    final String highQualityNetworkUrl = (user.avatarUrl ?? '');
+    final bool fetchNetworkLayer =
+        absoluteLocalPath == null && highQualityNetworkUrl.isNotEmpty;
+    return _UserDisplayData(
+      absoluteLocalPath: absoluteLocalPath,
+      highQualityNetworkUrl: highQualityNetworkUrl,
+      fetchNetworkLayer: fetchNetworkLayer,
+    );
+  }
+
   Future<void> _navigateToUserList(
     BuildContext context,
     String categoryKey,
@@ -209,6 +257,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   Widget _buildAccountView(BuildContext context) {
     final cacheAsyncValue = ref.watch(cacheProvider);
+    final mediaDir = ref.watch(appSupportDirProvider).value;
     return cacheAsyncValue.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(child: Text('加载缓存失败: $err')),
@@ -216,7 +265,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         if (cacheData == null) {
           return _buildEmptyCacheState(context);
         }
-        return _buildDataDisplay(context, cacheData);
+        return _buildDataDisplay(context, cacheData, mediaDir);
       },
     );
   }
@@ -239,9 +288,20 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Widget _buildDataDisplay(BuildContext context, CacheData cache) {
+  Widget _buildDataDisplay(
+    BuildContext context,
+    CacheData cache,
+    String? mediaDir,
+  ) {
     final l10n = AppLocalizations.of(context)!;
     final activeAccount = ref.watch(activeAccountProvider);
+
+    final String? relativePath = activeAccount?.avatarLocalPath;
+    final String? absolutePath =
+        (mediaDir != null && relativePath != null && relativePath.isNotEmpty)
+        ? p.join(mediaDir, relativePath)
+        : null;
+
     return RefreshIndicator(
       onRefresh: () async => ref.invalidate(cacheProvider),
       child: ListView(
@@ -277,7 +337,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => UserDetailPage(user: user, ownerId: activeAccount.id),
+                    builder: (context) =>
+                        UserDetailPage(user: user, ownerId: activeAccount.id),
                   ),
                 );
               },
@@ -296,7 +357,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                               alignment: Alignment.center,
                               children: [
                                 if (activeAccount?.avatarUrl != null &&
-                                    activeAccount!.avatarUrl!.isNotEmpty)
+                                    activeAccount!.avatarUrl!.isNotEmpty &&
+                                    activeAccount.avatarLocalPath == null)
                                   ClipOval(
                                     child: CachedNetworkImage(
                                       imageUrl: activeAccount.avatarUrl!,
@@ -311,6 +373,17 @@ class _HomePageState extends ConsumerState<HomePage> {
                                       ),
                                       errorWidget: (context, url, error) =>
                                           const SizedBox(),
+                                    ),
+                                  ),
+                                if (activeAccount?.avatarUrl != null &&
+                                    activeAccount!.avatarUrl!.isNotEmpty &&
+                                    activeAccount.avatarLocalPath != null)
+                                  ClipOval(
+                                    child: Image.file(
+                                      File(absolutePath!),
+                                      fit: BoxFit.cover,
+                                      width: 48,
+                                      height: 48,
                                     ),
                                   ),
                               ],
@@ -490,8 +563,6 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
           ),
           const SizedBox(height: 80),
-
-          // --- 新增：上次更新时间 ---
           Padding(
             padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),
             child: Center(
@@ -503,7 +574,6 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
             ),
           ),
-          // --- 新增结束 ---
         ],
       ),
     );
@@ -557,12 +627,18 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+
+    final activeAccountNotifier = ref.read(activeAccountProvider.notifier);
     final activeAccount = ref.watch(activeAccountProvider);
+
     return Scaffold(
       appBar: AppBar(title: Text(l10n.app_title)),
-      body: activeAccount == null
-          ? _buildNoAccountState(context, widget.onNavigateToAccounts)
-          : _buildAccountView(context),
+
+      body: !activeAccountNotifier.isInitialized
+          ? const Center(child: CircularProgressIndicator())
+          : activeAccount != null
+          ? _buildAccountView(context)
+          : _buildNoAccountState(context, widget.onNavigateToAccounts),
       floatingActionButton: activeAccount == null
           ? null
           : FloatingActionButton.extended(
@@ -572,11 +648,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                 final currentL10n = AppLocalizations.of(currentContext)!;
                 final currentTheme = Theme.of(currentContext);
 
-                // --- 修改：在 showDialog 之前启动分析 ---
-                // (这将立即设置 analysisIsRunningProvider 为 true)
-                // (并且异步执行，不会阻塞 UI)
-                // 我们在 try/catch 之外调用它，因为日志对话框会处理自己的错误
-                // 确保 accountToProcess 在调用前被检查
                 final accountToProcess = currentRef.read(activeAccountProvider);
                 if (accountToProcess == null) {
                   ScaffoldMessenger.of(currentContext).showSnackBar(
@@ -590,18 +661,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                       backgroundColor: currentTheme.colorScheme.error,
                     ),
                   );
-                  return; // 没有活动账号，不执行
+                  return;
                 }
 
-                // 异步调用，但不等待它
-                // 我们将通过 analysisIsRunningProvider 观察它的完成
                 currentRef
                     .read(analysisServiceProvider.notifier)
                     .runAnalysis(accountToProcess)
                     .catchError((e, s) {
-                      // 即使在 provider 中捕获了错误，这里也可能需要一个顶层捕获
-                      // 以防 runAnalysisProcess 本身抛出（例如 accountToProcess 为 null）
-                      // 已经在 provider 内部处理了
                       logger.e(
                         "runAnalysisProcess top-level error (should be handled in Notifier): $e",
                         error: e,
@@ -609,11 +675,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                       );
                     })
                     .whenComplete(() {
-                      // 无论成功还是失败，都触发 cacheProvider 刷新
                       currentRef.invalidate(cacheProvider);
                     });
 
-                // --- 立即显示对话框 ---
                 showDialog(
                   context: currentContext,
                   barrierDismissible: false,
@@ -623,7 +687,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                       title: Row(
                         children: [
                           Consumer(
-                            // 让转圈动画也监听状态
                             builder: (context, ref, child) {
                               final isRunning = ref.watch(
                                 analysisIsRunningProvider,
@@ -639,14 +702,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                                   : Icon(
                                       Icons.check_circle,
                                       color: Colors.green,
-                                    ); // 完成时显示勾
+                                    );
                             },
                           ),
                           SizedBox(width: 16),
                           Text(currentL10n.analysis_log),
                         ],
                       ),
-                      // --- 修改：使用不可编辑的 TextField ---
                       content: SizedBox(
                         width: double.maxFinite,
                         height: MediaQuery.of(currentContext).size.height * 0.7,
@@ -654,7 +716,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                           builder: (context, ref, child) {
                             final logs = ref.watch(analysisLogProvider);
                             final String logText = logs.join('\n');
-                            // 使用 TextEditingController 来设置文本
                             final controller = TextEditingController(
                               text: logText,
                             );
@@ -667,7 +728,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                 borderRadius: BorderRadius.circular(8.0),
                               ),
                               child: SingleChildScrollView(
-                                reverse: true, // 尝试自动滚动到底部
+                                reverse: true,
                                 padding: const EdgeInsets.all(8.0),
                                 child: TextField(
                                   controller: controller,
@@ -689,16 +750,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                           },
                         ),
                       ),
-                      // --- 修改：根据状态显示/隐藏关闭按钮 ---
                       actions: [
                         Consumer(
                           builder: (context, ref, child) {
                             final isRunning = ref.watch(
                               analysisIsRunningProvider,
                             );
-                            // 运行时隐藏按钮
                             if (isRunning) return const SizedBox.shrink();
-                            // 运行结束后显示按钮
                             return TextButton(
                               child: Text(currentL10n.close),
                               onPressed: () => Navigator.pop(dialogContext),
@@ -709,12 +767,21 @@ class _HomePageState extends ConsumerState<HomePage> {
                     ),
                   ),
                 );
-                // --- 移除 try/catch/finally 块 ---
-                // (因为逻辑已经移入 Notifier 和 Dialog 状态)
               },
               label: Text(l10n.run),
               icon: const Icon(Icons.play_arrow),
             ),
     );
   }
+}
+
+class _UserDisplayData {
+  final String? absoluteLocalPath;
+  final String highQualityNetworkUrl;
+  final bool fetchNetworkLayer;
+  _UserDisplayData({
+    required this.absoluteLocalPath,
+    required this.highQualityNetworkUrl,
+    required this.fetchNetworkLayer,
+  });
 }

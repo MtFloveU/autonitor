@@ -33,10 +33,7 @@ class GraphQLService {
           if (_targetOperations.contains(operationName)) {
             final String queryId = exports['queryId'];
             operations.add(
-              GraphQLOperation(
-                queryId: queryId,
-                operationName: operationName,
-              ),
+              GraphQLOperation(queryId: queryId, operationName: operationName),
             );
           }
         }

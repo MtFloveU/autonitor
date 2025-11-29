@@ -35,12 +35,17 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
     }
   }
 
-  Future<void> updateCustomGqlQueryId(String operationName, String newQueryId) async {
+  Future<void> updateCustomGqlQueryId(
+    String operationName,
+    String newQueryId,
+  ) async {
     final currentState = state;
     if (currentState is! AsyncData<AppSettings>) return;
 
     final currentSettings = currentState.value;
-    final newQueryIds = Map<String, String>.from(currentSettings.customGqlQueryIds);
+    final newQueryIds = Map<String, String>.from(
+      currentSettings.customGqlQueryIds,
+    );
     newQueryIds[operationName] = newQueryId;
 
     final newState = currentSettings.copyWith(customGqlQueryIds: newQueryIds);

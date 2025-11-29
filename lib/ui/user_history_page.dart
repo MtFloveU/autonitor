@@ -16,11 +16,7 @@ class UserHistoryPage extends ConsumerWidget {
   final TwitterUser user;
   final String ownerId;
 
-  const UserHistoryPage({
-    super.key,
-    required this.user,
-    required this.ownerId,
-  });
+  const UserHistoryPage({super.key, required this.user, required this.ownerId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -44,10 +40,9 @@ class UserHistoryPage extends ConsumerWidget {
             const SizedBox(height: 2),
             Text(
               '@${user.screenName}', // <-- 这里显示 @handle 没问题
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(color: Colors.grey.shade600),
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(color: Colors.grey.shade600),
             ),
           ],
         ),
@@ -77,7 +72,8 @@ class UserHistoryPage extends ConsumerWidget {
 
               // --- 8. 复制 user_list_page 的头像渲染逻辑 ---
               final String? relativeLocalPath = snapshotUser.avatarLocalPath;
-              final String? absoluteLocalPath = (mediaDirAsync.hasValue &&
+              final String? absoluteLocalPath =
+                  (mediaDirAsync.hasValue &&
                       relativeLocalPath != null &&
                       relativeLocalPath.isNotEmpty)
                   ? p.join(mediaDirAsync.value!, relativeLocalPath)
@@ -89,11 +85,11 @@ class UserHistoryPage extends ConsumerWidget {
                   absoluteLocalPath.contains('_high')) {
                 isLocalHighQuality = true;
               }
-              final String highQualityNetworkUrl =
-                  (networkAvatarUrl ?? '').replaceFirst(
-                RegExp(r'_(normal|bigger|400x400)'),
-                '_400x400',
-              );
+              final String highQualityNetworkUrl = (networkAvatarUrl ?? '')
+                  .replaceFirst(
+                    RegExp(r'_(normal|bigger|400x400)'),
+                    '_400x400',
+                  );
               bool fetchNetworkLayer =
                   !isLocalHighQuality && highQualityNetworkUrl.isNotEmpty;
               // --- 头像逻辑结束 ---
@@ -135,14 +131,15 @@ class UserHistoryPage extends ConsumerWidget {
                                   height: 48,
                                   frameBuilder:
                                       (context, child, frame, wasSync) {
-                                    if (wasSync) return child;
-                                    return AnimatedOpacity(
-                                      opacity: frame == null ? 0 : 1,
-                                      duration:
-                                          const Duration(milliseconds: 0),
-                                      child: child,
-                                    );
-                                  },
+                                        if (wasSync) return child;
+                                        return AnimatedOpacity(
+                                          opacity: frame == null ? 0 : 1,
+                                          duration: const Duration(
+                                            milliseconds: 0,
+                                          ),
+                                          child: child,
+                                        );
+                                      },
                                   errorBuilder: (context, e, s) =>
                                       const SizedBox.shrink(),
                                 ),
@@ -154,8 +151,9 @@ class UserHistoryPage extends ConsumerWidget {
                                   fit: BoxFit.cover,
                                   width: 48,
                                   height: 48,
-                                  fadeInDuration:
-                                      const Duration(milliseconds: 300),
+                                  fadeInDuration: const Duration(
+                                    milliseconds: 300,
+                                  ),
                                   placeholder: (context, url) =>
                                       const SizedBox.shrink(),
                                   errorWidget: (context, url, error) =>
@@ -185,7 +183,9 @@ class UserHistoryPage extends ConsumerWidget {
                               width: 18,
                               height: 18,
                               colorFilter: const ColorFilter.mode(
-                                  Color(0xFF1DA1F2), BlendMode.srcIn),
+                                Color(0xFF1DA1F2),
+                                BlendMode.srcIn,
+                              ),
                             ),
                           ),
                         if (snapshotUser.isProtected)

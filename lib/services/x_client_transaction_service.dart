@@ -510,7 +510,7 @@ class XClientGenerator {
     return null;
   }
 
-Future<XClientTransactionService> fetchService() async {
+  Future<XClientTransactionService> fetchService() async {
     logger.i("Fetching resources for service...");
     try {
       // 1. fetch home page
@@ -545,14 +545,14 @@ Future<XClientTransactionService> fetchService() async {
     }
   }
 
- Future<String?> fetchAndGenerateTransactionId({
+  Future<String?> fetchAndGenerateTransactionId({
     required String method,
     required String url,
   }) async {
     logger.i("Starting fetch-and-generate (single)...");
     try {
       // 复用 fetchService()
-      final svc = await fetchService(); 
+      final svc = await fetchService();
 
       final txid = svc.generateTransactionId(method: method, url: url);
       logger.i("Generated txid: $txid");

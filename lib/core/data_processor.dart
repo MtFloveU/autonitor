@@ -43,16 +43,16 @@ class DataProcessor {
     required AppSettings settings,
     required ImageHistoryService imageService,
     required LogCallback logCallback,
-  })  : _ref = ref,
-        _database = database,
-        _apiServiceGql = apiServiceGql,
-        _apiServiceV1 = apiServiceV1,
-        _accountRepository = accountRepository,
-        _ownerId = ownerAccount.id,
-        _ownerCookie = ownerAccount.cookie,
-        _log = logCallback,
-        _settings = settings,
-        _imageService = imageService {
+  }) : _ref = ref,
+       _database = database,
+       _apiServiceGql = apiServiceGql,
+       _apiServiceV1 = apiServiceV1,
+       _accountRepository = accountRepository,
+       _ownerId = ownerAccount.id,
+       _ownerCookie = ownerAccount.cookie,
+       _log = logCallback,
+       _settings = settings,
+       _imageService = imageService {
     // Initialize the helper classes, passing them the dependencies they need
     _networkFetcher = NetworkDataFetcher(
       apiServiceGql: _apiServiceGql,
@@ -78,10 +78,7 @@ class DataProcessor {
       log: _log,
     );
 
-    _databaseUpdater = DatabaseUpdater(
-      database: _database,
-      log: _log,
-    );
+    _databaseUpdater = DatabaseUpdater(database: _database, log: _log);
   }
 
   Future<void> _refreshOwnerProfile() async {
@@ -111,9 +108,11 @@ class DataProcessor {
     _log("Loading GQL Query IDs...");
     try {
       // Ensure query IDs are loaded. This can be expanded.
-      _ref.read(gqlQueryIdProvider.notifier).getCurrentQueryIdForDisplay('Following');
+      _ref
+          .read(gqlQueryIdProvider.notifier)
+          .getCurrentQueryIdForDisplay('Following');
     } catch (e) {
-        _log("Error ensuring GQL Query IDs are loaded: $e");
+      _log("Error ensuring GQL Query IDs are loaded: $e");
     }
   }
 
@@ -128,7 +127,9 @@ class DataProcessor {
 
       // 3. Get Old Data from Database
       _log("Fetching old relationships from database...");
-      final oldRelationsList = await _database.getNetworkRelationships(_ownerId);
+      final oldRelationsList = await _database.getNetworkRelationships(
+        _ownerId,
+      );
       final Map<String, FollowUser> oldRelationsMap = {
         for (var relation in oldRelationsList) relation.userId: relation,
       };
@@ -157,9 +158,7 @@ class DataProcessor {
         newUsers: networkData.uniqueUsers,
         oldRelations: oldRelationsMap,
       );
-      _log(
-        "Finished downloading ${mediaResult.newDownloadCount} images.",
-      );
+      _log("Finished downloading ${mediaResult.newDownloadCount} images.");
 
       // 7. Save to Database (Delegated)
       _log("Writing changes to database...");

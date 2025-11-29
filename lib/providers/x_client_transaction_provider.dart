@@ -9,8 +9,9 @@ final xClientGeneratorProvider = Provider<XClientGenerator>((ref) {
 
 // --- MODIFICATION: Restore xctServiceProvider as a FutureProvider ---
 // This provider now fetches the service *once* and caches it.
-final xctServiceProvider =
-    FutureProvider<XClientTransactionService>((ref) async {
+final xctServiceProvider = FutureProvider<XClientTransactionService>((
+  ref,
+) async {
   final generator = ref.read(xClientGeneratorProvider);
   logger.i(
     "[xctServiceProvider] Fetching new XClientTransactionService instance...",
@@ -36,7 +37,9 @@ class TransactionIdNotifier extends Notifier<AsyncValue<String?>> {
     try {
       // --- MODIFICATION: Read from the new FutureProvider ---
       logger.i("[TransactionIdNotifier] init() awaiting xctServiceProvider...");
-      _service = await ref.read(xctServiceProvider.future); // Awaits the cached service
+      _service = await ref.read(
+        xctServiceProvider.future,
+      ); // Awaits the cached service
       logger.i("[TransactionIdNotifier] init() successfully got service.");
 
       state = const AsyncData(null);
@@ -47,7 +50,10 @@ class TransactionIdNotifier extends Notifier<AsyncValue<String?>> {
   }
 
   /// 按需生成 ID (必须先调用 init())
-  Future<String?> generate({required String method, required String url}) async {
+  Future<String?> generate({
+    required String method,
+    required String url,
+  }) async {
     if (_service == null) {
       // This should not happen if init() is called correctly in DataProcessor.
       final errorMsg =
@@ -76,5 +82,5 @@ class TransactionIdNotifier extends Notifier<AsyncValue<String?>> {
 // --- MODIFICATION: Changed to NotifierProvider (non-autoDispose) ---
 final transactionIdProvider =
     NotifierProvider<TransactionIdNotifier, AsyncValue<String?>>(
-  TransactionIdNotifier.new,
-);
+      TransactionIdNotifier.new,
+    );

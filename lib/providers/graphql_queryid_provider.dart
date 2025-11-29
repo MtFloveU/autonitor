@@ -24,7 +24,6 @@ Map<String, String> _getDefaultQueryIds() {
   };
 }
 
-
 class GqlQueryIdState {
   final QueryIdSource source;
   final List<GraphQLOperation> apiOperations; // 从 JSON 获取的列表
@@ -71,12 +70,15 @@ class GqlQueryIdNotifier extends StateNotifier<GqlQueryIdState> {
   final Ref _ref;
   final GraphQLService _graphQLApiService;
 
-  GqlQueryIdNotifier(this._ref, this._graphQLApiService) : super(GqlQueryIdState()) {
+  GqlQueryIdNotifier(this._ref, this._graphQLApiService)
+    : super(GqlQueryIdState()) {
     // 1. 监听 SettingsProvider，以获取最新的 Custom QueryIds 和 Source
     _ref.listen<AsyncValue<AppSettings>>(settingsProvider, (previous, next) {
       if (next.hasValue) {
         final settings = next.value!;
-        final newCustomQueryIds = _ensureAllQueryIdsExist(settings.customGqlQueryIds);
+        final newCustomQueryIds = _ensureAllQueryIdsExist(
+          settings.customGqlQueryIds,
+        );
         final List<GraphQLOperation> persistedApiOps =
             _convertPersistedQueryIdsToOperations(newCustomQueryIds);
         // 从 Settings 中读取 source
@@ -103,13 +105,17 @@ class GqlQueryIdNotifier extends StateNotifier<GqlQueryIdState> {
     }
     final currentSettings = settingsAsync.value!;
 
-    final customQueryIds = _ensureAllQueryIdsExist(currentSettings.customGqlQueryIds);
+    final customQueryIds = _ensureAllQueryIdsExist(
+      currentSettings.customGqlQueryIds,
+    );
 
     // 默认选择第一个 Operation Name
     final firstOpName = _targetOperations.first;
 
     // 需要定义 persistedApiOps
-    final persistedApiOps = _convertPersistedQueryIdsToOperations(customQueryIds);
+    final persistedApiOps = _convertPersistedQueryIdsToOperations(
+      customQueryIds,
+    );
 
     state = state.copyWith(
       customQueryIds: customQueryIds,
@@ -132,12 +138,7 @@ class GqlQueryIdNotifier extends StateNotifier<GqlQueryIdState> {
         final parts = path.split('/');
         if (parts.length >= 4) {
           final queryId = parts[parts.length - 2];
-          ops.add(
-            GraphQLOperation(
-              queryId: queryId,
-              operationName: opName,
-            ),
-          );
+          ops.add(GraphQLOperation(queryId: queryId, operationName: opName));
         }
       }
     }
@@ -168,7 +169,9 @@ class GqlQueryIdNotifier extends StateNotifier<GqlQueryIdState> {
       final Map<String, String> newApiQueryIds = {
         for (var op in operations) op.operationName: op.queryId,
       };
-      _ref.read(settingsProvider.notifier).updateCustomGqlQueryIds(newApiQueryIds);
+      _ref
+          .read(settingsProvider.notifier)
+          .updateCustomGqlQueryIds(newApiQueryIds);
 
       state = state.copyWith(
         apiOperations: operations,
@@ -278,7 +281,9 @@ class GqlQueryIdNotifier extends StateNotifier<GqlQueryIdState> {
 }
 
 final gqlQueryIdProvider =
-    StateNotifierProvider.autoDispose<GqlQueryIdNotifier, GqlQueryIdState>((ref) {
+    StateNotifierProvider.autoDispose<GqlQueryIdNotifier, GqlQueryIdState>((
+      ref,
+    ) {
       return GqlQueryIdNotifier(
         ref,
         ref.read(graphQLServiceProvider), // 来自 graphql_path_service.dart

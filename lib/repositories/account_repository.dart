@@ -1,3 +1,4 @@
+// lib/repositories/account_repository.dart
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart';
@@ -119,6 +120,9 @@ class AccountRepository {
               screenName: profile.screenName,
               avatarUrl: profile.avatarUrl,
               bannerUrl: profile.bannerUrl,
+              // [修复 1] 映射本地路径字段
+              avatarLocalPath: profile.avatarLocalPath,
+              bannerLocalPath: profile.bannerLocalPath,
               bio: profile.bio,
               location: profile.location,
               link: profile.link,
@@ -258,6 +262,11 @@ class AccountRepository {
         logger.e("在 AccountRepository 中读取设置失败，状态为: $settingsValue");
         throw Exception("无法执行操作，因为设置未准备好: $settingsValue");
       }
+
+      // [修复 2] 定义变量以捕获事务中确定的最终路径
+      String? finalAvatarLocalPath;
+      String? finalBannerLocalPath;
+
       await _database.transaction(() async {
         final oldProfile = await (_database.select(
           _database.loggedAccounts,
@@ -287,6 +296,34 @@ class AccountRepository {
               newUrl: bannerUrl, // (这是你从 API 获取的 bannerUrl)
               settings: settings, // 使用我们从 read 读到的 settings
             );
+
+        // [修复 2] 确定最终的 Companion 值和返回对象值
+        final avatarPathValue = newAvatarLocalPath != null
+            ? Value<String?>(newAvatarLocalPath)
+            : (avatarUrl == oldProfile?.avatarUrl
+                  ? Value<String?>(oldProfile?.avatarLocalPath)
+                  : const Value<String?>.absent());
+
+        final bannerPathValue = newBannerLocalPath != null
+            ? Value<String?>(newBannerLocalPath)
+            : (bannerUrl == oldProfile?.bannerUrl
+                  ? Value<String?>(oldProfile?.bannerLocalPath)
+                  : const Value<String?>.absent());
+
+        // 捕获用于返回对象的值 (如果 Value 是 absent，则 finalPath 保持为 null/旧值需要小心处理)
+        // 这里简化逻辑：如果是 absent 且没有新值，说明我们没有更改它，所以应该沿用旧值
+        if (newAvatarLocalPath != null) {
+          finalAvatarLocalPath = newAvatarLocalPath;
+        } else if (avatarUrl == oldProfile?.avatarUrl) {
+          finalAvatarLocalPath = oldProfile?.avatarLocalPath;
+        }
+
+        if (newBannerLocalPath != null) {
+          finalBannerLocalPath = newBannerLocalPath;
+        } else if (bannerUrl == oldProfile?.bannerUrl) {
+          finalBannerLocalPath = oldProfile?.bannerLocalPath;
+        }
+
         final companion = LoggedAccountsCompanion(
           id: Value(id),
           name: name == null ? const Value.absent() : Value(name),
@@ -312,17 +349,8 @@ class AccountRepository {
           isVerified: Value(isVerified),
           isProtected: Value(isProtected),
           latestRawJson: Value(rawJsonString),
-          avatarLocalPath: newAvatarLocalPath != null
-              ? Value(newAvatarLocalPath)
-              : (avatarUrl == oldProfile?.avatarUrl
-                    ? Value(oldProfile?.avatarLocalPath)
-                    : const Value.absent()),
-
-          bannerLocalPath: newBannerLocalPath != null
-              ? Value(newBannerLocalPath)
-              : (bannerUrl == oldProfile?.bannerUrl
-                    ? Value(oldProfile?.bannerLocalPath)
-                    : const Value.absent()),
+          avatarLocalPath: avatarPathValue,
+          bannerLocalPath: bannerPathValue,
         );
         await _database
             .into(_database.loggedAccounts)
@@ -350,7 +378,11 @@ class AccountRepository {
         name: name,
         screenName: screenName,
         avatarUrl: avatarUrl,
+        // [修复 2] 传入计算出的路径
+        avatarLocalPath: finalAvatarLocalPath,
         bannerUrl: bannerUrl,
+        // [修复 2] 传入计算出的路径
+        bannerLocalPath: finalBannerLocalPath,
         bio: bio,
         location: location,
         link: link,
@@ -376,15 +408,8 @@ class AccountRepository {
   }
 
   String getCurrentQueryId(String operationName) {
-  return _ref
-      .read(gqlQueryIdProvider.notifier)
-      .getCurrentQueryIdForDisplay(operationName);
-}
-
-
-  // --- 稍后我们会把 AccountsNotifier 中的方法逻辑搬到这里 ---
-  // 比如：
-  // Future<Account> addNewAccount(String cookie) async { ... }
-  // Future<void> removeAccount(String id) async { ... }
-  // Future<List<Account>> getAllAccounts() async { ... }
+    return _ref
+        .read(gqlQueryIdProvider.notifier)
+        .getCurrentQueryIdForDisplay(operationName);
+  }
 }

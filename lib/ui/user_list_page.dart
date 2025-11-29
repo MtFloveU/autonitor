@@ -10,10 +10,8 @@ import '../l10n/app_localizations.dart';
 import '../providers/report_providers.dart';
 import 'package:autonitor/providers/media_provider.dart';
 
-// 预编译正则
 final RegExp _avatarSizeRegex = RegExp(r'_(normal|bigger|400x400)');
 
-/// 用于持有显示数据
 class _UserDisplayData {
   final String? absoluteLocalPath;
   final String highQualityNetworkUrl;
@@ -26,7 +24,7 @@ class _UserDisplayData {
   });
 }
 
-class UserListTile extends StatefulWidget {
+class UserListTile extends StatelessWidget {
   final TwitterUser user;
   final String? mediaDir;
   final VoidCallback? onTap;
@@ -43,64 +41,12 @@ class UserListTile extends StatefulWidget {
   });
 
   @override
-  State<UserListTile> createState() => _UserListTileState();
-}
-
-class _UserListTileState extends State<UserListTile> {
-  // 使用 late 确保同步初始化，避免构建时的 null 检查导致占位符跳动
-  late _UserDisplayData _displayData;
-
-  @override
-  void initState() {
-    super.initState();
-    // [关键修复]：同步计算数据，确保第一帧就能渲染出正确高度的内容
-    _displayData = _calculateDisplayData();
-  }
-
-  @override
-  void didUpdateWidget(covariant UserListTile oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.user != widget.user || oldWidget.mediaDir != widget.mediaDir) {
-      _displayData = _calculateDisplayData();
-    }
-  }
-
-  _UserDisplayData _calculateDisplayData() {
-    final user = widget.user;
-    final mediaDir = widget.mediaDir;
-
-    final String? relativeLocalPath = user.avatarLocalPath;
-    final String? absoluteLocalPath =
-        (mediaDir != null && relativeLocalPath != null && relativeLocalPath.isNotEmpty)
-            ? p.join(mediaDir, relativeLocalPath)
-            : null;
-
-    final String highQualityNetworkUrl = (user.avatarUrl ?? '')
-        .replaceFirst(_avatarSizeRegex, '_400x400');
-
-    bool isLocalHighQuality = false;
-    if (absoluteLocalPath != null && absoluteLocalPath.contains('_high')) {
-      isLocalHighQuality = true;
-    }
-    
-    final bool fetchNetworkLayer = !isLocalHighQuality && highQualityNetworkUrl.isNotEmpty;
-
-    return _UserDisplayData(
-      absoluteLocalPath: absoluteLocalPath,
-      highQualityNetworkUrl: highQualityNetworkUrl,
-      fetchNetworkLayer: fetchNetworkLayer,
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
-    // 此时 _displayData 必然已初始化，直接渲染真实内容，高度稳定。
     final l10n = AppLocalizations.of(context)!;
-    final data = _displayData;
+    final data = _calculateDisplayData(user, mediaDir);
 
-    // 构建头像
     final avatarWidget = Hero(
-      tag: 'avatar_${widget.user.restId}',
+      tag: 'avatar_${user.restId}',
       child: CircleAvatar(
         radius: 24,
         backgroundColor: Colors.transparent,
@@ -116,15 +62,15 @@ class _UserListTileState extends State<UserListTile> {
 
     final listTile = ListTile(
       titleAlignment: ListTileTitleAlignment.top,
-      onTap: widget.user.isFollower ? null : widget.onTap,
+      onTap: user.isFollower ? null : onTap,
       leading: avatarWidget,
-      title: _buildTitleRow(context),
-      subtitle: _buildSubtitle(context, l10n),
+      title: _buildTitleRow(context, user),
+      subtitle: _buildSubtitle(context, user, l10n),
     );
 
-    final content = widget.isFollower
+    final content = isFollower
         ? InkWell(
-            onTap: widget.onTap,
+            onTap: onTap,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -147,8 +93,8 @@ class _UserListTileState extends State<UserListTile> {
                       Text(
                         l10n.follows_you,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).hintColor,
-                            ),
+                          color: Theme.of(context).hintColor,
+                        ),
                       ),
                     ],
                   ),
@@ -162,7 +108,7 @@ class _UserListTileState extends State<UserListTile> {
     return RepaintBoundary(child: content);
   }
 
-  Widget _buildTitleRow(BuildContext context) {
+  Widget _buildTitleRow(BuildContext context, TwitterUser user) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -175,13 +121,13 @@ class _UserListTileState extends State<UserListTile> {
                 children: [
                   Flexible(
                     child: Text(
-                      widget.user.name ?? 'Unknown Name',
+                      user.name ?? 'Unknown Name',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  if (widget.user.isVerified)
+                  if (user.isVerified)
                     Padding(
                       padding: const EdgeInsets.only(left: 4),
                       child: SvgPicture.asset(
@@ -194,7 +140,7 @@ class _UserListTileState extends State<UserListTile> {
                         ),
                       ),
                     ),
-                  if (widget.user.isProtected)
+                  if (user.isProtected)
                     Padding(
                       padding: const EdgeInsets.only(left: 4),
                       child: SvgPicture.asset(
@@ -210,17 +156,17 @@ class _UserListTileState extends State<UserListTile> {
                 ],
               ),
               Text(
-                "@${widget.user.screenName}",
+                "@${user.screenName}",
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).hintColor,
-                    ),
+                  color: Theme.of(context).hintColor,
+                ),
               ),
             ],
           ),
         ),
-        if (widget.user.isFollowing)
+        if (user.isFollowing)
           Container(
             margin: const EdgeInsets.only(left: 8),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
@@ -233,24 +179,25 @@ class _UserListTileState extends State<UserListTile> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              widget.followingLabel,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-              ),
+              followingLabel,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
             ),
           ),
       ],
     );
   }
 
-  Widget _buildSubtitle(BuildContext context, AppLocalizations l10n) {
+  Widget _buildSubtitle(
+    BuildContext context,
+    TwitterUser user,
+    AppLocalizations l10n,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(top: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (widget.user.automatedScreenName != null)
+          if (user.automatedScreenName != null)
             Padding(
               padding: const EdgeInsets.only(top: 2),
               child: Row(
@@ -267,18 +214,17 @@ class _UserListTileState extends State<UserListTile> {
                   const SizedBox(width: 4),
                   Flexible(
                     child: Text(
-                      l10n.automated_by(widget.user.automatedScreenName!),
+                      l10n.automated_by(user.automatedScreenName!),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).hintColor,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                        color: Theme.of(context).hintColor,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-          if (widget.user.parodyCommentaryFanLabel != null &&
-              widget.user.parodyCommentaryFanLabel != "None")
+          if (user.parodyCommentaryFanLabel != null &&
+              user.parodyCommentaryFanLabel != "None")
             Padding(
               padding: const EdgeInsets.only(top: 2),
               child: Row(
@@ -291,18 +237,17 @@ class _UserListTileState extends State<UserListTile> {
                   const SizedBox(width: 4),
                   Flexible(
                     child: Text(
-                      "${widget.user.parodyCommentaryFanLabel!} account",
+                      "${user.parodyCommentaryFanLabel!} account",
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).hintColor,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                        color: Theme.of(context).hintColor,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
           Text(
-            widget.user.bio ?? '',
+            user.bio ?? '',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodyMedium,
@@ -311,6 +256,30 @@ class _UserListTileState extends State<UserListTile> {
       ),
     );
   }
+}
+
+_UserDisplayData _calculateDisplayData(TwitterUser user, String? mediaDir) {
+  final String? relativeLocalPath = user.avatarLocalPath;
+  final String? absoluteLocalPath =
+      (mediaDir != null &&
+          relativeLocalPath != null &&
+          relativeLocalPath.isNotEmpty)
+      ? p.join(mediaDir, relativeLocalPath)
+      : null;
+
+  final String highQualityNetworkUrl = (user.avatarUrl ?? '').replaceFirst(
+    _avatarSizeRegex,
+    '_400x400',
+  );
+
+  final bool isLocalHighQuality =
+      absoluteLocalPath != null && absoluteLocalPath.contains('_high');
+
+  return _UserDisplayData(
+    absoluteLocalPath: absoluteLocalPath,
+    highQualityNetworkUrl: highQualityNetworkUrl,
+    fetchNetworkLayer: !isLocalHighQuality && highQualityNetworkUrl.isNotEmpty,
+  );
 }
 
 class _OptimizedUserAvatar extends StatelessWidget {
@@ -334,15 +303,15 @@ class _OptimizedUserAvatar extends StatelessWidget {
         width: 48,
         height: 48,
         fit: BoxFit.cover,
-        cacheWidth: 100, // 内存优化
+        cacheWidth: 100,
         errorBuilder: (context, error, stackTrace) {
-          if (fetchNetworkLayer && highQualityNetworkUrl.isNotEmpty) {
+          if (absoluteLocalPath == null && highQualityNetworkUrl.isNotEmpty) {
             return CachedNetworkImage(
               imageUrl: highQualityNetworkUrl,
               width: 48,
               height: 48,
               fit: BoxFit.cover,
-              memCacheWidth: 100, // 内存优化
+              memCacheWidth: 100,
               placeholder: (context, url) => placeholder,
               errorWidget: (context, url, error) => placeholder,
               fadeInDuration: const Duration(milliseconds: 200),
@@ -353,7 +322,7 @@ class _OptimizedUserAvatar extends StatelessWidget {
       );
     }
 
-    if (fetchNetworkLayer && highQualityNetworkUrl.isNotEmpty) {
+    if (absoluteLocalPath == null && highQualityNetworkUrl.isNotEmpty) {
       return CachedNetworkImage(
         imageUrl: highQualityNetworkUrl,
         width: 48,
@@ -385,7 +354,7 @@ class UserListPage extends ConsumerStatefulWidget {
 
 class _UserListPageState extends ConsumerState<UserListPage>
     with AutomaticKeepAliveClientMixin {
-  final ScrollController _scrollController = ScrollController();
+  bool _routeAnimationCompleted = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -393,43 +362,69 @@ class _UserListPageState extends ConsumerState<UserListPage>
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
+
+    // ✅ 监听路由进入动画
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final route = ModalRoute.of(context);
+      final animation = route?.animation;
+
+      if (animation == null) {
+        _markRouteCompleted();
+        return;
+      }
+
+      if (animation.status == AnimationStatus.completed) {
+        _markRouteCompleted();
+      } else {
+        late final AnimationStatusListener listener;
+        listener = (status) {
+          if (status == AnimationStatus.completed) {
+            animation.removeStatusListener(listener);
+            _markRouteCompleted();
+          }
+        };
+        animation.addStatusListener(listener);
+      }
+    });
+  }
+
+  void _markRouteCompleted() {
+    if (!mounted) return;
+
+    setState(() {
+      _routeAnimationCompleted = true;
+    });
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
     super.dispose();
-  }
-
-  void _onScroll() {
-    if (!_scrollController.hasClients) return;
-    
-    final position = _scrollController.position;
-    if (position.pixels >= position.maxScrollExtent - 200) {
-      final param = UserListParam(
-        ownerId: widget.ownerId,
-        categoryKey: widget.categoryKey,
-      );
-      final notifier = ref.read(userListProvider(param).notifier);
-      notifier.fetchMore();
-    }
   }
 
   String getLocalizedTitle(AppLocalizations l10n) {
     switch (widget.categoryKey) {
-      case 'followers': return l10n.followers;
-      case 'following': return l10n.following;
-      case 'normal_unfollowed': return l10n.normal_unfollowed;
-      case 'mutual_unfollowed': return l10n.mutual_unfollowed;
-      case 'oneway_unfollowed': return l10n.oneway_unfollowed;
-      case 'temporarily_restricted': return l10n.temporarily_restricted;
-      case 'suspended': return l10n.suspended;
-      case 'deactivated': return l10n.deactivated;
-      case 'be_followed_back': return l10n.be_followed_back;
-      case 'new_followers_following': return l10n.new_followers_following;
-      default: return widget.categoryKey;
+      case 'followers':
+        return l10n.followers;
+      case 'following':
+        return l10n.following;
+      case 'normal_unfollowed':
+        return l10n.normal_unfollowed;
+      case 'mutual_unfollowed':
+        return l10n.mutual_unfollowed;
+      case 'oneway_unfollowed':
+        return l10n.oneway_unfollowed;
+      case 'temporarily_restricted':
+        return l10n.temporarily_restricted;
+      case 'suspended':
+        return l10n.suspended;
+      case 'deactivated':
+        return l10n.deactivated;
+      case 'be_followed_back':
+        return l10n.be_followed_back;
+      case 'new_followers_following':
+        return l10n.new_followers_following;
+      default:
+        return widget.categoryKey;
     }
   }
 
@@ -447,86 +442,114 @@ class _UserListPageState extends ConsumerState<UserListPage>
   Widget build(BuildContext context) {
     super.build(context);
     final l10n = AppLocalizations.of(context)!;
-    final param = UserListParam(
-      ownerId: widget.ownerId,
-      categoryKey: widget.categoryKey,
-    );
-    final userListAsync = ref.watch(userListProvider(param));
-    final mediaDirAsync = ref.watch(appSupportDirProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(getLocalizedTitle(l10n))),
       body: Column(
         children: [
           _buildSuspendedBanner(context),
+
           Expanded(
-            child: userListAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, stack) =>
-                  Center(child: Text('${l10n.failed_to_load_user_list}: $err')),
-              data: (users) {
-                if (users.isEmpty) {
-                  return Center(child: Text(l10n.no_users_in_this_category));
-                }
-
-                final bool hasMore = ref
-                    .read(userListProvider(param).notifier)
-                    .hasMore();
-                final int itemCount = users.length + (hasMore ? 1 : 0);
-                
-                final mediaDir = mediaDirAsync.value;
-
-                return ListView.builder(
-                  controller: _scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  cacheExtent: 1000, 
-                  itemCount: itemCount,
-                  itemBuilder: (context, index) {
-                    if (index == users.length) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (mounted) {
-                          ref.read(userListProvider(param).notifier).fetchMore();
-                        }
-                      });
-
-                      return const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(16.0),
-                          child: SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(strokeWidth: 3),
-                          ),
-                        ),
+            child: !_routeAnimationCompleted
+                ? const Center(
+                    child: SizedBox(
+                      width: 32,
+                      height: 32,
+                      child: CircularProgressIndicator(strokeWidth: 3),
+                    ),
+                  )
+                : Builder(
+                    builder: (context) {
+                      final param = UserListParam(
+                        ownerId: widget.ownerId,
+                        categoryKey: widget.categoryKey,
                       );
-                    }
 
-                    final user = users[index];
+                      final userListAsync = ref.watch(userListProvider(param));
+                      final mediaDirAsync = ref.watch(appSupportDirProvider);
 
-                    void onTapAction() {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => UserDetailPage(
-                            user: user,
-                            ownerId: widget.ownerId,
-                          ),
+                      return userListAsync.when(
+                        loading: () =>
+                            const Center(child: CircularProgressIndicator()),
+                        error: (err, stack) => Center(
+                          child: Text('${l10n.failed_to_load_user_list}: $err'),
                         ),
-                      );
-                    }
+                        data: (users) {
+                          if (users.isEmpty) {
+                            return Center(
+                              child: Text(l10n.no_users_in_this_category),
+                            );
+                          }
 
-                    return UserListTile(
-                      key: ValueKey(user.restId),
-                      user: user,
-                      mediaDir: mediaDir,
-                      onTap: onTapAction,
-                      followingLabel: l10n.following,
-                      isFollower: user.isFollower,
-                    );
-                  },
-                );
-              },
-            ),
+                          final bool hasMore = ref
+                              .read(userListProvider(param).notifier)
+                              .hasMore();
+
+                          final int itemCount =
+                              users.length + (hasMore ? 1 : 0);
+
+                          final mediaDir = mediaDirAsync.value;
+
+                          return ListView.builder(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            cacheExtent: 1000,
+                            itemCount: itemCount,
+                            itemBuilder: (context, index) {
+                              if (index == users.length) {
+                                WidgetsBinding.instance.addPostFrameCallback((
+                                  _,
+                                ) {
+                                  final notifier = ref.read(
+                                    userListProvider(param).notifier,
+                                  );
+                                  if (notifier.hasMore()) {
+                                    notifier.fetchMore();
+                                  }
+                                });
+
+                                return const Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(16.0),
+                                    child: SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 3,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+
+                              final user = users[index];
+
+                              void onTapAction() {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => UserDetailPage(
+                                      key: ValueKey(user.restId),
+                                      user: user,
+                                      ownerId: widget.ownerId,
+                                    ),
+                                  ),
+                                );
+                              }
+
+                              return UserListTile(
+                                key: ValueKey(user.restId),
+                                user: user,
+                                mediaDir: mediaDir,
+                                onTap: onTapAction,
+                                followingLabel: l10n.following,
+                                isFollower: user.isFollower,
+                              );
+                            },
+                          );
+                        },
+                      );
+                    },
+                  ),
           ),
         ],
       ),

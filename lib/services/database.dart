@@ -184,7 +184,8 @@ class AppDatabase extends _$AppDatabase {
           : Value(avatarPath),
       bannerLocalPath: bannerPath == null
           ? const Value.absent()
-          : Value(bannerPath), bannerUrl: const Value.absent(),
+          : Value(bannerPath),
+      bannerUrl: const Value.absent(),
     );
 
     return (update(followUsers)..where(

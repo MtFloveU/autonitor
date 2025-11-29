@@ -25,19 +25,25 @@ class ProfileHistoryParams {
 }
 
 /// 2. 创建 History Provider (现在它非常简单)
-final profileHistoryProvider = AsyncNotifierProvider.family.autoDispose<
-    ProfileHistoryNotifier,
-    List<HistorySnapshot>,
-    ProfileHistoryParams>(() {
-  return ProfileHistoryNotifier();
-});
+final profileHistoryProvider = AsyncNotifierProvider.family
+    .autoDispose<
+      ProfileHistoryNotifier,
+      List<HistorySnapshot>,
+      ProfileHistoryParams
+    >(() {
+      return ProfileHistoryNotifier();
+    });
 
-class ProfileHistoryNotifier extends AutoDisposeFamilyAsyncNotifier<List<HistorySnapshot>, ProfileHistoryParams> {
-  
+class ProfileHistoryNotifier
+    extends
+        AutoDisposeFamilyAsyncNotifier<
+          List<HistorySnapshot>,
+          ProfileHistoryParams
+        > {
   @override
   Future<List<HistorySnapshot>> build(ProfileHistoryParams arg) async {
     // 3. Provider 的职责：
-    
+
     // a. 监听它依赖的 Provider (设置)
     final settings = ref.watch(settingsProvider).valueOrNull;
     if (settings == null) {
@@ -48,10 +54,6 @@ class ProfileHistoryNotifier extends AutoDisposeFamilyAsyncNotifier<List<History
     final repository = ref.read(historyRepositoryProvider);
 
     // c. 调用 Repository 的方法并返回结果
-    return repository.getFilteredHistory(
-      arg.ownerId,
-      arg.userId,
-      settings,
-    );
+    return repository.getFilteredHistory(arg.ownerId, arg.userId, settings);
   }
 }

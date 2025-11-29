@@ -1,11 +1,12 @@
+// lib/providers/report_providers.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
 import '../models/cache_data.dart';
 import '../models/twitter_user.dart';
 import '../main.dart';
-import 'auth_provider.dart';
 import '../repositories/analysis_report_repository.dart';
+import 'auth_provider.dart';
 import 'package:autonitor/services/log_service.dart';
 
 @immutable
@@ -13,6 +14,7 @@ class UserListParam {
   final String ownerId;
   final String categoryKey;
   const UserListParam({required this.ownerId, required this.categoryKey});
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -20,6 +22,7 @@ class UserListParam {
           runtimeType == other.runtimeType &&
           ownerId == other.ownerId &&
           categoryKey == other.categoryKey;
+
   @override
   int get hashCode => ownerId.hashCode ^ categoryKey.hashCode;
 }
@@ -35,7 +38,7 @@ final cacheProvider = FutureProvider.autoDispose<CacheData?>((ref) async {
 
   try {
     final changeTypeCol = database.changeReports.changeType;
-    final countExp = changeTypeCol.count();
+    final countExp = drift.countAll();
 
     final query = database.selectOnly(database.changeReports)
       ..addColumns([changeTypeCol, countExp])
@@ -44,16 +47,11 @@ final cacheProvider = FutureProvider.autoDispose<CacheData?>((ref) async {
     query.groupBy([changeTypeCol]);
 
     final countsResult = await query.get();
-    logger.i(
-      "cacheProvider: Fetching counts from database for account ${activeAccount.id}...",
-    );
 
     final Map<String, int> categoryCounts = {
       for (var row in countsResult)
         row.read(changeTypeCol)!: row.read(countExp)!,
     };
-
-    logger.i("cacheProvider: Fetched category counts: $categoryCounts");
 
     final accountDetails = await (database.select(
       database.loggedAccounts,
@@ -75,7 +73,11 @@ final cacheProvider = FutureProvider.autoDispose<CacheData?>((ref) async {
       temporarilyRestrictedCount: categoryCounts['temporarily_restricted'] ?? 0,
     );
   } catch (e, s) {
-    logger.e("cacheProvider: Error fetching counts from database: $e\n$s");
+    logger.e(
+      "cacheProvider: Error fetching counts from database",
+      error: e,
+      stackTrace: s,
+    );
     return null;
   }
 });
@@ -85,92 +87,116 @@ const int _kUserListPageSize = 10;
 class UserListNotifier
     extends AutoDisposeFamilyAsyncNotifier<List<TwitterUser>, UserListParam> {
   final List<TwitterUser> _users = [];
+  final Set<String> _seenIds = <String>{};
   bool _hasMore = true;
+  bool _isFetching = false;
+  int _duplicateStreak = 0;
+  late UserListParam _param;
 
   @override
   Future<List<TwitterUser>> build(UserListParam arg) async {
-    // --- 关键修改：每次 build 时重置内部状态 ---
-    _users.clear(); // <-- 强制清空旧数据
-    _hasMore = true; // <-- 强制重置分页状态
-    // --- 关键修改结束 ---
+    _param = arg;
+    _users.clear();
+    _seenIds.clear();
+    _hasMore = true;
+    _isFetching = false;
+    _duplicateStreak = 0;
 
     final repository = ref.read(analysisReportRepositoryProvider);
-    final newUsers = await repository.getUsersForCategory(
-      arg.ownerId,
-      arg.categoryKey,
-      limit: _kUserListPageSize,
-      offset: 0,
-    );
-    logger.i(
-      "UserListNotifier: build() called for owner ${arg.ownerId}, category ${arg.categoryKey}",
-    );
-    _users.addAll(newUsers);
-
-    if (newUsers.length < _kUserListPageSize) {
-      _hasMore = false;
-    }
-
-    logger.i(
-      "UserListNotifier: build() completed, loaded ${_users.length} users, hasMore=$_hasMore",
-    );
-
-    return _users;
-  }
-
-  Future<void> fetchMore() async {
-
-    logger.i(
-      "UserListNotifier: fetchMore() started, current users=${_users.length}",
-    );
-
-    state = const AsyncLoading<List<TwitterUser>>().copyWithPrevious(state);
-
-    final repository = ref.read(analysisReportRepositoryProvider);
-    final arg = this.arg;
 
     try {
-      final offset = _users.length;
-
       final newUsers = await repository.getUsersForCategory(
         arg.ownerId,
         arg.categoryKey,
         limit: _kUserListPageSize,
-        offset: offset,
+        offset: 0,
       );
 
-      if (newUsers.isEmpty || newUsers.length < _kUserListPageSize) {
-        _hasMore = false;
-        logger.i(
-          "UserListNotifier: fetchMore() fetched less than page size, setting hasMore=false",
-        );
+      for (var u in newUsers) {
+        final id = u.restId;
+        if (id.isNotEmpty && !_seenIds.contains(id)) {
+          _seenIds.add(id);
+          _users.add(u);
+        }
       }
 
-      _users.addAll(newUsers);
+      // only stop when server returns empty result (avoid premature stop due to filtering)
+      _hasMore = newUsers.isNotEmpty;
 
-      state = AsyncData(_users);
-      logger.i(
-        "UserListNotifier: fetchMore() completed, total users=${_users.length}",
-      );
+      return List<TwitterUser>.from(_users);
     } catch (e, s) {
-      state = AsyncValue<List<TwitterUser>>.error(e, s).copyWithPrevious(state);
-      logger.e(
-        "UserListNotifier: fetchMore() failed: $e",
-        error: e,
-        stackTrace: s,
-      );
+      logger.e("UserListNotifier.build error", error: e, stackTrace: s);
+      throw e;
     }
   }
 
-  bool hasMore() {
-    return _hasMore;
+  Future<void> fetchMore() async {
+    if (_isFetching || !_hasMore) return;
+    _isFetching = true;
+
+    final repository = ref.read(analysisReportRepositoryProvider);
+
+    try {
+      final offset = _users.length;
+      logger.i("UserListNotifier: fetchMore() offset=$offset");
+
+      final newUsers = await repository.getUsersForCategory(
+        _param.ownerId,
+        _param.categoryKey,
+        limit: _kUserListPageSize,
+        offset: offset,
+      );
+
+      if (newUsers.isEmpty) {
+        _duplicateStreak += 1;
+        logger.w(
+          "UserListNotifier: fetchMore() returned empty, duplicateStreak=$_duplicateStreak",
+        );
+      } else {
+        final uniqueNew = <TwitterUser>[];
+        for (var u in newUsers) {
+          final id = u.restId;
+          if (id.isNotEmpty && !_seenIds.contains(id)) {
+            _seenIds.add(id);
+            uniqueNew.add(u);
+          }
+        }
+
+        if (uniqueNew.isNotEmpty) {
+          _users.addAll(uniqueNew);
+          _duplicateStreak = 0;
+        } else {
+          _duplicateStreak += 1;
+          logger.w(
+            "UserListNotifier: fetchMore() returned only duplicates, duplicateStreak=$_duplicateStreak",
+          );
+        }
+      }
+
+      // stop when we got several empty/duplicate rounds in a row OR server returned empty
+      if (_duplicateStreak >= 3) {
+        _hasMore = false;
+        logger.w(
+          "UserListNotifier: duplicate streak reached, stopping pagination",
+        );
+      } else {
+        // continue unless server returned empty and duplicateStreak triggered stop
+        _hasMore = newUsers.isNotEmpty;
+      }
+
+      state = AsyncData(List<TwitterUser>.from(_users));
+    } catch (e, s) {
+      logger.e("UserListNotifier: fetchMore failed", error: e, stackTrace: s);
+      state = AsyncValue<List<TwitterUser>>.error(e, s).copyWithPrevious(state);
+    } finally {
+      _isFetching = false;
+    }
   }
+
+  bool hasMore() => _hasMore;
 }
 
-final userListProvider =
-    AsyncNotifierProvider.family.autoDispose< // <-- 关键修改：添加 .autoDispose
-      UserListNotifier,
-      List<TwitterUser>,
-      UserListParam
-    >(() {
-      return UserListNotifier();
-    });
+final userListProvider = AsyncNotifierProvider.family
+    .autoDispose<UserListNotifier, List<TwitterUser>, UserListParam>(
+      () => UserListNotifier(),
+    );

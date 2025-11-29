@@ -26,12 +26,9 @@ class HistoryRepository {
     "screen_name",
     "description",
     "url",
-    "location"
+    "location",
   };
-  static const Set<String> _imageKeys = {
-    "profile_image_url_https",
-    "profile_banner_url"
-  };
+  static const Set<String> _imageKeys = {"avatar_url", "banner_url"};
   static final Set<String> _relevantKeys = _textKeys.union(_imageKeys);
 
   /// 4. 这是 Provider 将调用的公共方法
@@ -41,49 +38,48 @@ class HistoryRepository {
     AppSettings settings,
   ) async {
     // 1. 获取最新数据 (我们的起点)
-    final currentUser = await (_db.select(_db.followUsers)
-          ..where(
-            (tbl) => tbl.ownerId.equals(ownerId) & tbl.userId.equals(userId),
-          ))
-        .getSingleOrNull();
+    final currentUser =
+        await (_db.select(_db.followUsers)..where(
+              (tbl) => tbl.ownerId.equals(ownerId) & tbl.userId.equals(userId),
+            ))
+            .getSingleOrNull();
 
     if (currentUser == null || currentUser.latestRawJson == null) {
       return []; // 没有当前数据，无法重建
     }
 
     // 2. 获取所有历史补丁 (从新到旧)
-    final historyEntries = await (_db.select(_db.followUsersHistory)
-          ..where(
-            (tbl) => tbl.ownerId.equals(ownerId) & tbl.userId.equals(userId),
-          )
-          ..orderBy([
-            (tbl) =>
-                OrderingTerm(expression: tbl.timestamp, mode: OrderingMode.desc),
-          ]))
-        .get();
-    
+    final historyEntries =
+        await (_db.select(_db.followUsersHistory)
+              ..where(
+                (tbl) =>
+                    tbl.ownerId.equals(ownerId) & tbl.userId.equals(userId),
+              )
+              ..orderBy([
+                (tbl) => OrderingTerm(
+                  expression: tbl.timestamp,
+                  mode: OrderingMode.desc,
+                ),
+              ]))
+            .get();
+
     // --- 新增：获取所有相关的媒体历史记录（按时间倒序） ---
-    final mediaHistory = await (_db.select(_db.mediaHistory)
-      ..orderBy([
-        (tbl) => OrderingTerm(
-          expression: tbl.id,
-          mode: OrderingMode.desc,
-        )
-      ]))
-    .get();
+    final mediaHistory =
+        await (_db.select(_db.mediaHistory)..orderBy([
+              (tbl) =>
+                  OrderingTerm(expression: tbl.id, mode: OrderingMode.desc),
+            ]))
+            .get();
     // --- 新增结束 ---
 
     // 5. 将 *纯数据*（可发送）传递给 compute 块
-    return await compute(
-      _reconstructAndFilterHistory,
-      {
-        'settings': settings,
-        'userId': userId,
-        'latestRawJson': currentUser.latestRawJson!, // 传入 String
-        'historyEntries': historyEntries, // 传入 List<FollowUserHistoryEntry>
-        'mediaHistory': mediaHistory, // <-- NEW: 传入媒体历史记录
-      },
-    );
+    return await compute(_reconstructAndFilterHistory, {
+      'settings': settings,
+      'userId': userId,
+      'latestRawJson': currentUser.latestRawJson!, // 传入 String
+      'historyEntries': historyEntries, // 传入 List<FollowUserHistoryEntry>
+      'mediaHistory': mediaHistory, // <-- NEW: 传入媒体历史记录
+    });
   }
 }
 
@@ -121,19 +117,20 @@ String? _findLocalPath(
   MediaHistoryEntry? bestMatch;
   bestMatch = filtered.isNotEmpty ? filtered.first : null;
 
-
   return bestMatch?.localFilePath;
 }
 
 /// 6. 这是在独立 Isolate 中运行的重建和过滤函数
 Future<List<HistorySnapshot>> _reconstructAndFilterHistory(
-    Map<String, dynamic> context) async {
+  Map<String, dynamic> context,
+) async {
   // --- 核心修改：从 context 中解包纯数据 ---
   final AppSettings settings = context['settings'];
   final String userId = context['userId'];
   final String latestRawJson = context['latestRawJson'];
   final List<FollowUserHistoryEntry> historyEntries = context['historyEntries'];
-  final List<MediaHistoryEntry> mediaHistory = context['mediaHistory']; // <-- NEW
+  final List<MediaHistoryEntry> mediaHistory =
+      context['mediaHistory']; // <-- NEW
   // --- 修改结束 ---
 
   // (从 HistoryRepository 访问常量)
@@ -160,12 +157,15 @@ Future<List<HistorySnapshot>> _reconstructAndFilterHistory(
 
     // 1. 检查相关性（在应用补丁前检查，因为 patchMap 包含了差异信息）
     final patchKeys = patchMap.keys.toSet();
-    final bool hasRelevantChange =
-        patchKeys.any((k) => relevantKeys.contains(k));
+    final bool hasRelevantChange = patchKeys.any(
+      (k) => relevantKeys.contains(k),
+    );
 
     // 2. 应用反向补丁：将 currentJsonMap 从新版本 'A' 变为旧版本 'B'
-    final Map<String, dynamic>? oldVersionMap =
-        applyReversePatch(currentJsonMap, entry.reverseDiffJson);
+    final Map<String, dynamic>? oldVersionMap = applyReversePatch(
+      currentJsonMap,
+      entry.reverseDiffJson,
+    );
 
     if (oldVersionMap == null) {
       // 补丁应用失败，无法继续回滚
@@ -183,9 +183,8 @@ Future<List<HistorySnapshot>> _reconstructAndFilterHistory(
     final bool onlyImageChange = !hasTextChange;
 
     if (onlyImageChange) {
-      final bool hadAvatarChange =
-          patchKeys.contains("profile_image_url_https");
-      final bool hadBannerChange = patchKeys.contains("profile_banner_url");
+      final bool hadAvatarChange = patchKeys.contains("avatar_url");
+      final bool hadBannerChange = patchKeys.contains("banner_url");
 
       if (hadAvatarChange && !settings.saveAvatarHistory) {
         continue;
@@ -196,9 +195,8 @@ Future<List<HistorySnapshot>> _reconstructAndFilterHistory(
     }
 
     // --- 新增：查找本地媒体路径 ---
-    final snapshotAvatarUrl =
-        currentJsonMap['profile_image_url_https'] as String?;
-    final snapshotBannerUrl = currentJsonMap['profile_banner_url'] as String?;
+    final snapshotAvatarUrl = currentJsonMap['avatar_url'] as String?;
+    final snapshotBannerUrl = currentJsonMap['banner_url'] as String?;
     final snapshotTimestamp = entry.timestamp;
 
     final avatarPath = _findLocalPath(
@@ -216,19 +214,30 @@ Future<List<HistorySnapshot>> _reconstructAndFilterHistory(
     // --- 新增结束 ---
 
     // 4. 将 'B' 版本（即应用补丁后的状态）作为快照保存
+    if (avatarPath != null && avatarPath.isNotEmpty) {
+      currentJsonMap['avatar_local_path'] = avatarPath;
+    }
+
+    if (bannerPath != null && bannerPath.isNotEmpty) {
+      currentJsonMap['banner_local_path'] = bannerPath;
+    }
+
     final params = ParseParams(
       userId: userId,
       jsonString: jsonEncode(currentJsonMap),
-      dbAvatarLocalPath: avatarPath, // <-- 传入找到的本地路径
-      dbBannerLocalPath: bannerPath, // <-- 传入找到的本地路径
+      dbAvatarLocalPath: avatarPath,
+      dbBannerLocalPath: bannerPath,
     );
+
     final reconstructedUser = parseFollowUserToTwitterUser(params);
 
-    filteredSnapshots.add(HistorySnapshot(
-      entry: entry,
-      user: reconstructedUser,
-      fullJson: jsonEncode(currentJsonMap),
-    ));
+    filteredSnapshots.add(
+      HistorySnapshot(
+        entry: entry,
+        user: reconstructedUser,
+        fullJson: jsonEncode(currentJsonMap),
+      ),
+    );
   }
 
   return filteredSnapshots;

@@ -243,10 +243,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                                 if (Uri.tryParse(path)?.hasScheme != true ||
                                     Uri.tryParse(path)?.hasAuthority != true ||
                                     !(Uri.tryParse(path)?.scheme == 'http' ||
-                                        Uri.tryParse(path)?.scheme == 'https')) {
+                                        Uri.tryParse(path)?.scheme ==
+                                            'https')) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text(l10n.path_must_start_with_slash),
+                                      content: Text(
+                                        l10n.path_must_start_with_slash,
+                                      ),
                                     ),
                                   );
                                   return;

@@ -21,7 +21,7 @@ class Account {
   /// The URL for the user's profile banner.
   final String? bannerUrl;
 
-   final String? bannerLocalPath;
+  final String? bannerLocalPath;
 
   /// The user's biography.
   final String? bio;

@@ -80,9 +80,7 @@ class RelationshipAnalyzer {
   Future<Map<String, String>> _categorizeRemovals(
     Set<String> removedIds,
   ) async {
-    _log(
-      "Processing ${removedIds.length} users to determine status...",
-    );
+    _log("Processing ${removedIds.length} users to determine status...");
     final Map<String, String> categorizedRemovals = {};
     if (removedIds.isEmpty) {
       return categorizedRemovals;

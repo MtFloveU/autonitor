@@ -56,7 +56,9 @@ class ActiveAccountNotifier extends StateNotifier<Account?> {
       );
       _resetActiveAccountAndMarkInitialized(accounts);
     } else {
-      logger.i("ActiveAccountNotifier: No accounts loaded. State remains null.");
+      logger.i(
+        "ActiveAccountNotifier: No accounts loaded. State remains null.",
+      );
       state = null;
       _isInitialized = true;
     }
@@ -80,7 +82,9 @@ class ActiveAccountNotifier extends StateNotifier<Account?> {
     } else {
       state = null;
       await _storageService.deleteActiveAccountId();
-      logger.i("ActiveAccountNotifier: Reset called but no accounts available.");
+      logger.i(
+        "ActiveAccountNotifier: Reset called but no accounts available.",
+      );
     }
   }
 
@@ -93,7 +97,9 @@ class ActiveAccountNotifier extends StateNotifier<Account?> {
       );
     } else {
       await _storageService.deleteActiveAccountId();
-      logger.i("ActiveAccountNotifier: Cleared active account ID and persisted.");
+      logger.i(
+        "ActiveAccountNotifier: Cleared active account ID and persisted.",
+      );
     }
   }
 
@@ -167,11 +173,15 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
       loadedAccounts = await _accountRepository.getAllAccounts();
       storedActiveId = await _storageService.readActiveAccountId();
     } catch (e, s) {
-      logger.e("AccountsNotifier: Error loading accounts from repository: $e\n$s");
+      logger.e(
+        "AccountsNotifier: Error loading accounts from repository: $e\n$s",
+      );
     }
 
     state = loadedAccounts;
-    logger.i("AccountsNotifier: Loaded and assembled ${state.length} accounts.");
+    logger.i(
+      "AccountsNotifier: Loaded and assembled ${state.length} accounts.",
+    );
 
     _ref
         .read(activeAccountProvider.notifier)
@@ -211,7 +221,9 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
         Future(() async {
           await semaphore.acquire();
           try {
-            logger.i("AccountsNotifier: Refreshing profile for ${account.id}...");
+            logger.i(
+              "AccountsNotifier: Refreshing profile for ${account.id}...",
+            );
             await _refreshSingleAccountProfile(account);
             logger.i("AccountsNotifier: Refresh successful for ${account.id}.");
             return RefreshResult(accountId: account.id, success: true);

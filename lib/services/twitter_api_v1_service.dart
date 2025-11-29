@@ -40,7 +40,11 @@ class TwitterApiV1Service {
         return token.isNotEmpty ? token : null;
       }
     } catch (e, s) {
-      logger.e("TwitterApiV1Service: Failed to parse ct0 token: $e", error: e, stackTrace: s);
+      logger.e(
+        "TwitterApiV1Service: Failed to parse ct0 token: $e",
+        error: e,
+        stackTrace: s,
+      );
     }
     return null;
   }
@@ -194,7 +198,11 @@ class TwitterApiV1Service {
   }
 
   Never _logAndThrow(String errorMessage) {
-    logger.e("TwitterApiV1Service: $errorMessage", error: Exception(errorMessage), stackTrace: StackTrace.current);
+    logger.e(
+      "TwitterApiV1Service: $errorMessage",
+      error: Exception(errorMessage),
+      stackTrace: StackTrace.current,
+    );
     throw Exception(errorMessage); // 抛出异常中断执行
   }
   // --- 辅助方法结束 ---

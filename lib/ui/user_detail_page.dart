@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
 import 'package:autonitor/providers/media_provider.dart';
@@ -34,10 +35,131 @@ class UserDetailPage extends ConsumerStatefulWidget {
   ConsumerState<UserDetailPage> createState() => _UserDetailPageState();
 }
 
-class _UserDetailPageState extends ConsumerState<UserDetailPage> {
-  // 移除了 _fileExistenceCache，因为交给 Image.file 处理更加高效且流畅
+class _UserDetailPageState extends ConsumerState<UserDetailPage>
+    with TickerProviderStateMixin {
+  // builders 列表（构造每一项的 Widget）
   final List<Widget Function(BuildContext)> _builders = [];
-  int _visibleCount = 0;
+  // 控制当前可见数量（异步逐个增加）
+  int _visibleCount = 3;
+  // ✅ index < 4 我们不做 fade（保证名字立即显示）
+  final List<AnimationController?> _fadeControllers = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _prepareBuilders();
+    _ensureControllersList();
+    _startRenderLoop();
+  }
+
+  void _ensureControllersList() {
+    // 初始化 controllers 列表（保持与 builders 长度一致），只为 index >= 3 创建 controller
+    _fadeControllers.clear();
+    for (var i = 0; i < _builders.length; i++) {
+      if (i >= 3) {
+        _fadeControllers.add(
+          AnimationController(vsync: this, duration: _fadeDurationFor(i)),
+        );
+      } else {
+        _fadeControllers.add(null); // 前三个默认不使用 fade（可修改）
+      }
+    }
+  }
+
+  Duration _fadeDurationFor(int index) {
+    final base = 60;
+    final step = 5;
+    return Duration(milliseconds: base + (index * step));
+  }
+
+  Duration _delayFor(int index) {
+    final base = 14;
+    final step = 4;
+    return Duration(milliseconds: base + (index * step));
+  }
+
+  void _prepareBuilders() {
+    _builders.clear();
+    _builders.add(_buildBannerAvatarSection);
+    _builders.add(_buildVisitButton);
+    _builders.add((c) => const SizedBox(height: 5));
+    _builders.add(_buildUserInfoColumn);
+    _builders.add((c) => const SizedBox(height: 5));
+    _builders.add(_buildMetadataRow);
+    _builders.add(_buildCountsRow);
+    _builders.add(_buildExternalLinksSection);
+    _builders.add(_buildPinnedTweetSection);
+    _builders.add(_buildMetadataTiles);
+    _builders.add(_buildIdentityTile);
+    _builders.add(_buildSnapshotInfo);
+  }
+
+  Future<void> _startRenderLoop() async {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+
+      // 确保 controllers 数量与 builders 一致（万一 builders 在 init 后被改）
+      if (_fadeControllers.length != _builders.length) {
+        _ensureControllersList();
+      }
+
+      // 1) 等待路由（Hero）动画完成再显示主要内容
+      final route = ModalRoute.of(context);
+      final animation = route?.animation;
+      if (animation != null && animation.status != AnimationStatus.completed) {
+        final completer = Completer<void>();
+        late final AnimationStatusListener listener;
+        listener = (status) {
+          if (status == AnimationStatus.completed) {
+            animation.removeStatusListener(listener);
+            if (!completer.isCompleted) completer.complete();
+          }
+        };
+        animation.addStatusListener(listener);
+        // 若 animation 已是 completed，就跳过等待（防护）
+        if (animation.status != AnimationStatus.completed) {
+          await completer.future;
+        }
+      }
+
+      if (!mounted) return;
+
+      // 2) Hero 完成后立刻显示前三项（0..2）
+      //    我们保持前三项不使用淡入（可选）
+      setState(() {
+        _visibleCount = _visibleCount < 3 ? 3 : _visibleCount;
+      });
+
+      // 3) 其余项逐个异步出现，并使用各自的 fade controller 渐显
+      for (var i = 3; i < _builders.length; i++) {
+        if (!mounted) return;
+
+        // 先让 Widget 被 build（加入 ListView）
+        setState(() {
+          _visibleCount = i + 1;
+        });
+
+        // 触发对应的 fade 动画（如果存在 controller）
+        final controller = _fadeControllers.length > i
+            ? _fadeControllers[i]
+            : null;
+        controller?.forward();
+
+        // 等待下一项出现（动态节奏）
+        await Future.delayed(_delayFor(i));
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    for (final c in _fadeControllers) {
+      try {
+        c?.dispose();
+      } catch (_) {}
+    }
+    super.dispose();
+  }
 
   void _launchURL(BuildContext context, String? urlString) async {
     if (urlString == null || urlString.isEmpty) return;
@@ -58,46 +180,6 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
           context,
         ).showSnackBar(SnackBar(content: Text('无法打开链接: $e')));
       }
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _prepareBuilders();
-    _startRenderLoop();
-  }
-
-  void _prepareBuilders() {
-    _builders.add(_buildBannerAvatarSection);
-    _builders.add(_buildJsonButton);
-    _builders.add((c) => const SizedBox(height: 5));
-    _builders.add(_buildUserInfoColumn);
-    _builders.add((c) => const SizedBox(height: 5));
-    _builders.add(_buildMetadataRow);
-    _builders.add(_buildCountsRow);
-    _builders.add(_buildExternalLinksSection);
-    _builders.add(_buildPinnedTweetSection);
-    _builders.add(_buildMetadataTiles);
-    _builders.add(_buildIdentityTile);
-    _builders.add(_buildSnapshotInfo);
-  }
-
-  Future<void> _startRenderLoop() async {
-    if (!mounted) return;
-    setState(() {
-      _visibleCount = 3;
-    });
-
-    await Future.delayed(const Duration(milliseconds: 300));
-    if (!mounted) return;
-
-    for (var i = 3; i < _builders.length; i++) {
-      await Future.delayed(const Duration(milliseconds: 16));
-      if (!mounted) return;
-      setState(() {
-        _visibleCount = i + 1;
-      });
     }
   }
 
@@ -128,14 +210,43 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
       body: ListView(
         padding: EdgeInsets.zero,
         children: List.generate(
+          // 仍只 build <= _visibleCount 的元素，保留异步加载意义
           _visibleCount.clamp(0, _builders.length),
-          (index) => _builders[index](context),
+          (index) {
+            // 前 3 项我们不做 fade（确保 Hero 与首批立即显示）
+            if (index < 3) {
+              return _builders[index](context);
+            }
+
+            // 对于后续项，如果有 controller 则使用 FadeTransition（可叠加位移）
+            final controller = _fadeControllers.length > index
+                ? _fadeControllers[index]
+                : null;
+            if (controller != null) {
+              return FadeTransition(
+                opacity: controller.drive(CurveTween(curve: Curves.easeOut)),
+                child: SlideTransition(
+                  position: controller.drive(
+                    Tween<Offset>(
+                      begin: const Offset(0, 0.03),
+                      end: Offset.zero,
+                    ).chain(CurveTween(curve: Curves.easeOut)),
+                  ),
+                  child: _builders[index](context),
+                ),
+              );
+            } else {
+              // 保底：如果没有 controller，直接显示
+              return _builders[index](context);
+            }
+          },
         ),
       ),
     );
   }
 
-  // [修改]：彻底移除了 FutureBuilder，使用同步构造 + errorBuilder 回退机制
+  // ------------------------- 以下是你原有的 builder 方法（未改动逻辑） -------------------------
+
   Widget _buildBannerAvatarSection(BuildContext context) {
     final String highQualityNetworkUrl = (widget.user.avatarUrl ?? '')
         .replaceFirst(RegExp(r'_(normal|bigger|400x400)'), '_400x400');
@@ -147,19 +258,18 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
 
     final String? avatarLocalPath =
         (mediaDir != null &&
-                widget.user.avatarLocalPath != null &&
-                widget.user.avatarLocalPath!.isNotEmpty)
-            ? p.join(mediaDir, widget.user.avatarLocalPath!)
-            : null;
+            widget.user.avatarLocalPath != null &&
+            widget.user.avatarLocalPath!.isNotEmpty)
+        ? p.join(mediaDir, widget.user.avatarLocalPath!)
+        : null;
 
     final String? bannerLocalPath =
         (mediaDir != null &&
-                widget.user.bannerLocalPath != null &&
-                widget.user.bannerLocalPath!.isNotEmpty)
-            ? p.join(mediaDir, widget.user.bannerLocalPath!)
-            : null;
+            widget.user.bannerLocalPath != null &&
+            widget.user.bannerLocalPath!.isNotEmpty)
+        ? p.join(mediaDir, widget.user.bannerLocalPath!)
+        : null;
 
-    // 定义统一的网络图片加载逻辑，复用代码
     Widget buildNetworkAvatar() {
       if (highQualityNetworkUrl.isEmpty) return const SizedBox.shrink();
       return CachedNetworkImage(
@@ -179,21 +289,20 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
       clipBehavior: Clip.none,
       alignment: Alignment.topCenter,
       children: [
-        // 1. Banner
+        // Banner
         AspectRatio(
           aspectRatio: bannerAspectRatio,
           child: bannerLocalPath != null
               ? Image.file(
                   File(bannerLocalPath),
                   fit: BoxFit.cover,
-                  // [关键] 如果本地加载失败，立即回退到网络图片
                   errorBuilder: (context, error, stackTrace) =>
                       buildNetworkBanner(),
                 )
               : buildNetworkBanner(),
         ),
 
-        // 2. Avatar with Hero
+        // Avatar with Hero
         Positioned(
           left: 16,
           bottom: -avatarOverhang,
@@ -204,20 +313,19 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
               backgroundColor: Colors.white,
               child: CircleAvatar(
                 radius: 42,
-                backgroundColor:
-                    Theme.of(context).colorScheme.surfaceContainerHighest,
+                backgroundColor: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHighest,
                 child: ClipOval(
                   child: SizedBox(
                     width: 84,
                     height: 84,
-                    // [关键] 直接尝试加载本地文件，无需等待 exists() 检查
                     child: avatarLocalPath != null
                         ? Image.file(
                             File(avatarLocalPath),
                             fit: BoxFit.cover,
                             width: 84,
                             height: 84,
-                            // 本地加载失败 -> 显示网络图片
                             errorBuilder: (context, error, stackTrace) =>
                                 buildNetworkAvatar(),
                           )
@@ -244,7 +352,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
     return Container(color: Colors.grey.shade300);
   }
 
-  Widget _buildJsonButton(BuildContext context) {
+  Widget _buildVisitButton(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.only(right: 16.0, top: 8.0),
@@ -258,7 +366,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
           ),
           icon: const Icon(Icons.description_outlined, size: 20),
-          label: const Text('JSON'),
+          label: const Text('View on Twitter'),
         ),
       ),
     );
@@ -345,15 +453,15 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
     final l10n = AppLocalizations.of(context)!;
     if (widget.user.pinnedTweetIdStr == null) return const SizedBox.shrink();
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start, // 左对齐
-      mainAxisSize: MainAxisSize.min, // Column 高度自适应内容
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 1, 0), // 可保留左边距 16
+          padding: const EdgeInsets.fromLTRB(16, 4, 1, 0),
           child: Text(
             l10n.user_content,
             style: const TextStyle(fontSize: 12, color: Colors.grey),
-            textAlign: TextAlign.left, // 明确文字左对齐
+            textAlign: TextAlign.left,
           ),
         ),
         _buildInfoTile(
@@ -493,28 +601,89 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
   }
 
   Widget _buildScreenName(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       children: [
         Flexible(
-          child: Text.rich(
+          child: SelectableText.rich(
             TextSpan(
               children: [
+                // @username
                 TextSpan(
-                  text: '@',
+                  text: '@${widget.user.screenName ?? ''} ',
                   style: Theme.of(
                     context,
                   ).textTheme.bodyLarge?.copyWith(color: Colors.grey.shade600),
                 ),
-                WidgetSpan(
-                  alignment: PlaceholderAlignment.baseline,
-                  baseline: TextBaseline.alphabetic,
-                  child: SelectableText(
-                    widget.user.screenName ?? '',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Colors.grey.shade600,
+
+                // Follows you 标签，如果为 true 才显示
+                if (widget.user.isFollower)
+                  WidgetSpan(
+                    alignment: PlaceholderAlignment.middle,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 2,
+                      ),
+                      margin: const EdgeInsets.only(left: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        l10n.follows_you,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade800,
+                        ),
+                      ),
                     ),
                   ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAutomation(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Row(
+      children: [
+        Flexible(
+          child: SelectableText.rich(
+            TextSpan(
+              children: [
+                // @username
+                TextSpan(
+                  text: '@${widget.user.screenName ?? ''} ',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyLarge?.copyWith(color: Colors.grey.shade600),
                 ),
+
+                // Follows you 标签，如果为 true 才显示
+                if (widget.user.isFollower)
+                  WidgetSpan(
+                    alignment: PlaceholderAlignment.middle,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 2,
+                      ),
+                      margin: const EdgeInsets.only(left: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        l10n.follows_you,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade800,
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -672,7 +841,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('JSON'),
+        title: const Text('View on Twitter'),
         content: Container(
           width: double.maxFinite,
           constraints: BoxConstraints(

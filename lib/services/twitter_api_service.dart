@@ -221,8 +221,7 @@ class TwitterApiService {
       "verified_phone_label_enabled": true,
       "highlights_tweets_tab_ui_enabled": true,
       "creator_subscriptions_tweet_preview_api_enabled": true,
-      "responsive_web_graphql_skip_user_profile_image_extensions_enabled":
-          true,
+      "responsive_web_graphql_skip_user_profile_image_extensions_enabled": true,
       "responsive_web_graphql_timeline_navigation_enabled": true,
       "rweb_tipjar_consumption_enabled": true,
       "subscriptions_feature_can_gift_premium": true,
@@ -295,8 +294,9 @@ class TwitterApiService {
         // --- START OF MODIFICATION ---
 
         // 1. Get the instructions list
-        final List<dynamic>? instructions = data['data']?['user']?['result']
-            ?['timeline']?['timeline']?['instructions'] as List<dynamic>?;
+        final List<dynamic>? instructions =
+            data['data']?['user']?['result']?['timeline']?['timeline']?['instructions']
+                as List<dynamic>?;
 
         if (instructions == null) {
           logger.w(
@@ -306,13 +306,13 @@ class TwitterApiService {
         }
 
         // 2. Find the correct instruction object ('TimelineAddEntries')
-        final Map<String, dynamic>? addEntriesInstruction =
-            instructions.firstWhere(
-          (inst) =>
-              inst is Map<String, dynamic> &&
-              inst['type'] == 'TimelineAddEntries',
-          orElse: () => null,
-        );
+        final Map<String, dynamic>? addEntriesInstruction = instructions
+            .firstWhere(
+              (inst) =>
+                  inst is Map<String, dynamic> &&
+                  inst['type'] == 'TimelineAddEntries',
+              orElse: () => null,
+            );
 
         if (addEntriesInstruction == null) {
           logger.w(
@@ -351,8 +351,9 @@ class TwitterApiService {
                   e['content']?['itemContent']?['user_results'] != null,
             )
             .map<Map<String, dynamic>>(
-              (e) => e['content']['itemContent']['user_results']
-                  as Map<String, dynamic>,
+              (e) =>
+                  e['content']['itemContent']['user_results']
+                      as Map<String, dynamic>,
             )
             .toList();
 

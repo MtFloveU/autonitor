@@ -60,7 +60,9 @@ class AnalysisService extends StateNotifier<AnalysisState> {
       imageService = _ref.read(imageHistoryServiceProvider);
       accountRepository = _ref.read(accountRepositoryProvider);
     } catch (e, s) {
-      logCallback('!!! CRITICAL ERROR: Failed to load settings before analysis.');
+      logCallback(
+        '!!! CRITICAL ERROR: Failed to load settings before analysis.',
+      );
       state = state.copyWith(isRunning: false);
       logger.e("Failed to load settings/imageService", error: e, stackTrace: s);
       return;
@@ -72,7 +74,7 @@ class AnalysisService extends StateNotifier<AnalysisState> {
       apiServiceV1: _apiServiceV1,
       ownerAccount: accountToProcess,
       logCallback: logCallback,
-      settings: settings, 
+      settings: settings,
       imageService: imageService,
       accountRepository: accountRepository,
     );
