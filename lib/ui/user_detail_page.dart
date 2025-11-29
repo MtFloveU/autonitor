@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:autonitor/providers/media_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import 'package:cached_network_image/cached_network_image.dart';
 import '../l10n/app_localizations.dart';
@@ -12,6 +13,50 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/twitter_user.dart';
 import 'user_history_page.dart';
+
+String formatJoinedTime(String? raw) {
+  if (raw == null || raw.isEmpty) return '';
+  try {
+    // 清理多余空格
+    final cleaned = raw.replaceAll(RegExp(r'\s+'), ' ').trim();
+    final parts = cleaned.split(' ');
+    if (parts.length < 6) return raw;
+
+    // 月份映射
+    final monthMap = {
+      'Jan': 1,
+      'Feb': 2,
+      'Mar': 3,
+      'Apr': 4,
+      'May': 5,
+      'Jun': 6,
+      'Jul': 7,
+      'Aug': 8,
+      'Sep': 9,
+      'Oct': 10,
+      'Nov': 11,
+      'Dec': 12,
+    };
+    final month = monthMap[parts[1]];
+    if (month == null) return raw;
+
+    final day = int.parse(parts[2]);
+    final timeParts = parts[3].split(':');
+    final hour = int.parse(timeParts[0]);
+    final minute = int.parse(timeParts[1]);
+    final second = int.parse(timeParts[2]);
+    final year = int.parse(parts[5]);
+
+    final utc = DateTime.utc(year, month, day, hour, minute, second);
+    final local = utc.toLocal();
+
+    final formatter = DateFormat.yMd().add_Hms();
+    return formatter.format(local);
+  } catch (e) {
+    debugPrint('formatJoinTime error: $e');
+    return raw;
+  }
+}
 
 class UserDetailPage extends ConsumerStatefulWidget {
   final TwitterUser user;
@@ -81,13 +126,12 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
   void _prepareBuilders() {
     _builders.clear();
     _builders.add(_buildBannerAvatarSection);
-    _builders.add(_buildVisitButton);
+    _builders.add(_buildButtons);
     _builders.add((c) => const SizedBox(height: 5));
     _builders.add(_buildUserInfoColumn);
     _builders.add((c) => const SizedBox(height: 5));
     _builders.add(_buildMetadataRow);
     _builders.add(_buildCountsRow);
-    _builders.add(_buildExternalLinksSection);
     _builders.add(_buildPinnedTweetSection);
     _builders.add(_buildMetadataTiles);
     _builders.add(_buildIdentityTile);
@@ -189,22 +233,35 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
       appBar: AppBar(
         title: Text(widget.user.name ?? 'Unknown'),
         actions: [
-          if (!widget.isFromHistory)
-            IconButton(
-              icon: const Icon(Icons.history),
-              tooltip: AppLocalizations.of(context)!.history,
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => UserHistoryPage(
-                      user: widget.user,
-                      ownerId: widget.ownerId,
-                    ),
+          PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert),
+            offset: const Offset(0, 40),
+            onSelected: (value) {
+              if (value == 'json') {
+                final l10n = AppLocalizations.of(context)!;
+                _showJsonDialog(context, l10n);
+              }
+            },
+            itemBuilder: (context) {
+              final l10n = AppLocalizations.of(context)!;
+              return [
+                PopupMenuItem(
+                  value: 'json',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.description_outlined,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                      const SizedBox(width: 8),
+                      Text('JSON'),
+                    ],
                   ),
-                );
-              },
-            ),
+                ),
+              ];
+            },
+          ),
         ],
       ),
       body: ListView(
@@ -352,21 +409,69 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
     return Container(color: Colors.grey.shade300);
   }
 
-  Widget _buildVisitButton(BuildContext context) {
+  Widget _buildButtons(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+
+    // 右边访问按钮高度，和 padding 一致
+    final buttonHeight = 32.0; // 对应 padding: vertical: 6 + 图标 20 ≈ 32
+
     return Padding(
       padding: const EdgeInsets.only(right: 16.0, top: 8.0),
       child: Align(
         alignment: Alignment.centerRight,
-        child: FilledButton.tonalIcon(
-          onPressed: () => _showJsonDialog(context, l10n),
-          style: FilledButton.styleFrom(
-            backgroundColor: Colors.pink.shade100,
-            foregroundColor: Colors.pink.shade800,
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-          ),
-          icon: const Icon(Icons.description_outlined, size: 20),
-          label: const Text('View on Twitter'),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 左边历史按钮，正方形，高度和右边一致
+            SizedBox(
+              width: buttonHeight,
+              height: buttonHeight,
+              child: FilledButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => UserHistoryPage(
+                        user: widget.user,
+                        ownerId: widget.ownerId,
+                      ),
+                    ),
+                  );
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.pink.shade100,
+                  foregroundColor: Colors.pink.shade800,
+                  padding: EdgeInsets.zero, // 图标紧贴按钮中心
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Icon(Icons.history_outlined, size: 20),
+              ),
+            ),
+
+            const SizedBox(width: 8),
+
+            // 右边访问按钮
+            FilledButton.tonalIcon(
+              onPressed: () => _openExternalProfile(context, l10n),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.pink.shade100,
+                foregroundColor: Colors.pink.shade800,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              icon: const Icon(Icons.open_in_new, size: 20),
+              label: Text(l10n.visit),
+            ),
+          ],
         ),
       ),
     );
@@ -381,6 +486,8 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
         children: [
           _buildNameHeader(context),
           _buildScreenName(context),
+          _buildAutomation(context),
+          _buildParodyLabel(context),
           const SizedBox(height: 4),
           SelectableText(
             widget.user.bio ?? '',
@@ -410,7 +517,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
           _buildIconText(
             context,
             Icons.calendar_month_outlined,
-            '${l10n.joined} ${widget.user.joinedTime}',
+            l10n.joined(formatJoinedTime(widget.user.joinedTime)),
           ),
         ],
       ),
@@ -427,23 +534,6 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
         children: [
           _buildCountText(context, widget.user.followingCount, l10n.following),
           _buildCountText(context, widget.user.followersCount, l10n.followers),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildExternalLinksSection(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.view_on_twitter,
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
-          ),
-          _buildExternalLinks(context),
         ],
       ),
     );
@@ -538,8 +628,9 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
   Widget _buildSnapshotInfo(BuildContext context) {
     if (!widget.isFromHistory ||
         widget.snapshotId == null ||
-        widget.snapshotTimestamp == null)
+        widget.snapshotTimestamp == null) {
       return const SizedBox.shrink();
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
       child: Text(
@@ -602,93 +693,124 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
 
   Widget _buildScreenName(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Row(
-      children: [
-        Flexible(
-          child: SelectableText.rich(
-            TextSpan(
-              children: [
-                // @username
-                TextSpan(
-                  text: '@${widget.user.screenName ?? ''} ',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyLarge?.copyWith(color: Colors.grey.shade600),
-                ),
+    final children = <Widget>[
+      Text(
+        '@',
+        style: Theme.of(
+          context,
+        ).textTheme.bodyLarge?.copyWith(color: Colors.grey.shade600),
+      ),
+      SelectableText(
+        widget.user.screenName ?? '',
+        style: Theme.of(
+          context,
+        ).textTheme.bodyLarge?.copyWith(color: Colors.grey.shade600),
+      ),
+    ];
 
-                // Follows you 标签，如果为 true 才显示
-                if (widget.user.isFollower)
-                  WidgetSpan(
-                    alignment: PlaceholderAlignment.middle,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 2,
-                      ),
-                      margin: const EdgeInsets.only(left: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        l10n.follows_you,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey.shade800,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
+    if (widget.user.isFollower) {
+      children.add(
+        Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              border: Border.all(color: Colors.transparent, width: 1.5),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              l10n.follows_you,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ),
-      ],
+      );
+    }
+
+    if (widget.user.isFollowing) {
+      children.add(
+        Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+            decoration: BoxDecoration(
+              color: Theme.of(context).canvasColor,
+              border: Border.all(
+                color: Theme.of(context).dividerColor,
+                width: 1.5,
+              ),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              l10n.following,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.normal),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: children,
     );
   }
 
   Widget _buildAutomation(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Row(
-      children: [
-        Flexible(
-          child: SelectableText.rich(
-            TextSpan(
-              children: [
-                // @username
-                TextSpan(
-                  text: '@${widget.user.screenName ?? ''} ',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyLarge?.copyWith(color: Colors.grey.shade600),
-                ),
-
-                // Follows you 标签，如果为 true 才显示
-                if (widget.user.isFollower)
-                  WidgetSpan(
-                    alignment: PlaceholderAlignment.middle,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 2,
-                      ),
-                      margin: const EdgeInsets.only(left: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        l10n.follows_you,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey.shade800,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
+    if (widget.user.automatedScreenName == null ||
+        widget.user.automatedScreenName!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final children = <Widget>[
+      SvgPicture.asset(
+        'assets/icon/bot.svg',
+        width: 18,
+        height: 18,
+        colorFilter: ColorFilter.mode(
+          Theme.of(context).hintColor,
+          BlendMode.srcIn,
         ),
-      ],
+      ),
+      const SizedBox(width: 4),
+      Flexible(
+        child: Text(
+          l10n.automated_by(widget.user.automatedScreenName!),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(),
+        ),
+      ),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Row(children: children),
+    );
+  }
+
+  Widget _buildParodyLabel(BuildContext context) {
+    final label = widget.user.parodyCommentaryFanLabel;
+    if (label == null || label == "None") {
+      return const SizedBox.shrink();
+    }
+    final children = <Widget>[
+      SvgPicture.asset('assets/icon/mask.svg', width: 18, height: 18),
+      const SizedBox(width: 4),
+      Flexible(
+        child: Text(
+          "$label account",
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Row(children: children),
     );
   }
 
@@ -749,70 +871,6 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
     );
   }
 
-  Widget _buildExternalLinks(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildExternalLinkItem(
-            context,
-            'ByScreenName',
-            'https://x.com/${widget.user.screenName}',
-          ),
-          const SizedBox(width: 12),
-          _buildExternalLinkItem(
-            context,
-            'ByRestId',
-            'https://x.com/intent/user?user_id=${widget.user.restId}',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildExternalLinkItem(
-    BuildContext context,
-    String title,
-    String url,
-  ) {
-    return Expanded(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.link,
-            color: Theme.of(context).colorScheme.primary,
-            size: 16,
-          ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontSize: 12)),
-                const SizedBox(height: 4),
-                InkWell(
-                  onTap: () => _launchURL(context, url),
-                  child: Text(
-                    url,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.blue,
-                      decoration: TextDecoration.underline,
-                      decorationColor: Colors.blue,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildInfoTile(
     BuildContext context,
     IconData icon,
@@ -841,7 +899,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('View on Twitter'),
+        title: const Text('JSON'),
         content: Container(
           width: double.maxFinite,
           constraints: BoxConstraints(
@@ -894,5 +952,17 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
         ],
       ),
     );
+  }
+
+  void _openExternalProfile(BuildContext context, AppLocalizations l10n) async {
+    final screenName = widget.user.screenName;
+    if (screenName == null || screenName.isEmpty) return;
+    final appUrl = Uri.parse('twitter://user?screen_name=$screenName');
+    final webUrl = Uri.parse('https://x.com/$screenName');
+    if (await canLaunchUrl(appUrl)) {
+      await launchUrl(appUrl);
+    } else {
+      await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+    }
   }
 }

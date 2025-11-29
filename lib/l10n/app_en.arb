@@ -1,269 +1,270 @@
 {
-"@@locale": "en",
-"language": "Language",
-"@language": {
-"description": "Label for the language setting"
-},
-"app_title": "Autonitor",
-"@app_title": {},
-"settings": "Settings",
-"@settings": {},
-"home": "Home",
-"@home": {},
-"data": "Data",
-"@data": {},
-"accounts": "Accounts",
-"@accounts": {},
-"switchAccount": "Switch Account",
-"@switchAccount": {},
-"followers": "Followers",
-"@followers": {},
-"following": "Following",
-"@following": {},
-"new_account": "Add/Update an account",
-"@new_account": {},
-"view_cookie": "View Cookie",
-"@view_cookie": {},
-"close": "Close",
-"@close": {},
-"view_on_twitter": "View on Twitter",
-"@view_on_twitter": {},
-"metadata": "Statistics",
-"@metadata": {},
-"user_content": "User Content",
-"@user_content": {},
-"pinned_tweet_id": "Pinned Tweet ID",
-"@pinned_tweet_id": {},
-"tweets": "Tweets",
-"@tweets": {},
-"media_count": "Media Count",
-"@media_count": {},
-"likes": "Likes",
-"@likes": {},
-"listed_count": "Listed Count",
-"@listed_count": {},
-"identity": "Identity-related",
-"@identity": {},
-"back": "Back",
-"@back": {},
-"history": "History",
-"@history": {},
-"suspended": "Suspended",
-"@suspended": {},
-"deactivated": "Deactivated",
-"@deactivated": {},
-"normal_unfollowed": "Normal Unfollowed",
-"@normal_unfollowed": {},
-"be_followed_back": "Be Followed Back",
-"@be_followed_back": {},
-"mutual_unfollowed": "Mutual Unfollowed",
-"@mutual_unfollowed": {},
-"oneway_unfollowed": "One-way Unfollowed",
-"@oneway_unfollowed": {},
-"new_followers_following": "New Followers & Following",
-"@new_followers_following": {},
-"empty_list_message": "The list is empty",
-"@empty_list_message": {},
-"switch_account": "Switch Account",
-"@switch_account": {},
-"run": "Run",
-"@run": {},
-"choose_login_method": "Choose Login Method",
-"@choose_login_method": {},
-"browser_login": "Login via Browser",
-"@browser_login": {},
-"manual_cookie": "Manual Cookie Input",
-"@manual_cookie": {},
-"joined": "Joined",
-"@joined": {},
-"im_logged_in": "I've logged in",
-"@im_logged_in": {},
-"cancel": "Cancel",
-"@cancel": {},
-"ok": "OK",
-"@ok": {},
-"account_added_successfully": "Account added successfully!",
-"@account_added_successfully": {},
-"saving_account": "Saving account...",
-"@saving_account": {},
-"cookie": "Cookie",
-"@cookie": {},
-"no_cookie_found": "No cookie found",
-"@no_cookie_found": {},
-"no_auth_token_found": "No auth_token found",
-"@no_auth_token_found": {},
-"found_auth_token_last_check": "Auth Token found in last check",
-"@found_auth_token_last_check": {},
-"general": "General",
-"@general": {},
-"login_first": "Log in Needed",
-"@login_first": {},
-"login_first_description": "Add at least one account to continue",
-"@login_first_description": {},
-"log_in": "Log In",
-"@log_in": {},
-"delete": "Delete",
-"@delete": {},
-"confirm_delete_account": "Are you sure you want to delete account {accountId}? This action cannot be undone. Deleting an account will permanently remove all its associated data (history, follower/following lists etc.). If you only want to update the cookie, simply add the account again.",
-"@confirm_delete_account": {
-"placeholders": {
-"accountId": {
-"description": "The ID of the account to be deleted"
-}
-}
-},
-"copy": "Copy",
-"@copy": {},
-"copied_to_clipboard": "Copied to clipboard!",
-"@copied_to_clipboard": {},
-"no_json_data_available": "No JSON data available",
-"@no_json_data_available": {},
-"temporarily_restricted": "Temporarily Restricted",
-"@temporarily_restricted": {},
-"failed_to_load_user_list": "Failed to load user list",
-"@failed_to_load_user_list": {},
-"no_users_in_this_category": "Empty list",
-"@no_users_in_this_category": {},
-"analysis_log": "Analysis Log",
-"@analysis_log": {},
-"no_active_account_error": "Cannot run analysis: No account is active.",
-"@no_active_account_error": {},
-"analysis_failed_error": "Analysis failed",
-"@analysis_failed_error": {},
-"no_analysis_data": "No analysis data found",
-"@no_analysis_data": {},
-"run_analysis_now": "Run Analysis Now",
-"@run_analysis_now": {},
-"last_updated_at": "Last updated: {date}",
-"@last_updated_at": {
-"placeholders": {
-"date": {
-"type": "String"
-}
-}
-},
-"user_history_page_title": "Profile History",
-"@user_history_page_title": {},
-"storage_settings": "Storage Settings",
-"@storage_settings": {},
-"save_avatar_history": "Save Avatar",
-"@save_avatar_history": {},
-"save_banner_history": "Save Banner",
-"@save_banner_history": {},
-"avatar_quality": "Quality",
-"@avatar_quality": {},
-"quality_low": "Low",
-"@quality_low": {
-"description": "e.g. 48x48, _normal suffix"
-},
-"quality_high": "High",
-"@quality_high": {
-"description": "e.g. 400x400, _400x400 suffix"
-},
-"history_strategy": "History Avatar/Banner Storage Strategy",
-"@history_strategy": {},
-"strategy_save_all": "Never Delete",
-"@strategy_save_all": {},
-"strategy_save_latest": "Keep Latest Only",
-"@strategy_save_latest": {},
-"strategy_save_last_n": "Delete avatar/banner older than last",
-"@strategy_save_last_n": {},
-"strategy_save_last_n_suffix": "changes",
-"@strategy_save_last_n_suffix": {},
-"theme_mode": "Theme",
-"@theme_mode": {},
-"theme_mode_system": "Follow System",
-"@theme_mode_system": {},
-"theme_mode_light": "Light",
-"@theme_mode_light": {},
-"theme_mode_dark": "Dark",
-"@theme_mode_dark": {},
-"log": "Log",
-"@log": {},
-"view_log": "View Logs",
-"@view_log": {},
-"clear": "Clear",
-"@clear": {},
-"api_request_settings": "API Request Settings",
-"@api_request_settings": {},
-"xclient_generator_title": "XClientTransactionID Generator",
+  "@@locale": "en",
+  "language": "Language",
+  "@language": {
+    "description": "Label for the language setting"
+  },
+  "app_title": "Autonitor",
+  "@app_title": {},
+  "settings": "Settings",
+  "@settings": {},
+  "home": "Home",
+  "@home": {},
+  "data": "Data",
+  "@data": {},
+  "accounts": "Accounts",
+  "@accounts": {},
+  "switchAccount": "Switch Account",
+  "@switchAccount": {},
+  "followers": "Followers",
+  "@followers": {},
+  "following": "Following",
+  "@following": {},
+  "new_account": "Add/Update an account",
+  "@new_account": {},
+  "view_cookie": "View Cookie",
+  "@view_cookie": {},
+  "close": "Close",
+  "@close": {},
+  "view_on_twitter": "View on Twitter",
+  "@view_on_twitter": {},
+  "metadata": "Statistics",
+  "@metadata": {},
+  "user_content": "User Content",
+  "@user_content": {},
+  "pinned_tweet_id": "Pinned Tweet ID",
+  "@pinned_tweet_id": {},
+  "tweets": "Tweets",
+  "@tweets": {},
+  "media_count": "Media Count",
+  "@media_count": {},
+  "likes": "Likes",
+  "@likes": {},
+  "listed_count": "Listed Count",
+  "@listed_count": {},
+  "identity": "Identity-related",
+  "@identity": {},
+  "back": "Back",
+  "@back": {},
+  "history": "History",
+  "@history": {},
+  "suspended": "Suspended",
+  "@suspended": {},
+  "deactivated": "Deactivated",
+  "@deactivated": {},
+  "normal_unfollowed": "Normal Unfollowed",
+  "@normal_unfollowed": {},
+  "be_followed_back": "Be Followed Back",
+  "@be_followed_back": {},
+  "mutual_unfollowed": "Mutual Unfollowed",
+  "@mutual_unfollowed": {},
+  "oneway_unfollowed": "One-way Unfollowed",
+  "@oneway_unfollowed": {},
+  "new_followers_following": "New Followers & Following",
+  "@new_followers_following": {},
+  "empty_list_message": "The list is empty",
+  "@empty_list_message": {},
+  "switch_account": "Switch Account",
+  "@switch_account": {},
+  "run": "Run",
+  "@run": {},
+  "choose_login_method": "Choose Login Method",
+  "@choose_login_method": {},
+  "browser_login": "Login via Browser",
+  "@browser_login": {},
+  "manual_cookie": "Manual Cookie Input",
+  "@manual_cookie": {},
+  "joined": "Joined {date}",
+  "@joined": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "im_logged_in": "I've logged in",
+  "@im_logged_in": {},
+  "cancel": "Cancel",
+  "@cancel": {},
+  "ok": "OK",
+  "@ok": {},
+  "account_added_successfully": "Account added successfully!",
+  "@account_added_successfully": {},
+  "saving_account": "Saving account...",
+  "@saving_account": {},
+  "cookie": "Cookie",
+  "@cookie": {},
+  "no_cookie_found": "No cookie found",
+  "@no_cookie_found": {},
+  "no_auth_token_found": "No auth_token found",
+  "@no_auth_token_found": {},
+  "found_auth_token_last_check": "Auth Token found in last check",
+  "@found_auth_token_last_check": {},
+  "general": "General",
+  "@general": {},
+  "login_first": "Log in Needed",
+  "@login_first": {},
+  "login_first_description": "Add at least one account to continue",
+  "@login_first_description": {},
+  "log_in": "Log In",
+  "@log_in": {},
+  "delete": "Delete",
+  "@delete": {},
+  "confirm_delete_account": "Are you sure you want to delete account {accountId}? This action cannot be undone. Deleting an account will permanently remove all its associated data (history, follower/following lists etc.). If you only want to update the cookie, simply add the account again.",
+  "@confirm_delete_account": {
+    "placeholders": {
+      "accountId": {
+        "description": "The ID of the account to be deleted"
+      }
+    }
+  },
+  "copy": "Copy",
+  "@copy": {},
+  "copied_to_clipboard": "Copied to clipboard!",
+  "@copied_to_clipboard": {},
+  "no_json_data_available": "No JSON data available",
+  "@no_json_data_available": {},
+  "temporarily_restricted": "Temporarily Restricted",
+  "@temporarily_restricted": {},
+  "failed_to_load_user_list": "Failed to load user list",
+  "@failed_to_load_user_list": {},
+  "no_users_in_this_category": "Empty list",
+  "@no_users_in_this_category": {},
+  "analysis_log": "Analysis Log",
+  "@analysis_log": {},
+  "no_active_account_error": "Cannot run analysis: No account is active.",
+  "@no_active_account_error": {},
+  "analysis_failed_error": "Analysis failed",
+  "@analysis_failed_error": {},
+  "no_analysis_data": "No analysis data found",
+  "@no_analysis_data": {},
+  "run_analysis_now": "Run Analysis Now",
+  "@run_analysis_now": {},
+  "last_updated_at": "Last updated: {date}",
+  "@last_updated_at": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "user_history_page_title": "Profile History",
+  "@user_history_page_title": {},
+  "storage_settings": "Storage Settings",
+  "@storage_settings": {},
+  "save_avatar_history": "Save Avatar",
+  "@save_avatar_history": {},
+  "save_banner_history": "Save Banner",
+  "@save_banner_history": {},
+  "avatar_quality": "Quality",
+  "@avatar_quality": {},
+  "quality_low": "Low",
+  "@quality_low": {
+    "description": "e.g. 48x48, _normal suffix"
+  },
+  "quality_high": "High",
+  "@quality_high": {
+    "description": "e.g. 400x400, _400x400 suffix"
+  },
+  "history_strategy": "History Avatar/Banner Storage Strategy",
+  "@history_strategy": {},
+  "strategy_save_all": "Never Delete",
+  "@strategy_save_all": {},
+  "strategy_save_latest": "Keep Latest Only",
+  "@strategy_save_latest": {},
+  "strategy_save_last_n": "Delete avatar/banner older than last",
+  "@strategy_save_last_n": {},
+  "strategy_save_last_n_suffix": "changes",
+  "@strategy_save_last_n_suffix": {},
+  "theme_mode": "Theme",
+  "@theme_mode": {},
+  "theme_mode_system": "Follow System",
+  "@theme_mode_system": {},
+  "theme_mode_light": "Light",
+  "@theme_mode_light": {},
+  "theme_mode_dark": "Dark",
+  "@theme_mode_dark": {},
+  "log": "Log",
+  "@log": {},
+  "view_log": "View Logs",
+  "@view_log": {},
+  "clear": "Clear",
+  "@clear": {},
+  "api_request_settings": "API Request Settings",
+  "@api_request_settings": {},
+  "xclient_generator_title": "XClientTransactionID Generator",
   "@xclient_generator_title": {
     "description": "Dialog title for XClientTransactionID Generator"
   },
-
   "num_ids_to_generate": "Number of IDs to be generated:",
   "@num_ids_to_generate": {
     "description": "Label for the count input field in ID generator dialog"
   },
-
   "please_enter_valid_number": "Please enter a valid number (1-100)",
   "@please_enter_valid_number": {
     "description": "Snackbar message shown when invalid number entered"
   },
-
   "path_must_start_with_slash": "Path must start with /",
   "@path_must_start_with_slash": {
     "description": "Snackbar message shown when path not starting with /"
   },
-
   "fetching_resources": "Fetching resources",
   "@fetching_resources": {
     "description": "Shown when fetching resources before generating IDs"
   },
-
   "generating_ids_local": "Generating {count} IDs (local)...",
   "@generating_ids_local": {
     "description": "Message shown during local ID generation",
     "placeholders": {
-      "count": { "type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
-
   "generation_canceled": "Generation canceled.",
   "@generation_canceled": {
     "description": "Error message when generation canceled"
   },
-
   "id_generation_failed": "ID Generation Failed: {error}",
   "@id_generation_failed": {
     "description": "Error message when generation failed",
     "placeholders": {
-      "error": { "type": "String", "example": "Network error" }
+      "error": {
+        "type": "String",
+        "example": "Network error"
+      }
     }
   },
-
   "generating": "Generating...",
   "@generating": {
     "description": "Label for progress state of generation button"
   },
-
   "generate": "Generate",
   "@generate": {
     "description": "Label for generate button"
   },
-
   "load_settings_failed": "Failed to load settings: {error}",
   "@load_settings_failed": {
     "description": "Shown when failed to load settings",
     "placeholders": {
-      "error": { "type": "String", "example": "Network error" }
+      "error": {
+        "type": "String",
+        "example": "Network error"
+      }
     }
   },
   "xclient_generator_source": "Source:",
   "@xclient_generator_source": {
     "description": "Label for the API path source selection"
   },
-
   "refresh": "Refresh",
   "@refresh": {
     "description": "Button label to refresh API paths from the document"
   },
-
   "reset": "Reset",
   "@reset": {
     "description": "Button label to reset custom paths to default values"
   },
-
   "operation_name": "Operation:",
   "@operation_name": {
     "description": "Label for the GraphQL operation name dropdown"
@@ -289,5 +290,7 @@
         "description": "The automated screen name"
       }
     }
-  }
+  },
+  "visit": "Visit",
+  "@visit": {}
 }

@@ -36,7 +36,7 @@
   "choose_login_method": "选择登录方式",
   "browser_login": "浏览器登录",
   "manual_cookie": "输入Cookie",
-  "joined": "加入于",
+  "joined": "{date} 加入",
   "im_logged_in": "我已登录",
   "cancel": "取消",
   "ok": "确定",
@@ -116,5 +116,6 @@
   "graphql_path_config": "GQL QueryId 配置",
   "follows_you": "关注了你",
   "not_follow": "未关注",
-  "automated_by": "由 @{automatedScreenName} 自动发推"
+  "automated_by": "由 @{automatedScreenName} 自动发推",
+  "visit": "访问"
 }

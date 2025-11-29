@@ -117,7 +117,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get manual_cookie => 'Manual Cookie Input';
 
   @override
-  String get joined => 'Joined';
+  String joined(String date) {
+    return 'Joined $date';
+  }
 
   @override
   String get im_logged_in => 'I\'ve logged in';
@@ -329,4 +331,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String automated_by(String automatedScreenName) {
     return 'Automated by @$automatedScreenName';
   }
+
+  @override
+  String get visit => 'Visit';
 }

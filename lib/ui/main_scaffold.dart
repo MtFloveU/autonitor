@@ -27,24 +27,14 @@ class _MainScaffoldState extends State<MainScaffold> {
 
     final List<Widget> pages = <Widget>[
       HomePage(onNavigateToAccounts: () => _onItemTapped(2)),
-      CommitsPage(),
-      AccountsPage(),
-      SettingsPage(),
-    ];
-
-    final List<Widget> pagesWithVisibility = <Widget>[
-      pages[0], // HomePage
-      Visibility(
-        visible: _selectedIndex == 1,
-        maintainState: false,
-        child: pages[1], // CommitsPage
-      ),
-      pages[2], // AccountsPage
-      pages[3], // SettingsPage
+      const CommitsPage(),
+      const AccountsPage(),
+      const SettingsPage(),
     ];
 
     return Scaffold(
-      body: IndexedStack(index: _selectedIndex, children: pagesWithVisibility),
+      body: pages[_selectedIndex],
+
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onItemTapped,

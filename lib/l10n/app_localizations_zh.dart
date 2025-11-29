@@ -117,7 +117,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get manual_cookie => '输入Cookie';
 
   @override
-  String get joined => '加入于';
+  String joined(String date) {
+    return '$date 加入';
+  }
 
   @override
   String get im_logged_in => '我已登录';
@@ -328,6 +330,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String automated_by(String automatedScreenName) {
     return '由 @$automatedScreenName 自动发推';
   }
+
+  @override
+  String get visit => '访问';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -443,7 +448,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get manual_cookie => '鍵入Cookie';
 
   @override
-  String get joined => '加入於';
+  String joined(String date) {
+    return '$date 加入';
+  }
 
   @override
   String get im_logged_in => '我已登入';
@@ -645,7 +652,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get graphql_path_config => 'GQL QueryId 配置';
 
   @override
-  String get follows_you => '跟隨你';
+  String get follows_you => '跟隨了你';
 
   @override
   String get not_follow => '未跟隨';
@@ -654,4 +661,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String automated_by(String automatedScreenName) {
     return '由 @$automatedScreenName 自動發推';
   }
+
+  @override
+  String get visit => '訪問';
 }

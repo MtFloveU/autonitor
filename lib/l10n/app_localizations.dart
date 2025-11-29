@@ -318,8 +318,8 @@ abstract class AppLocalizations {
   /// No description provided for @joined.
   ///
   /// In en, this message translates to:
-  /// **'Joined'**
-  String get joined;
+  /// **'Joined {date}'**
+  String joined(String date);
 
   /// No description provided for @im_logged_in.
   ///
@@ -716,6 +716,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Automated by @{automatedScreenName}'**
   String automated_by(String automatedScreenName);
+
+  /// No description provided for @visit.
+  ///
+  /// In en, this message translates to:
+  /// **'Visit'**
+  String get visit;
 }
 
 class _AppLocalizationsDelegate

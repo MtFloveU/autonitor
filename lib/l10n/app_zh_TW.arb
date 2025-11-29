@@ -36,7 +36,7 @@
   "choose_login_method": "選擇登入方式",
   "browser_login": "透過瀏覽器登入",
   "manual_cookie": "鍵入Cookie",
-  "joined": "加入於",
+  "joined": "{date} 加入",
   "im_logged_in": "我已登入",
   "cancel": "取消",
   "ok": "確定",
@@ -114,7 +114,8 @@
   "reset": "重設",
   "operation_name": "操作：",
   "graphql_path_config": "GQL QueryId 配置",
-  "follows_you": "跟隨你",
+  "follows_you": "跟隨了你",
   "not_follow": "未跟隨",
-  "automated_by": "由 @{automatedScreenName} 自動發推"
+  "automated_by": "由 @{automatedScreenName} 自動發推",
+  "visit": "訪問"
 }
