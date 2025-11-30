@@ -7,6 +7,7 @@ class TwitterUser {
   final String? bannerUrl;
   final String? bannerLocalPath;
   final String? bio;
+  final List<Map<String, String>> bioLinks;
   final String? location;
   final String? pinnedTweetIdStr;
   final String? parodyCommentaryFanLabel;
@@ -40,6 +41,7 @@ class TwitterUser {
     this.bannerUrl,
     this.bannerLocalPath,
     this.bio,
+    this.bioLinks = const [],
     this.location,
     this.pinnedTweetIdStr,
     this.parodyCommentaryFanLabel,
@@ -98,6 +100,11 @@ class TwitterUser {
       canMediaTag: json['can_media_tag'] as bool? ?? false,
       status: json['status'] as String? ?? 'normal',
       keptIdsStatus: json['kept_ids_status'] as String? ?? 'normal',
+      bioLinks:
+          (json['bio_links'] as List?)
+              ?.map((e) => Map<String, String>.from(e))
+              .toList() ??
+          const [],
     );
   }
 
@@ -107,8 +114,25 @@ class TwitterUser {
     String? getString(String key) => raw[key] as String?;
 
     String? description = getString('description');
+
+    // [修复] 1. 统一获取 URL 列表，确保不为空
     final List descUrlList =
         (raw['entities']?['description']?['urls'] as List?) ?? [];
+
+    // [修复] 2. 提前定义 extractedLinks，确保作用域覆盖整个方法
+    final List<Map<String, String>> extractedLinks = [];
+
+    // [修复] 3. 提取链接逻辑 (先提取，保证数据纯净)
+    if (descUrlList.isNotEmpty) {
+      for (final entry in descUrlList) {
+        final String? expanded = entry['expanded_url']?.toString();
+        if (expanded != null && expanded.isNotEmpty) {
+          extractedLinks.add({'expanded_url': expanded});
+        }
+      }
+    }
+
+    // [逻辑保持] 4. 简介文本替换逻辑 (用于显示 expanded_url)
     if (description != null && descUrlList.isNotEmpty) {
       for (final urlEntry in descUrlList) {
         final String? shortUrl = urlEntry['url'] as String?;
@@ -131,9 +155,8 @@ class TwitterUser {
       bannerUrl: getString('profile_banner_url'),
       bannerLocalPath: null,
       bio: description,
+      bioLinks: extractedLinks, // [修复] 5. 确保传入 extractedLinks
       location: getString('location'),
-      pinnedTweetIdStr: (raw['pinned_tweet_ids_str'] as List?)?.firstOrNull
-          ?.toString(),
       joinedTime: getString('created_at'),
       link:
           (raw['entities']?['url']?['urls'] as List?)
@@ -170,8 +193,25 @@ class TwitterUser {
     String? description = legacy['description'] as String?;
     description ??=
         (result['profile_bio']?['description'] as String?) ?? description;
+
+    // [修复] 1. 统一获取列表
     final List descUrlList =
         (legacy['entities']?['description']?['urls'] as List?) ?? [];
+
+    // [修复] 2. 提前定义 extractedLinks (解决之前的 Scope 问题)
+    final List<Map<String, String>> extractedLinks = [];
+
+    // [修复] 3. 提取链接逻辑
+    if (descUrlList.isNotEmpty) {
+      for (final entry in descUrlList) {
+        final String? expanded = entry['expanded_url']?.toString();
+        if (expanded != null && expanded.isNotEmpty) {
+          extractedLinks.add({'expanded_url': expanded});
+        }
+      }
+    }
+
+    // [逻辑保持] 4. 简介文本替换逻辑
     if (description != null && descUrlList.isNotEmpty) {
       for (final urlEntry in descUrlList) {
         final String? shortUrl = urlEntry['url'] as String?;
@@ -208,6 +248,7 @@ class TwitterUser {
       bannerUrl: legacy['profile_banner_url'] as String?,
       bannerLocalPath: null,
       bio: description,
+      bioLinks: extractedLinks, // [修复] 5. 确保此处传入了 extractedLinks (原来漏掉了)
       location: result['location']?['location'] as String?,
       pinnedTweetIdStr:
           (legacy['pinned_tweet_ids_str'] as List?)?.isNotEmpty == true
@@ -251,6 +292,7 @@ class TwitterUser {
       'banner_url': bannerUrl,
       'banner_local_path': bannerLocalPath,
       'bio': bio,
+      'bio_links': bioLinks,
       'location': location,
       'pinned_tweet_id_str': pinnedTweetIdStr,
       'parody_commentary_fan_label': parodyCommentaryFanLabel,
@@ -309,6 +351,7 @@ class TwitterUser {
     bool? isFollower,
     bool? canDm,
     bool? canMediaTag,
+    List<Map<String, String>>? bioLinks,
   }) {
     return TwitterUser(
       restId: restId ?? this.restId,
@@ -319,6 +362,7 @@ class TwitterUser {
       bannerUrl: bannerUrl ?? this.bannerUrl,
       bannerLocalPath: bannerLocalPath ?? this.bannerLocalPath,
       bio: bio ?? this.bio,
+      bioLinks: bioLinks ?? this.bioLinks,
       location: location ?? this.location,
       pinnedTweetIdStr: pinnedTweetIdStr ?? this.pinnedTweetIdStr,
       parodyCommentaryFanLabel:

@@ -519,58 +519,99 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
   Widget _buildBioRichText(BuildContext context, String bio) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
+    final entities = <_TextEntity>[];
 
-    final regex = RegExp(r'(@[\w]+)|(https?:\/\/[^\s]+)');
+    // 1. Find explicit links from bioLinks
+    // Since 'bio' has already been processed to contain expanded_urls,
+    // we search for them directly.
+    if (widget.user.bioLinks.isNotEmpty) {
+      // Sort links by length descending to prevent partial matches of shorter links inside longer ones
+      final uniqueLinks =
+          widget.user.bioLinks
+              .map((e) => e['expanded_url'])
+              .where((e) => e != null)
+              .cast<String>()
+              .toSet() // Deduplicate
+              .toList()
+            ..sort((a, b) => b.length.compareTo(a.length));
+
+      for (final link in uniqueLinks) {
+        int startIndex = 0;
+        while (true) {
+          final index = bio.indexOf(link, startIndex);
+          if (index == -1) break;
+          entities.add(
+            _TextEntity(index, index + link.length, link, 'link', link),
+          );
+          startIndex = index + link.length;
+        }
+      }
+    }
+
+    // 2. Find mentions using Regex (Still safe for handles)
+    final mentionRegex = RegExp(r'@[a-zA-Z0-9_]+');
+    for (final match in mentionRegex.allMatches(bio)) {
+      entities.add(
+        _TextEntity(
+          match.start,
+          match.end,
+          match.group(0)!,
+          'mention',
+          match.group(0)!.substring(1), // remove @
+        ),
+      );
+    }
+
+    // 3. Sort entities by start position
+    entities.sort((a, b) => a.start.compareTo(b.start));
+
+    // 4. Build spans avoiding overlaps
     final List<TextSpan> spans = [];
-    int lastIndex = 0;
+    int currentPos = 0;
 
-    for (final match in regex.allMatches(bio)) {
-      if (match.start > lastIndex) {
+    for (final entity in entities) {
+      if (entity.start < currentPos) continue; // Skip overlapping entities
+
+      // Add plain text before entity
+      if (entity.start > currentPos) {
         spans.add(
           TextSpan(
-            text: bio.substring(lastIndex, match.start),
+            text: bio.substring(currentPos, entity.start),
             style: theme.textTheme.bodyLarge,
           ),
         );
       }
 
-      final matchedText = match[0]!;
-      if (matchedText.startsWith('@')) {
-        final username = matchedText.substring(1);
+      // Add styled entity
+      if (entity.type == 'link') {
         spans.add(
           TextSpan(
-            text: matchedText,
+            text: entity.text,
             style: theme.textTheme.bodyLarge?.copyWith(color: Colors.blue),
             recognizer: TapGestureRecognizer()
-              ..onTap = () {
-                _openExternalProfile(context, l10n, screenName: username);
-              },
+              ..onTap = () => _launchURL(context, entity.data),
           ),
         );
-      } else {
+      } else if (entity.type == 'mention') {
         spans.add(
           TextSpan(
-            text: matchedText,
+            text: entity.text,
             style: theme.textTheme.bodyLarge?.copyWith(color: Colors.blue),
             recognizer: TapGestureRecognizer()
-              ..onTap = () async {
-                final uri = Uri.tryParse(matchedText);
-                if (uri != null) {
-                  try {
-                    await launchUrl(uri, mode: LaunchMode.platformDefault);
-                  } catch (_) {}
-                }
-              },
+              ..onTap = () =>
+                  _openExternalProfile(context, l10n, screenName: entity.data),
           ),
         );
       }
-      lastIndex = match.end;
+
+      currentPos = entity.end;
     }
 
-    if (lastIndex < bio.length) {
+    // Add remaining text
+    if (currentPos < bio.length) {
       spans.add(
         TextSpan(
-          text: bio.substring(lastIndex),
+          text: bio.substring(currentPos),
           style: theme.textTheme.bodyLarge,
         ),
       );
@@ -1214,4 +1255,14 @@ class _StatItemData {
   final String value;
 
   _StatItemData(this.icon, this.label, this.value);
+}
+
+class _TextEntity {
+  final int start;
+  final int end;
+  final String text;
+  final String type; // 'link' or 'mention'
+  final String? data; // expandedUrl for link, username for mention
+
+  _TextEntity(this.start, this.end, this.text, this.type, this.data);
 }
