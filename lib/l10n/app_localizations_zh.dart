@@ -332,6 +332,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get automated => '自动发推';
+
+  @override
   String get visit => '访问';
 }
 
@@ -661,6 +664,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String automated_by(String automatedScreenName) {
     return '由 @$automatedScreenName 自動發推';
   }
+
+  @override
+  String get automated => '自動發推';
 
   @override
   String get visit => '訪問';

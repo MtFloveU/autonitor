@@ -102,10 +102,25 @@ class TwitterUser {
   }
 
   factory TwitterUser.fromV1(Map<String, dynamic> raw, String runId) {
-    // Helper parsers
     bool getBool(String key) => raw[key] == true || raw[key] == 'true';
     int getInt(String key) => int.tryParse(raw[key]?.toString() ?? '0') ?? 0;
     String? getString(String key) => raw[key] as String?;
+
+    String? description = getString('description');
+    final List descUrlList =
+        (raw['entities']?['description']?['urls'] as List?) ?? [];
+    if (description != null && descUrlList.isNotEmpty) {
+      for (final urlEntry in descUrlList) {
+        final String? shortUrl = urlEntry['url'] as String?;
+        final String? expanded =
+            urlEntry['expanded_url'] as String? ??
+            urlEntry['display_url'] as String?;
+        if (shortUrl != null && expanded != null && shortUrl != expanded) {
+          description = description?.replaceAll(shortUrl, expanded);
+        }
+      }
+      description = description?.trim();
+    }
 
     return TwitterUser(
       restId: getString('id_str') ?? '',
@@ -115,7 +130,7 @@ class TwitterUser {
       avatarLocalPath: null,
       bannerUrl: getString('profile_banner_url'),
       bannerLocalPath: null,
-      bio: getString('description'),
+      bio: description,
       location: getString('location'),
       pinnedTweetIdStr: (raw['pinned_tweet_ids_str'] as List?)?.firstOrNull
           ?.toString(),
@@ -142,15 +157,47 @@ class TwitterUser {
 
   factory TwitterUser.fromGraphQL(Map<String, dynamic> raw, String runId) {
     final result = raw['result'] ?? raw;
-    final legacy = result['legacy'] ?? {};
-    final core = result['core'] ?? {};
-
-    final relationship = result['relationship_perspectives'] ?? {};
-    final dm = result['dm_permissions'] ?? {};
-    final media = result['media_permissions'] ?? {};
+    final legacy = (result['legacy'] ?? {}) as Map<String, dynamic>;
+    final core = (result['core'] ?? {}) as Map<String, dynamic>;
+    final relationship =
+        (result['relationship_perspectives'] ?? {}) as Map<String, dynamic>;
+    final dm = (result['dm_permissions'] ?? {}) as Map<String, dynamic>;
+    final media = (result['media_permissions'] ?? {}) as Map<String, dynamic>;
 
     int getInt(String key) => int.tryParse(legacy[key]?.toString() ?? '0') ?? 0;
     String? getString(String key) => legacy[key] as String?;
+
+    String? description = legacy['description'] as String?;
+    description ??=
+        (result['profile_bio']?['description'] as String?) ?? description;
+    final List descUrlList =
+        (legacy['entities']?['description']?['urls'] as List?) ?? [];
+    if (description != null && descUrlList.isNotEmpty) {
+      for (final urlEntry in descUrlList) {
+        final String? shortUrl = urlEntry['url'] as String?;
+        final String? expanded =
+            urlEntry['expanded_url'] as String? ??
+            urlEntry['display_url'] as String?;
+        if (shortUrl != null && expanded != null && shortUrl != expanded) {
+          description = description?.replaceAll(shortUrl, expanded);
+        }
+      }
+      description = description?.trim();
+    }
+
+    String? link;
+    final List urlEntities =
+        (legacy['entities']?['url']?['urls'] as List?) ?? [];
+    if (urlEntities.isNotEmpty) {
+      final first = urlEntities.firstWhere(
+        (e) => e is Map && e['expanded_url'] != null,
+        orElse: () => null,
+      );
+      if (first != null && first is Map) {
+        link = first['expanded_url'] as String?;
+      }
+    }
+    link = link ?? getString('url');
 
     return TwitterUser(
       restId: result['rest_id']?.toString() ?? '',
@@ -160,23 +207,20 @@ class TwitterUser {
       avatarLocalPath: null,
       bannerUrl: legacy['profile_banner_url'] as String?,
       bannerLocalPath: null,
-      bio: legacy['description'],
+      bio: description,
       location: result['location']?['location'] as String?,
-      pinnedTweetIdStr: (legacy['pinned_tweet_ids_str'] as List?)?.firstOrNull
-          ?.toString(),
+      pinnedTweetIdStr:
+          (legacy['pinned_tweet_ids_str'] as List?)?.isNotEmpty == true
+          ? (legacy['pinned_tweet_ids_str'] as List).first?.toString()
+          : null,
       joinedTime: core['created_at'] as String?,
-      link:
-          (legacy['entities']?['url']?['urls'] as List?)
-                  ?.cast<Map>()
-                  .firstWhere(
-                    (e) => e['indices']?.join(',') == '0,23',
-                    orElse: () => {},
-                  )['expanded_url']
-              as String? ??
-          getString('url'),
-
-      isVerified: result['is_blue_verified'] == true,
-      isProtected: result['privacy']?['protected'] == true,
+      link: link,
+      isVerified:
+          (result['is_blue_verified'] == true) ||
+          (result['verification']?['verified'] == true),
+      isProtected:
+          (result['privacy']?['protected'] == true) ||
+          (legacy['protected'] == true),
       followersCount: getInt('followers_count'),
       followingCount: getInt('friends_count'),
       statusesCount: getInt('statuses_count'),

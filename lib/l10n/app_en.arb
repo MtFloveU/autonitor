@@ -291,6 +291,8 @@
       }
     }
   },
+  "automated": "Automated",
+  "@automated": {},
   "visit": "Visit",
   "@visit": {}
 }

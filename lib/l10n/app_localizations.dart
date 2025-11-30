@@ -717,6 +717,12 @@ abstract class AppLocalizations {
   /// **'Automated by @{automatedScreenName}'**
   String automated_by(String automatedScreenName);
 
+  /// No description provided for @automated.
+  ///
+  /// In en, this message translates to:
+  /// **'Automated'**
+  String get automated;
+
   /// No description provided for @visit.
   ///
   /// In en, this message translates to:

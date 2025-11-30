@@ -109,7 +109,7 @@
   "generating": "正在產生...",
   "generate": "產生",
   "load_settings_failed": "載入設定失敗：{error}",
-    "xclient_generator_source": "來源：",
+  "xclient_generator_source": "來源：",
   "refresh": "刷新",
   "reset": "重設",
   "operation_name": "操作：",
@@ -117,5 +117,6 @@
   "follows_you": "跟隨了你",
   "not_follow": "未跟隨",
   "automated_by": "由 @{automatedScreenName} 自動發推",
+  "automated": "自動發推",
   "visit": "訪問"
 }

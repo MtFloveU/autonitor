@@ -302,280 +302,265 @@ class _HomePageState extends ConsumerState<HomePage> {
         ? p.join(mediaDir, relativePath)
         : null;
 
-    return RefreshIndicator(
-      onRefresh: () async => ref.invalidate(cacheProvider),
-      child: ListView(
-        padding: const EdgeInsets.all(16.0),
-        children: <Widget>[
-          Card(
-            clipBehavior: Clip.antiAlias,
-            margin: EdgeInsets.zero,
-            child: InkWell(
-              onTap: () {
-                if (activeAccount == null) return;
-                final user = TwitterUser(
-                  avatarUrl: activeAccount.avatarUrl ?? '',
-                  avatarLocalPath: activeAccount.avatarLocalPath ?? '',
-                  bannerLocalPath: activeAccount.bannerLocalPath ?? '',
-                  name: activeAccount.name ?? 'Unknown',
-                  screenName: activeAccount.screenName ?? activeAccount.id,
-                  restId: activeAccount.id,
-                  joinedTime: activeAccount.joinTime ?? '',
-                  bio: activeAccount.bio,
-                  location: activeAccount.location,
-                  bannerUrl: activeAccount.bannerUrl,
-                  link: activeAccount.link,
-                  followersCount: activeAccount.followersCount,
-                  followingCount: activeAccount.followingCount,
-                  statusesCount: activeAccount.statusesCount,
-                  mediaCount: activeAccount.mediaCount,
-                  favouritesCount: activeAccount.favouritesCount,
-                  listedCount: activeAccount.listedCount,
-                  isProtected: activeAccount.isProtected,
-                  isVerified: activeAccount.isVerified,
-                );
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        UserDetailPage(user: user, ownerId: activeAccount.id),
+    return ListView(
+      padding: const EdgeInsets.all(16.0),
+      children: <Widget>[
+        Card(
+          clipBehavior: Clip.antiAlias,
+          margin: EdgeInsets.zero,
+          child: InkWell(
+            onTap: () {
+              if (activeAccount == null) return;
+              final user = TwitterUser(
+                avatarUrl: activeAccount.avatarUrl ?? '',
+                avatarLocalPath: activeAccount.avatarLocalPath ?? '',
+                bannerLocalPath: activeAccount.bannerLocalPath ?? '',
+                name: activeAccount.name ?? 'Unknown',
+                screenName: activeAccount.screenName ?? activeAccount.id,
+                restId: activeAccount.id,
+                joinedTime: activeAccount.joinTime ?? '',
+                bio: activeAccount.bio,
+                location: activeAccount.location,
+                bannerUrl: activeAccount.bannerUrl,
+                link: activeAccount.link,
+                followersCount: activeAccount.followersCount,
+                followingCount: activeAccount.followingCount,
+                statusesCount: activeAccount.statusesCount,
+                mediaCount: activeAccount.mediaCount,
+                favouritesCount: activeAccount.favouritesCount,
+                listedCount: activeAccount.listedCount,
+                isProtected: activeAccount.isProtected,
+                isVerified: activeAccount.isVerified,
+              );
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      UserDetailPage(user: user, ownerId: activeAccount.id),
+                ),
+              );
+            },
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                  child: Row(
+                    children: [
+                      Hero(
+                        tag: 'avatar_${activeAccount?.id}',
+                        child: CircleAvatar(
+                          radius: 24,
+                          backgroundColor: Colors.transparent,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              if (activeAccount?.avatarUrl != null &&
+                                  activeAccount!.avatarUrl!.isNotEmpty &&
+                                  activeAccount.avatarLocalPath == null)
+                                ClipOval(
+                                  child: CachedNetworkImage(
+                                    imageUrl: activeAccount.avatarUrl!,
+                                    fit: BoxFit.cover,
+                                    width: 48,
+                                    height: 48,
+                                    fadeInDuration: const Duration(
+                                      milliseconds: 300,
+                                    ),
+                                    fadeOutDuration: const Duration(
+                                      milliseconds: 100,
+                                    ),
+                                    errorWidget: (context, url, error) =>
+                                        const SizedBox(),
+                                  ),
+                                ),
+                              if (activeAccount?.avatarUrl != null &&
+                                  activeAccount!.avatarUrl!.isNotEmpty &&
+                                  activeAccount.avatarLocalPath != null)
+                                ClipOval(
+                                  child: Image.file(
+                                    File(absolutePath!),
+                                    fit: BoxFit.cover,
+                                    width: 48,
+                                    height: 48,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              activeAccount?.name ?? 'Unknown Name',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              "@${activeAccount?.screenName ?? activeAccount?.id ?? '...'}",
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(color: Colors.grey.shade600),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              "ID: ${activeAccount?.id ?? '...'}",
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: Colors.grey.shade600),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.swap_horiz),
+                        tooltip: l10n.switch_account,
+                        onPressed: () => _showAccountSwitcher(context),
+                      ),
+                    ],
                   ),
-                );
-              },
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                    child: Row(
-                      children: [
-                        Hero(
-                          tag: 'avatar_${activeAccount?.id}',
-                          child: CircleAvatar(
-                            radius: 24,
-                            backgroundColor: Colors.transparent,
-                            child: Stack(
-                              alignment: Alignment.center,
+                ),
+                const Divider(height: 1, indent: 0, endIndent: 0),
+                IntrinsicHeight(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () =>
+                              _navigateToUserList(context, 'following'),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12.0),
+                            child: Column(
                               children: [
-                                if (activeAccount?.avatarUrl != null &&
-                                    activeAccount!.avatarUrl!.isNotEmpty &&
-                                    activeAccount.avatarLocalPath == null)
-                                  ClipOval(
-                                    child: CachedNetworkImage(
-                                      imageUrl: activeAccount.avatarUrl!,
-                                      fit: BoxFit.cover,
-                                      width: 48,
-                                      height: 48,
-                                      fadeInDuration: const Duration(
-                                        milliseconds: 300,
-                                      ),
-                                      fadeOutDuration: const Duration(
-                                        milliseconds: 100,
-                                      ),
-                                      errorWidget: (context, url, error) =>
-                                          const SizedBox(),
-                                    ),
-                                  ),
-                                if (activeAccount?.avatarUrl != null &&
-                                    activeAccount!.avatarUrl!.isNotEmpty &&
-                                    activeAccount.avatarLocalPath != null)
-                                  ClipOval(
-                                    child: Image.file(
-                                      File(absolutePath!),
-                                      fit: BoxFit.cover,
-                                      width: 48,
-                                      height: 48,
-                                    ),
-                                  ),
+                                Text(
+                                  cache.followingCount.toString(),
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  l10n.following,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
                               ],
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                activeAccount?.name ?? 'Unknown Name',
-                                style: Theme.of(context).textTheme.titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.bold),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              Text(
-                                "@${activeAccount?.screenName ?? activeAccount?.id ?? '...'}",
-                                style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(color: Colors.grey.shade600),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              Text(
-                                "ID: ${activeAccount?.id ?? '...'}",
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(color: Colors.grey.shade600),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.swap_horiz),
-                          tooltip: l10n.switch_account,
-                          onPressed: () => _showAccountSwitcher(context),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Divider(height: 1, indent: 0, endIndent: 0),
-                  IntrinsicHeight(
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: InkWell(
-                            onTap: () =>
-                                _navigateToUserList(context, 'following'),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 12.0,
-                              ),
-                              child: Column(
-                                children: [
-                                  Text(
-                                    cache.followingCount.toString(),
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(fontWeight: FontWeight.bold),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    l10n.following,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                  ),
-                                ],
-                              ),
+                      ),
+                      const VerticalDivider(width: 1),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () =>
+                              _navigateToUserList(context, 'followers'),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12.0),
+                            child: Column(
+                              children: [
+                                Text(
+                                  cache.followersCount.toString(),
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  l10n.followers,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                        const VerticalDivider(width: 1),
-                        Expanded(
-                          child: InkWell(
-                            onTap: () =>
-                                _navigateToUserList(context, 'followers'),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 12.0,
-                              ),
-                              child: Column(
-                                children: [
-                                  Text(
-                                    cache.followersCount.toString(),
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(fontWeight: FontWeight.bold),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    l10n.followers,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Card(
-            margin: EdgeInsets.zero,
-            child: Column(
-              children: [
-                _buildDetailListItem(
-                  context,
-                  'normal_unfollowed',
-                  Icons.person_remove_outlined,
-                  l10n.normal_unfollowed,
-                  cache.unfollowedCount,
-                ),
-                _buildDetailListItem(
-                  context,
-                  'mutual_unfollowed',
-                  Icons.group_off_rounded,
-                  l10n.mutual_unfollowed,
-                  cache.mutualUnfollowedCount,
-                ),
-                _buildDetailListItem(
-                  context,
-                  'oneway_unfollowed',
-                  Icons.group_off_outlined,
-                  l10n.oneway_unfollowed,
-                  cache.singleUnfollowedCount,
-                ),
-                _buildDetailListItem(
-                  context,
-                  'temporarily_restricted',
-                  Icons.warning_amber_rounded,
-                  l10n.temporarily_restricted,
-                  cache.temporarilyRestrictedCount,
-                ),
-                _buildDetailListItem(
-                  context,
-                  'suspended',
-                  Icons.lock_outline,
-                  l10n.suspended,
-                  cache.frozenCount,
-                ),
-                _buildDetailListItem(
-                  context,
-                  'deactivated',
-                  Icons.no_accounts_outlined,
-                  l10n.deactivated,
-                  cache.deactivatedCount,
-                ),
-                _buildDetailListItem(
-                  context,
-                  'be_followed_back',
-                  Icons.group_add_outlined,
-                  l10n.be_followed_back,
-                  cache.refollowedCount,
-                ),
-                _buildDetailListItem(
-                  context,
-                  'new_followers_following',
-                  Icons.person_add_alt_1_outlined,
-                  l10n.new_followers_following,
-                  cache.newFollowersCount,
-                  showDivider: false,
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 80),
-          Padding(
-            padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),
-            child: Center(
-              child: Text(
-                _getFormattedLastUpdate(context, l10n, cache.lastUpdateTime),
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
+        ),
+        const SizedBox(height: 24),
+        Card(
+          margin: EdgeInsets.zero,
+          child: Column(
+            children: [
+              _buildDetailListItem(
+                context,
+                'normal_unfollowed',
+                Icons.person_remove_outlined,
+                l10n.normal_unfollowed,
+                cache.unfollowedCount,
               ),
+              _buildDetailListItem(
+                context,
+                'mutual_unfollowed',
+                Icons.group_off_rounded,
+                l10n.mutual_unfollowed,
+                cache.mutualUnfollowedCount,
+              ),
+              _buildDetailListItem(
+                context,
+                'oneway_unfollowed',
+                Icons.group_off_outlined,
+                l10n.oneway_unfollowed,
+                cache.singleUnfollowedCount,
+              ),
+              _buildDetailListItem(
+                context,
+                'temporarily_restricted',
+                Icons.warning_amber_rounded,
+                l10n.temporarily_restricted,
+                cache.temporarilyRestrictedCount,
+              ),
+              _buildDetailListItem(
+                context,
+                'suspended',
+                Icons.lock_outline,
+                l10n.suspended,
+                cache.frozenCount,
+              ),
+              _buildDetailListItem(
+                context,
+                'deactivated',
+                Icons.no_accounts_outlined,
+                l10n.deactivated,
+                cache.deactivatedCount,
+              ),
+              _buildDetailListItem(
+                context,
+                'be_followed_back',
+                Icons.group_add_outlined,
+                l10n.be_followed_back,
+                cache.refollowedCount,
+              ),
+              _buildDetailListItem(
+                context,
+                'new_followers_following',
+                Icons.person_add_alt_1_outlined,
+                l10n.new_followers_following,
+                cache.newFollowersCount,
+                showDivider: false,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 80),
+        Padding(
+          padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),
+          child: Center(
+            child: Text(
+              _getFormattedLastUpdate(context, l10n, cache.lastUpdateTime),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

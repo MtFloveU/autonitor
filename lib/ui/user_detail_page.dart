@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
 import 'package:autonitor/providers/media_provider.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
@@ -65,6 +66,7 @@ class UserDetailPage extends ConsumerStatefulWidget {
   final String? snapshotJson;
   final int? snapshotId;
   final DateTime? snapshotTimestamp;
+  final String? heroTag;
 
   const UserDetailPage({
     super.key,
@@ -74,6 +76,7 @@ class UserDetailPage extends ConsumerStatefulWidget {
     this.snapshotJson,
     this.snapshotId,
     this.snapshotTimestamp,
+    this.heroTag,
   });
 
   @override
@@ -129,11 +132,16 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
     _builders.add(_buildButtons);
     _builders.add((c) => const SizedBox(height: 5));
     _builders.add(_buildUserInfoColumn);
-    _builders.add((c) => const SizedBox(height: 5));
+    _builders.add((c) => const SizedBox(height: 12));
+
+    // 1. 基础信息 (位置、链接、加入时间) - 之前代码里有 _buildMetadataRow
     _builders.add(_buildMetadataRow);
-    _builders.add(_buildCountsRow);
+
+    // 4. 灵活统计表格 (放在最下方)
+    _builders.add((c) => const SizedBox(height: 8));
+    _builders.add(_buildFlexibleStatGrid);
+
     _builders.add(_buildPinnedTweetSection);
-    _builders.add(_buildMetadataTiles);
     _builders.add(_buildIdentityTile);
     _builders.add(_buildSnapshotInfo);
   }
@@ -243,7 +251,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
               }
             },
             itemBuilder: (context) {
-              final l10n = AppLocalizations.of(context)!;
+              //final l10n = AppLocalizations.of(context)!;
               return [
                 PopupMenuItem(
                   value: 'json',
@@ -364,7 +372,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
           left: 16,
           bottom: -avatarOverhang,
           child: Hero(
-            tag: 'avatar_${widget.user.restId}',
+            tag: widget.heroTag ?? 'avatar_${widget.user.restId}',
             child: CircleAvatar(
               radius: 45,
               backgroundColor: Colors.white,
@@ -411,9 +419,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
 
   Widget _buildButtons(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-
-    // 右边访问按钮高度，和 padding 一致
-    final buttonHeight = 32.0; // 对应 padding: vertical: 6 + 图标 20 ≈ 32
+    final buttonHeight = 32.0;
 
     return Padding(
       padding: const EdgeInsets.only(right: 16.0, top: 8.0),
@@ -422,54 +428,53 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 左边历史按钮，正方形，高度和右边一致
-            SizedBox(
-              width: buttonHeight,
-              height: buttonHeight,
-              child: FilledButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => UserHistoryPage(
-                        user: widget.user,
-                        ownerId: widget.ownerId,
+            if (!widget.isFromHistory)
+              SizedBox(
+                width: buttonHeight,
+                height: buttonHeight,
+                child: FilledButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => UserHistoryPage(
+                          user: widget.user,
+                          ownerId: widget.ownerId,
+                        ),
                       ),
+                    );
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.pink.shade100,
+                    foregroundColor: Colors.pink.shade800,
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                  );
-                },
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Icon(Icons.history_outlined, size: 20),
+                ),
+              ),
+            const SizedBox(width: 8),
+            SizedBox(
+              height: buttonHeight,
+              child: FilledButton.tonalIcon(
+                onPressed: () => _openExternalProfile(context, l10n),
                 style: FilledButton.styleFrom(
                   backgroundColor: Colors.pink.shade100,
                   foregroundColor: Colors.pink.shade800,
-                  padding: EdgeInsets.zero, // 图标紧贴按钮中心
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  minimumSize: Size.zero,
+                  minimumSize: Size(0, buttonHeight),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: const Icon(Icons.history_outlined, size: 20),
+                icon: const Icon(Icons.open_in_new, size: 20),
+                label: Text(l10n.visit),
               ),
-            ),
-
-            const SizedBox(width: 8),
-
-            // 右边访问按钮
-            FilledButton.tonalIcon(
-              onPressed: () => _openExternalProfile(context, l10n),
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.pink.shade100,
-                foregroundColor: Colors.pink.shade800,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              icon: const Icon(Icons.open_in_new, size: 20),
-              label: Text(l10n.visit),
             ),
           ],
         ),
@@ -488,53 +493,153 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
           _buildScreenName(context),
           _buildAutomation(context),
           _buildParodyLabel(context),
-          const SizedBox(height: 4),
-          SelectableText(
-            widget.user.bio ?? '',
-            style: Theme.of(context).textTheme.bodyLarge,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (widget.user.bio != null && widget.user.bio!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                _buildBioRichText(context, widget.user.bio!),
+              ],
+            ],
           ),
         ],
       ),
     );
   }
 
+  Widget _buildBioRichText(BuildContext context, String bio) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
+    // 匹配 @username 或 http/https 链接
+    final regex = RegExp(r'(@[\w]+)|(https?:\/\/[^\s]+)');
+    final List<TextSpan> spans = [];
+    int lastIndex = 0;
+
+    for (final match in regex.allMatches(bio)) {
+      if (match.start > lastIndex) {
+        spans.add(
+          TextSpan(
+            text: bio.substring(lastIndex, match.start),
+            style: theme.textTheme.bodyLarge,
+          ),
+        );
+      }
+
+      final matchedText = match[0]!;
+      if (matchedText.startsWith('@')) {
+        final username = matchedText.substring(1);
+        spans.add(
+          TextSpan(
+            text: matchedText,
+            style: theme.textTheme.bodyLarge?.copyWith(color: Colors.blue),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () {
+                _openExternalProfile(context, l10n, screenName: username);
+              },
+          ),
+        );
+      } else {
+        // http/https 链接
+        spans.add(
+          TextSpan(
+            text: matchedText,
+            style: theme.textTheme.bodyLarge?.copyWith(color: Colors.blue),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () async {
+                final uri = Uri.tryParse(matchedText);
+                if (uri != null) {
+                  try {
+                    await launchUrl(uri, mode: LaunchMode.platformDefault);
+                  } catch (_) {}
+                }
+              },
+          ),
+        );
+      }
+
+      lastIndex = match.end;
+    }
+
+    if (lastIndex < bio.length) {
+      spans.add(
+        TextSpan(
+          text: bio.substring(lastIndex),
+          style: theme.textTheme.bodyLarge,
+        ),
+      );
+    }
+
+    return SelectableText.rich(TextSpan(children: spans));
+  }
+
   Widget _buildMetadataRow(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
+    final List<Widget> items = [];
+
+    // Location
+    if (widget.user.location != null && widget.user.location!.isNotEmpty) {
+      items.add(
+        _buildIconText(
+          context,
+          Icons.location_on_outlined,
+          widget.user.location!,
+        ),
+      );
+    }
+
+    // Link
+    if (widget.user.link != null && widget.user.link!.isNotEmpty) {
+      items.add(_buildLinkItem(context, widget.user.link!));
+    }
+
+    // Joined time
+    items.add(
+      _buildIconText(
+        context,
+        Icons.calendar_month_outlined,
+        l10n.joined(formatJoinedTime(widget.user.joinedTime)),
+      ),
+    );
+
+    if (widget.user.restId != widget.ownerId) {
+      items.add(
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.mail_outlined,
+              size: 16,
+              color: widget.user.canDm
+                  ? theme
+                        .colorScheme
+                        .tertiary // active DM color
+                  : theme.highlightColor, // inactive
+            ),
+            const SizedBox(width: 2),
+            Icon(
+              Icons.tag_outlined,
+              size: 16,
+              color: widget.user.canMediaTag
+                  ? theme
+                        .colorScheme
+                        .tertiary // active tag color
+                  : theme.highlightColor, // inactive
+            ),
+          ],
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Wrap(
         spacing: 16.0,
         runSpacing: 4.0,
-        children: [
-          if (widget.user.location != null && widget.user.location!.isNotEmpty)
-            _buildIconText(
-              context,
-              Icons.location_on_outlined,
-              widget.user.location!,
-            ),
-          if (widget.user.link != null && widget.user.link!.isNotEmpty)
-            _buildLinkItem(context, widget.user.link!),
-          _buildIconText(
-            context,
-            Icons.calendar_month_outlined,
-            l10n.joined(formatJoinedTime(widget.user.joinedTime)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCountsRow(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: Wrap(
-        spacing: 16.0,
-        runSpacing: 4.0,
-        children: [
-          _buildCountText(context, widget.user.followingCount, l10n.following),
-          _buildCountText(context, widget.user.followersCount, l10n.followers),
-        ],
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: items,
       ),
     );
   }
@@ -559,46 +664,6 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
           Icons.push_pin,
           l10n.pinned_tweet_id,
           widget.user.pinnedTweetIdStr.toString(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMetadataTiles(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 1, 0),
-          child: Text(
-            l10n.metadata,
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
-          ),
-        ),
-        _buildInfoTile(
-          context,
-          Icons.create,
-          l10n.tweets,
-          widget.user.statusesCount.toString(),
-        ),
-        _buildInfoTile(
-          context,
-          Icons.image,
-          l10n.media_count,
-          widget.user.mediaCount.toString(),
-        ),
-        _buildInfoTile(
-          context,
-          Icons.favorite,
-          l10n.likes,
-          widget.user.favouritesCount.toString(),
-        ),
-        _buildInfoTile(
-          context,
-          Icons.list_alt,
-          l10n.listed_count,
-          widget.user.listedCount.toString(),
         ),
       ],
     );
@@ -853,24 +918,6 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
     );
   }
 
-  Widget _buildCountText(BuildContext context, int? count, String label) {
-    return Text.rich(
-      TextSpan(
-        text: (count ?? 0).toString(),
-        style: const TextStyle(fontWeight: FontWeight.bold),
-        children: [
-          TextSpan(
-            text: ' $label',
-            style: const TextStyle(
-              fontWeight: FontWeight.normal,
-              color: Colors.grey,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildInfoTile(
     BuildContext context,
     IconData icon,
@@ -954,15 +1001,153 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
     );
   }
 
-  void _openExternalProfile(BuildContext context, AppLocalizations l10n) async {
-    final screenName = widget.user.screenName;
-    if (screenName == null || screenName.isEmpty) return;
-    final appUrl = Uri.parse('twitter://user?screen_name=$screenName');
-    final webUrl = Uri.parse('https://x.com/$screenName');
+  void _openExternalProfile(
+    BuildContext context,
+    AppLocalizations l10n, {
+    String? screenName,
+  }) async {
+    final name = screenName ?? widget.user.screenName;
+    if (name == null || name.isEmpty) return;
+    final appUrl = Uri.parse('twitter://user?screen_name=$name');
+    final webUrl = Uri.parse('https://x.com/$name');
     if (await canLaunchUrl(appUrl)) {
       await launchUrl(appUrl);
     } else {
       await launchUrl(webUrl, mode: LaunchMode.externalApplication);
     }
   }
+
+  Widget _buildFlexibleStatGrid(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
+    // 准备全部 6 个数据项
+    final items = [
+      _StatItemData(
+        Icons.group_outlined,
+        l10n.following,
+        widget.user.followingCount.toString(),
+      ),
+      _StatItemData(
+        Icons.group,
+        l10n.followers,
+        widget.user.followersCount.toString(),
+      ),
+      _StatItemData(
+        Icons.create,
+        l10n.tweets,
+        widget.user.statusesCount.toString(),
+      ),
+      _StatItemData(
+        Icons.image,
+        l10n.media_count,
+        widget.user.mediaCount.toString(),
+      ),
+      _StatItemData(
+        Icons.favorite,
+        l10n.likes,
+        widget.user.favouritesCount.toString(),
+      ),
+      _StatItemData(
+        Icons.list_alt,
+        l10n.listed_count,
+        widget.user.listedCount.toString(),
+      ),
+    ];
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.dividerColor.withOpacity(0.2)),
+      ),
+      child: Wrap(
+        // [核心] 使用 Wrap 实现灵活换行
+        spacing: 8.0, // 水平间距
+        runSpacing: 16.0, // 换行后的行间距
+        alignment: WrapAlignment.spaceEvenly, // 尽量均匀分布
+        children: items.map((item) => _buildGridItem(context, item)).toList(),
+      ),
+    );
+  }
+
+  // 3. 构建单行 (核心布局逻辑)
+
+  // 4. 构建单个单元格 (防止溢出逻辑)
+  Widget _buildGridItem(BuildContext context, _StatItemData item) {
+    // [核心] 动态计算宽度
+    // 屏幕宽 - 页面左右padding(32) - 容器内部padding(16) - Wrap间距预留
+    // 除以 3 试图让一行显示 3 个。如果屏幕太窄，Wrap 会自动换行。
+    final double desiredWidth =
+        (MediaQuery.of(context).size.width - 32 - 16 - 20) / 3;
+
+    // 设置最小宽度限制 (例如 90)，防止在极窄屏幕上挤成一团，而是直接换行
+    final double itemWidth = desiredWidth < 90 ? 90 : desiredWidth;
+
+    return SizedBox(
+      width: itemWidth,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            // [核心] 确保 Column 内部元素水平居中
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // 图标与数字并排 (Row 也要居中)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    item.icon,
+                    size: 18,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        item.value,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          height: 1.1,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              // 标签居中
+              Text(
+                item.label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Theme.of(context).colorScheme.secondary,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StatItemData {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  _StatItemData(this.icon, this.label, this.value);
 }

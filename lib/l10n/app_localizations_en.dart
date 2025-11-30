@@ -333,5 +333,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get automated => 'Automated';
+
+  @override
   String get visit => 'Visit';
 }

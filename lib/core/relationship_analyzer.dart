@@ -51,18 +51,48 @@ class RelationshipAnalyzer {
   Future<RelationshipAnalysisResult> analyze({
     required Map<String, FollowUser> oldRelationsMap,
     required NetworkFetchResult networkData,
-  }) {
+  }) async {
     final Set<String> newIds = networkData.uniqueUsers.keys.toSet();
     final Set<String> oldIds = oldRelationsMap.values
         .where((u) => u.isFollower || u.isFollowing)
         .map((u) => u.userId)
         .toSet();
+
     final Set<String> addedIds = newIds.difference(oldIds);
-    final Set<String> removedIds = oldIds.difference(newIds);
+    final Set<String> rawRemovedIds = oldIds.difference(newIds);
     final Set<String> keptIds = newIds.intersection(oldIds);
 
+    // [New Logic] 过滤掉已经是 Suspended 或 Deactivated 的用户
+    // 防止重复生成报告
+    final Set<String> realRemovedIds = {};
+    for (final id in rawRemovedIds) {
+      final oldUser = oldRelationsMap[id];
+      bool skip = false;
+
+      if (oldUser?.latestRawJson != null) {
+        try {
+          final Map<String, dynamic> jsonMap = jsonDecode(
+            oldUser!.latestRawJson!,
+          );
+          final String? status = jsonMap['status'] as String?;
+
+          if (status == 'suspended' || status == 'deactivated') {
+            skip = true;
+          }
+        } catch (e) {
+          _log("Error parsing JSON for user $id: $e");
+        }
+      }
+
+      if (!skip) {
+        realRemovedIds.add(id);
+      }
+    }
+
     _log(
-      "Calculated differences: ${addedIds.length} added, ${removedIds.length} removed, ${keptIds.length} kept.",
+      "Calculated differences: ${addedIds.length} added, "
+      "${realRemovedIds.length} removed (filtered from ${rawRemovedIds.length}), "
+      "${keptIds.length} kept.",
     );
 
     final List<FollowUsersHistoryCompanion> historyToInsert = [];
@@ -71,7 +101,7 @@ class RelationshipAnalyzer {
       oldRelationsMap,
       networkData,
       addedIds,
-      removedIds,
+      realRemovedIds,
       keptIds,
       historyToInsert,
     );

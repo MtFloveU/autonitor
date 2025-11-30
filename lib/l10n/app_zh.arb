@@ -117,5 +117,6 @@
   "follows_you": "关注了你",
   "not_follow": "未关注",
   "automated_by": "由 @{automatedScreenName} 自动发推",
+  "automated": "自动发推",
   "visit": "访问"
 }
