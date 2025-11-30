@@ -394,7 +394,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
                   tag: avatarHeroTag,
                   child: CircleAvatar(
                     radius: avatarRadius,
-                    backgroundColor: Colors.white,
+                    backgroundColor: Theme.of(context).colorScheme.surface,
                     child: CircleAvatar(
                       radius: 42,
                       backgroundColor: Theme.of(

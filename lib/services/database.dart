@@ -64,6 +64,11 @@ class FollowUsers extends Table {
       text().named('banner_local_path').nullable()();
   BoolColumn get isFollower => boolean().withDefault(const Constant(false))();
   BoolColumn get isFollowing => boolean().withDefault(const Constant(false))();
+
+  // Sort columns (Added in v2)
+  IntColumn get followerSort => integer().nullable()();
+  IntColumn get followingSort => integer().nullable()();
+
   @override
   Set<Column> get primaryKey => {ownerId, userId};
 }
@@ -118,7 +123,28 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  // [Upgraded] Upgrade to version 3 to include indices
+  int get schemaVersion => 3;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onUpgrade: (Migrator m, int from, int to) async {
+      if (from < 2) {
+        await m.addColumn(followUsers, followUsers.followerSort);
+        await m.addColumn(followUsers, followUsers.followingSort);
+      }
+      if (from < 3) {
+        // [Performance Fix] Create indices for sorting columns
+        // This makes ORDER BY + LIMIT/OFFSET extremely fast
+        await m.issueCustomQuery(
+          'CREATE INDEX IF NOT EXISTS idx_follower_sort ON follow_users (owner_id, is_follower, follower_sort)',
+        );
+        await m.issueCustomQuery(
+          'CREATE INDEX IF NOT EXISTS idx_following_sort ON follow_users (owner_id, is_following, following_sort)',
+        );
+      }
+    },
+  );
 
   Future<List<FollowUser>> getNetworkRelationships(String ownerId) async {
     return (select(

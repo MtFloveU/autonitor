@@ -82,7 +82,7 @@ final cacheProvider = FutureProvider.autoDispose<CacheData?>((ref) async {
   }
 });
 
-const int _kUserListPageSize = 10;
+const int _kUserListPageSize = 50;
 
 class UserListNotifier
     extends AutoDisposeFamilyAsyncNotifier<List<TwitterUser>, UserListParam> {

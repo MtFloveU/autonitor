@@ -46,10 +46,28 @@ class AnalysisReportRepository {
                     : tbl.isFollowing.equals(true)),
           );
 
+        // [Optimized] Apply sorting based on API order index directly in DB query
+        // This ensures pagination works correctly with the expected order
+        if (isFollower) {
+          query.orderBy([
+            (t) => OrderingTerm(
+              expression: t.followerSort,
+              mode: OrderingMode.asc,
+            ),
+          ]);
+        } else {
+          query.orderBy([
+            (t) => OrderingTerm(
+              expression: t.followingSort,
+              mode: OrderingMode.asc,
+            ),
+          ]);
+        }
+
         final followUsers = await (query..limit(limit, offset: offset)).get();
 
         logger.i(
-          "AnalysisReportRepository: Fetched ${followUsers.length} users.",
+          "AnalysisReportRepository: Fetched ${followUsers.length} users (Sorted).",
         );
 
         paramsList = followUsers
@@ -67,12 +85,17 @@ class AnalysisReportRepository {
             )
             .toList();
       } else {
+        // For other reports (new followers, unfollowed, etc.), sort by timestamp desc
         final reportQuery = _database.select(_database.changeReports)
           ..where(
             (tbl) =>
                 tbl.ownerId.equals(ownerId) &
                 tbl.changeType.equals(categoryKey),
-          );
+          )
+          ..orderBy([
+            (t) =>
+                OrderingTerm(expression: t.timestamp, mode: OrderingMode.desc),
+          ]);
 
         final reportResults = await (reportQuery..limit(limit, offset: offset))
             .get();
@@ -87,6 +110,7 @@ class AnalysisReportRepository {
 
         final userIds = reportResults.map((r) => r.userId).toList();
 
+        // Fetch user details for these reports
         final usersQuery = _database.select(_database.followUsers)
           ..where(
             (tbl) => tbl.ownerId.equals(ownerId) & tbl.userId.isIn(userIds),
@@ -97,24 +121,45 @@ class AnalysisReportRepository {
         final userMap = {for (var u in userResults) u.userId: u};
 
         for (var report in reportResults) {
-          final user = userMap[report.userId];
-          if (user != null) {
+          // If the report has a snapshot (e.g. added users), use it primarily
+          if (report.userSnapshotJson != null &&
+              report.userSnapshotJson!.isNotEmpty) {
             paramsList.add(
               ParseParams(
-                userId: user.userId,
-                dbScreenName: user.screenName,
-                dbName: user.name,
-                dbAvatarUrl: user.avatarUrl,
-                dbAvatarLocalPath: user.avatarLocalPath,
-                dbBannerLocalPath: user.bannerLocalPath,
-                dbBio: user.bio,
-                jsonString: user.latestRawJson,
+                userId: report.userId,
+                jsonString: report.userSnapshotJson,
+                // We can try to augment with local paths if available in current DB
+                dbAvatarLocalPath: userMap[report.userId]?.avatarLocalPath,
+                dbBannerLocalPath: userMap[report.userId]?.bannerLocalPath,
               ),
             );
           } else {
-            logger.w(
-              "User ${report.userId} found in ChangeReport but not in followUsers table.",
-            );
+            // Otherwise fall back to current user data
+            final user = userMap[report.userId];
+            if (user != null) {
+              paramsList.add(
+                ParseParams(
+                  userId: user.userId,
+                  dbScreenName: user.screenName,
+                  dbName: user.name,
+                  dbAvatarUrl: user.avatarUrl,
+                  dbAvatarLocalPath: user.avatarLocalPath,
+                  dbBannerLocalPath: user.bannerLocalPath,
+                  dbBio: user.bio,
+                  jsonString: user.latestRawJson,
+                ),
+              );
+            } else {
+              // This might happen if a user was deleted but report remains, or data inconsistency
+              // We can construct a minimal user from report info if possible, or skip
+              paramsList.add(
+                ParseParams(
+                  userId: report.userId,
+                  dbName: 'Unknown (Removed)',
+                  dbScreenName: 'unknown',
+                ),
+              );
+            }
           }
         }
       }
@@ -137,11 +182,15 @@ class AnalysisReportRepository {
         final parsedMaps = await _worker.parseBatch(items);
         parsedUsers = parsedMaps.map((m) => TwitterUser.fromJson(m)).toList();
       } catch (e) {
+        logger.w(
+          "AnalysisReportRepository: Worker parsing failed, falling back to main thread: $e",
+        );
         parsedUsers = paramsList
             .map((p) => parseFollowUserToTwitterUser(p))
             .toList();
       }
 
+      // Filter based on status only for main lists, reports might contain suspended users intentionally
       if (categoryKey == 'followers' || categoryKey == 'following') {
         return parsedUsers.where((u) => u.status == 'normal').toList();
       }
@@ -180,12 +229,7 @@ class ParseParams {
   });
 }
 
-List<TwitterUser> parseListInCompute(List<ParseParams> paramsList) {
-  return paramsList
-      .map((params) => parseFollowUserToTwitterUser(params))
-      .toList();
-}
-
+// Fallback parsing function
 TwitterUser parseFollowUserToTwitterUser(ParseParams params) {
   if (params.jsonString != null && params.jsonString!.isNotEmpty) {
     try {
@@ -199,7 +243,7 @@ TwitterUser parseFollowUserToTwitterUser(ParseParams params) {
       return TwitterUser.fromJson(jsonMap);
     } catch (e, s) {
       logger.e(
-        "AnalysisReportRepository (compute): Error parsing standardized JSON for user ${params.userId}",
+        "AnalysisReportRepository (fallback): Error parsing JSON for user ${params.userId}",
         error: e,
         stackTrace: s,
       );

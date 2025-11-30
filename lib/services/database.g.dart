@@ -1608,6 +1608,28 @@ class $FollowUsersTable extends FollowUsers
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _followerSortMeta = const VerificationMeta(
+    'followerSort',
+  );
+  @override
+  late final GeneratedColumn<int> followerSort = GeneratedColumn<int>(
+    'follower_sort',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _followingSortMeta = const VerificationMeta(
+    'followingSort',
+  );
+  @override
+  late final GeneratedColumn<int> followingSort = GeneratedColumn<int>(
+    'following_sort',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     ownerId,
@@ -1622,6 +1644,8 @@ class $FollowUsersTable extends FollowUsers
     bannerLocalPath,
     isFollower,
     isFollowing,
+    followerSort,
+    followingSort,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1723,6 +1747,24 @@ class $FollowUsersTable extends FollowUsers
         ),
       );
     }
+    if (data.containsKey('follower_sort')) {
+      context.handle(
+        _followerSortMeta,
+        followerSort.isAcceptableOrUnknown(
+          data['follower_sort']!,
+          _followerSortMeta,
+        ),
+      );
+    }
+    if (data.containsKey('following_sort')) {
+      context.handle(
+        _followingSortMeta,
+        followingSort.isAcceptableOrUnknown(
+          data['following_sort']!,
+          _followingSortMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1780,6 +1822,14 @@ class $FollowUsersTable extends FollowUsers
         DriftSqlType.bool,
         data['${effectivePrefix}is_following'],
       )!,
+      followerSort: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}follower_sort'],
+      ),
+      followingSort: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}following_sort'],
+      ),
     );
   }
 
@@ -1802,6 +1852,8 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
   final String? bannerLocalPath;
   final bool isFollower;
   final bool isFollowing;
+  final int? followerSort;
+  final int? followingSort;
   const FollowUser({
     required this.ownerId,
     required this.userId,
@@ -1815,6 +1867,8 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
     this.bannerLocalPath,
     required this.isFollower,
     required this.isFollowing,
+    this.followerSort,
+    this.followingSort,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1847,6 +1901,12 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
     }
     map['is_follower'] = Variable<bool>(isFollower);
     map['is_following'] = Variable<bool>(isFollowing);
+    if (!nullToAbsent || followerSort != null) {
+      map['follower_sort'] = Variable<int>(followerSort);
+    }
+    if (!nullToAbsent || followingSort != null) {
+      map['following_sort'] = Variable<int>(followingSort);
+    }
     return map;
   }
 
@@ -1876,6 +1936,12 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
           : Value(bannerLocalPath),
       isFollower: Value(isFollower),
       isFollowing: Value(isFollowing),
+      followerSort: followerSort == null && nullToAbsent
+          ? const Value.absent()
+          : Value(followerSort),
+      followingSort: followingSort == null && nullToAbsent
+          ? const Value.absent()
+          : Value(followingSort),
     );
   }
 
@@ -1897,6 +1963,8 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
       bannerLocalPath: serializer.fromJson<String?>(json['bannerLocalPath']),
       isFollower: serializer.fromJson<bool>(json['isFollower']),
       isFollowing: serializer.fromJson<bool>(json['isFollowing']),
+      followerSort: serializer.fromJson<int?>(json['followerSort']),
+      followingSort: serializer.fromJson<int?>(json['followingSort']),
     );
   }
   @override
@@ -1915,6 +1983,8 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
       'bannerLocalPath': serializer.toJson<String?>(bannerLocalPath),
       'isFollower': serializer.toJson<bool>(isFollower),
       'isFollowing': serializer.toJson<bool>(isFollowing),
+      'followerSort': serializer.toJson<int?>(followerSort),
+      'followingSort': serializer.toJson<int?>(followingSort),
     };
   }
 
@@ -1931,6 +2001,8 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
     Value<String?> bannerLocalPath = const Value.absent(),
     bool? isFollower,
     bool? isFollowing,
+    Value<int?> followerSort = const Value.absent(),
+    Value<int?> followingSort = const Value.absent(),
   }) => FollowUser(
     ownerId: ownerId ?? this.ownerId,
     userId: userId ?? this.userId,
@@ -1950,6 +2022,10 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
         : this.bannerLocalPath,
     isFollower: isFollower ?? this.isFollower,
     isFollowing: isFollowing ?? this.isFollowing,
+    followerSort: followerSort.present ? followerSort.value : this.followerSort,
+    followingSort: followingSort.present
+        ? followingSort.value
+        : this.followingSort,
   );
   FollowUser copyWithCompanion(FollowUsersCompanion data) {
     return FollowUser(
@@ -1977,6 +2053,12 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
       isFollowing: data.isFollowing.present
           ? data.isFollowing.value
           : this.isFollowing,
+      followerSort: data.followerSort.present
+          ? data.followerSort.value
+          : this.followerSort,
+      followingSort: data.followingSort.present
+          ? data.followingSort.value
+          : this.followingSort,
     );
   }
 
@@ -1994,7 +2076,9 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
           ..write('avatarLocalPath: $avatarLocalPath, ')
           ..write('bannerLocalPath: $bannerLocalPath, ')
           ..write('isFollower: $isFollower, ')
-          ..write('isFollowing: $isFollowing')
+          ..write('isFollowing: $isFollowing, ')
+          ..write('followerSort: $followerSort, ')
+          ..write('followingSort: $followingSort')
           ..write(')'))
         .toString();
   }
@@ -2013,6 +2097,8 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
     bannerLocalPath,
     isFollower,
     isFollowing,
+    followerSort,
+    followingSort,
   );
   @override
   bool operator ==(Object other) =>
@@ -2029,7 +2115,9 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
           other.avatarLocalPath == this.avatarLocalPath &&
           other.bannerLocalPath == this.bannerLocalPath &&
           other.isFollower == this.isFollower &&
-          other.isFollowing == this.isFollowing);
+          other.isFollowing == this.isFollowing &&
+          other.followerSort == this.followerSort &&
+          other.followingSort == this.followingSort);
 }
 
 class FollowUsersCompanion extends UpdateCompanion<FollowUser> {
@@ -2045,6 +2133,8 @@ class FollowUsersCompanion extends UpdateCompanion<FollowUser> {
   final Value<String?> bannerLocalPath;
   final Value<bool> isFollower;
   final Value<bool> isFollowing;
+  final Value<int?> followerSort;
+  final Value<int?> followingSort;
   final Value<int> rowid;
   const FollowUsersCompanion({
     this.ownerId = const Value.absent(),
@@ -2059,6 +2149,8 @@ class FollowUsersCompanion extends UpdateCompanion<FollowUser> {
     this.bannerLocalPath = const Value.absent(),
     this.isFollower = const Value.absent(),
     this.isFollowing = const Value.absent(),
+    this.followerSort = const Value.absent(),
+    this.followingSort = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   FollowUsersCompanion.insert({
@@ -2074,6 +2166,8 @@ class FollowUsersCompanion extends UpdateCompanion<FollowUser> {
     this.bannerLocalPath = const Value.absent(),
     this.isFollower = const Value.absent(),
     this.isFollowing = const Value.absent(),
+    this.followerSort = const Value.absent(),
+    this.followingSort = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : ownerId = Value(ownerId),
        userId = Value(userId);
@@ -2090,6 +2184,8 @@ class FollowUsersCompanion extends UpdateCompanion<FollowUser> {
     Expression<String>? bannerLocalPath,
     Expression<bool>? isFollower,
     Expression<bool>? isFollowing,
+    Expression<int>? followerSort,
+    Expression<int>? followingSort,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2105,6 +2201,8 @@ class FollowUsersCompanion extends UpdateCompanion<FollowUser> {
       if (bannerLocalPath != null) 'banner_local_path': bannerLocalPath,
       if (isFollower != null) 'is_follower': isFollower,
       if (isFollowing != null) 'is_following': isFollowing,
+      if (followerSort != null) 'follower_sort': followerSort,
+      if (followingSort != null) 'following_sort': followingSort,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2122,6 +2220,8 @@ class FollowUsersCompanion extends UpdateCompanion<FollowUser> {
     Value<String?>? bannerLocalPath,
     Value<bool>? isFollower,
     Value<bool>? isFollowing,
+    Value<int?>? followerSort,
+    Value<int?>? followingSort,
     Value<int>? rowid,
   }) {
     return FollowUsersCompanion(
@@ -2137,6 +2237,8 @@ class FollowUsersCompanion extends UpdateCompanion<FollowUser> {
       bannerLocalPath: bannerLocalPath ?? this.bannerLocalPath,
       isFollower: isFollower ?? this.isFollower,
       isFollowing: isFollowing ?? this.isFollowing,
+      followerSort: followerSort ?? this.followerSort,
+      followingSort: followingSort ?? this.followingSort,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2180,6 +2282,12 @@ class FollowUsersCompanion extends UpdateCompanion<FollowUser> {
     if (isFollowing.present) {
       map['is_following'] = Variable<bool>(isFollowing.value);
     }
+    if (followerSort.present) {
+      map['follower_sort'] = Variable<int>(followerSort.value);
+    }
+    if (followingSort.present) {
+      map['following_sort'] = Variable<int>(followingSort.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2201,6 +2309,8 @@ class FollowUsersCompanion extends UpdateCompanion<FollowUser> {
           ..write('bannerLocalPath: $bannerLocalPath, ')
           ..write('isFollower: $isFollower, ')
           ..write('isFollowing: $isFollowing, ')
+          ..write('followerSort: $followerSort, ')
+          ..write('followingSort: $followingSort, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4557,6 +4667,8 @@ typedef $$FollowUsersTableCreateCompanionBuilder =
       Value<String?> bannerLocalPath,
       Value<bool> isFollower,
       Value<bool> isFollowing,
+      Value<int?> followerSort,
+      Value<int?> followingSort,
       Value<int> rowid,
     });
 typedef $$FollowUsersTableUpdateCompanionBuilder =
@@ -4573,6 +4685,8 @@ typedef $$FollowUsersTableUpdateCompanionBuilder =
       Value<String?> bannerLocalPath,
       Value<bool> isFollower,
       Value<bool> isFollowing,
+      Value<int?> followerSort,
+      Value<int?> followingSort,
       Value<int> rowid,
     });
 
@@ -4664,6 +4778,16 @@ class $$FollowUsersTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get followerSort => $composableBuilder(
+    column: $table.followerSort,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get followingSort => $composableBuilder(
+    column: $table.followingSort,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$LoggedAccountsTableFilterComposer get ownerId {
     final $$LoggedAccountsTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -4752,6 +4876,16 @@ class $$FollowUsersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get followerSort => $composableBuilder(
+    column: $table.followerSort,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get followingSort => $composableBuilder(
+    column: $table.followingSort,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$LoggedAccountsTableOrderingComposer get ownerId {
     final $$LoggedAccountsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -4830,6 +4964,16 @@ class $$FollowUsersTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get followerSort => $composableBuilder(
+    column: $table.followerSort,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get followingSort => $composableBuilder(
+    column: $table.followingSort,
+    builder: (column) => column,
+  );
+
   $$LoggedAccountsTableAnnotationComposer get ownerId {
     final $$LoggedAccountsTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -4894,6 +5038,8 @@ class $$FollowUsersTableTableManager
                 Value<String?> bannerLocalPath = const Value.absent(),
                 Value<bool> isFollower = const Value.absent(),
                 Value<bool> isFollowing = const Value.absent(),
+                Value<int?> followerSort = const Value.absent(),
+                Value<int?> followingSort = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => FollowUsersCompanion(
                 ownerId: ownerId,
@@ -4908,6 +5054,8 @@ class $$FollowUsersTableTableManager
                 bannerLocalPath: bannerLocalPath,
                 isFollower: isFollower,
                 isFollowing: isFollowing,
+                followerSort: followerSort,
+                followingSort: followingSort,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -4924,6 +5072,8 @@ class $$FollowUsersTableTableManager
                 Value<String?> bannerLocalPath = const Value.absent(),
                 Value<bool> isFollower = const Value.absent(),
                 Value<bool> isFollowing = const Value.absent(),
+                Value<int?> followerSort = const Value.absent(),
+                Value<int?> followingSort = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => FollowUsersCompanion.insert(
                 ownerId: ownerId,
@@ -4938,6 +5088,8 @@ class $$FollowUsersTableTableManager
                 bannerLocalPath: bannerLocalPath,
                 isFollower: isFollower,
                 isFollowing: isFollowing,
+                followerSort: followerSort,
+                followingSort: followingSort,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
