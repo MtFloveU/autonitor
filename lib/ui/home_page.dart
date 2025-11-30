@@ -543,6 +543,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                 Icons.person_add_alt_1_outlined,
                 l10n.new_followers_following,
                 cache.newFollowersCount,
+              ),
+              _buildDetailListItem(
+                context,
+                'recovered',
+                Icons.refresh_rounded,
+                l10n.recovered,
+                cache.recoveredCount,
                 showDivider: false,
               ),
             ],

@@ -126,6 +126,8 @@
   "@no_json_data_available": {},
   "temporarily_restricted": "Temporarily Restricted",
   "@temporarily_restricted": {},
+  "recovered": "Recovered",
+  "@recovered": {},
   "failed_to_load_user_list": "Failed to load user list",
   "@failed_to_load_user_list": {},
   "no_users_in_this_category": "Empty list",

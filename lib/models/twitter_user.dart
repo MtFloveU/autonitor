@@ -178,8 +178,42 @@ class TwitterUser {
     );
   }
 
+  // [新增] 专门用于处理 UserByRestId 接口的深层嵌套结构
+  factory TwitterUser.fromUserByRestId(Map<String, dynamic> raw) {
+    // 1. 逐层拆解 JSON 结构
+    final data = raw['data'];
+    final user = (data is Map) ? data['user'] : null;
+    final result = (user is Map) ? user['result'] : null;
+
+    // 2. 异常处理：如果数据为空
+    if (result == null || result is! Map<String, dynamic>) {
+      // 返回一个空的安全对象，避免空指针崩溃
+      return const TwitterUser(
+        restId: '',
+        screenName: 'Unknown',
+        name: 'Unknown',
+      );
+    }
+
+    // 3. 异常处理：如果是 UserUnavailable (账号被封禁或注销)
+    if (result['__typename'] == 'UserUnavailable') {
+      return const TwitterUser(
+        restId: '',
+        screenName: 'Unavailable',
+        name: 'User Unavailable',
+        status: 'unavailable',
+      );
+    }
+
+    // 4. 核心复用：将提取出的 result 传给 fromGraphQL 进行通用解析
+    return TwitterUser.fromGraphQL(result, '');
+  }
+
+  // [修改] 增强版 fromGraphQL：集成了 bioLinks 和 生日解析
   factory TwitterUser.fromGraphQL(Map<String, dynamic> raw, String runId) {
+    // 兼容逻辑：如果 raw 本身就是 result 层，则直接使用；否则尝试查找 result 字段
     final result = raw['result'] ?? raw;
+
     final legacy = (result['legacy'] ?? {}) as Map<String, dynamic>;
     final core = (result['core'] ?? {}) as Map<String, dynamic>;
     final relationship =
@@ -190,18 +224,31 @@ class TwitterUser {
     int getInt(String key) => int.tryParse(legacy[key]?.toString() ?? '0') ?? 0;
     String? getString(String key) => legacy[key] as String?;
 
+    // --- 1. 生日解析 (Birthdate) [新增] ---
+    // 路径: result -> legacy_extended_profile -> birthdate
+    final birthdateObj = result['legacy_extended_profile']?['birthdate'];
+    String? bYear;
+    String? bMonth;
+    String? bDay;
+
+    if (birthdateObj is Map) {
+      bYear = birthdateObj['year']?.toString();
+      bMonth = birthdateObj['month']?.toString();
+      bDay = birthdateObj['day']?.toString();
+    }
+    // ------------------------------------
+
+    // --- 2. 简介 (Bio) 和 链接提取 (BioLinks) ---
     String? description = legacy['description'] as String?;
     description ??=
         (result['profile_bio']?['description'] as String?) ?? description;
 
-    // [修复] 1. 统一获取列表
+    // 2.1 统一获取 URL 列表
     final List descUrlList =
         (legacy['entities']?['description']?['urls'] as List?) ?? [];
 
-    // [修复] 2. 提前定义 extractedLinks (解决之前的 Scope 问题)
+    // 2.2 提取 bioLinks (优先提取，保持数据纯净)
     final List<Map<String, String>> extractedLinks = [];
-
-    // [修复] 3. 提取链接逻辑
     if (descUrlList.isNotEmpty) {
       for (final entry in descUrlList) {
         final String? expanded = entry['expanded_url']?.toString();
@@ -211,7 +258,7 @@ class TwitterUser {
       }
     }
 
-    // [逻辑保持] 4. 简介文本替换逻辑
+    // 2.3 替换简介文本中的 t.co 链接
     if (description != null && descUrlList.isNotEmpty) {
       for (final urlEntry in descUrlList) {
         final String? shortUrl = urlEntry['url'] as String?;
@@ -225,6 +272,7 @@ class TwitterUser {
       description = description?.trim();
     }
 
+    // --- 3. 其他字段解析 ---
     String? link;
     final List urlEntities =
         (legacy['entities']?['url']?['urls'] as List?) ?? [];
@@ -248,12 +296,17 @@ class TwitterUser {
       bannerUrl: legacy['profile_banner_url'] as String?,
       bannerLocalPath: null,
       bio: description,
-      bioLinks: extractedLinks, // [修复] 5. 确保此处传入了 extractedLinks (原来漏掉了)
+      bioLinks: extractedLinks, // 传入提取的链接
       location: result['location']?['location'] as String?,
       pinnedTweetIdStr:
           (legacy['pinned_tweet_ids_str'] as List?)?.isNotEmpty == true
           ? (legacy['pinned_tweet_ids_str'] as List).first?.toString()
           : null,
+      // 传入解析的生日信息
+      birthdateYear: bYear,
+      birthdateMonth: bMonth,
+      birthdateDay: bDay,
+
       joinedTime: core['created_at'] as String?,
       link: link,
       isVerified:

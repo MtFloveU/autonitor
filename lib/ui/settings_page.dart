@@ -886,7 +886,7 @@ class _GraphQLPathDialogState extends ConsumerState<GraphQLPathDialog> {
                           value: e,
                           child: Text(
                             e == QueryIdSource.apiDocument
-                                ? 'TwitterInternalAPIDocument'
+                                ? 'TIAD'
                                 : 'Custom',
                           ),
                         ),

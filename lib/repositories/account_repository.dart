@@ -1,5 +1,6 @@
 // lib/repositories/account_repository.dart
 import 'dart:async';
+import 'package:autonitor/models/twitter_user.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart';
 import 'dart:convert';
@@ -160,6 +161,7 @@ class AccountRepository {
   }
 
   Future<Account> _fetchAndSaveAccountProfile(String id, String cookie) async {
+    // 定义变量 (保持原有结构，以便用于 Account 构造)
     String? name;
     String? screenName;
     String? avatarUrl;
@@ -177,72 +179,48 @@ class AccountRepository {
     String rawJsonString = '{}';
     bool isVerified = false;
     bool isProtected = false;
+
     try {
       final queryId = _ref
           .read(gqlQueryIdProvider.notifier)
           .getCurrentQueryIdForDisplay('UserByRestId');
+
+      // 1. 获取原始 API 数据
       final Map<String, dynamic> userProfileJson = await _apiService
           .getUserByRestId(id, cookie, queryId);
-      rawJsonString = jsonEncode(userProfileJson);
-      final result = userProfileJson['data']?['user']?['result'];
-      if (result != null &&
-          result is Map<String, dynamic> &&
-          result['__typename'] == 'User') {
-        final core = result['core'];
-        final legacy = result['legacy'];
-        if (core != null && core is Map<String, dynamic>) {
-          name = core['name'] as String?;
-          screenName = core['screen_name'] as String?;
-          avatarUrl = (result['avatar']['image_url'] as String?);
-          joinTime = core['created_at'] as String?;
-          logger.i(
-            "addAccount: Profile fetched - Name: $name, ScreenName: $screenName, Avatar: $avatarUrl",
-          );
-        } else {
-          logger.w("addAccount: API 返回成功，但 core 数据缺失或格式不正确。");
-        }
-        if (legacy != null && legacy is Map<String, dynamic>) {
-          bio = legacy['description'] as String?;
-          followersCount = legacy['followers_count'] as int? ?? 0;
-          followingCount = legacy['friends_count'] as int? ?? 0;
-          final String? tcoUrl = legacy['url'] as String?;
-          String? finalLink = tcoUrl;
-          try {
-            final entities = legacy['entities'] as Map<String, dynamic>?;
-            final urlBlock = entities?['url'] as Map<String, dynamic>?;
-            final urlsList = urlBlock?['urls'] as List<dynamic>?;
-            if (tcoUrl != null && urlsList != null) {
-              for (final item in urlsList) {
-                final urlMap = item as Map<String, dynamic>?;
-                if (urlMap != null && urlMap['url'] == tcoUrl) {
-                  finalLink = urlMap['expanded_url'] as String?;
-                  break;
-                }
-              }
-            }
-          } catch (e, s) {
-            logger.w(
-              "addAccount: Failed to parse URL entities",
-              error: e,
-              stackTrace: s,
-            );
-          }
-          link = finalLink;
-          bannerUrl = legacy['profile_banner_url'] as String?;
-          statusesCount = legacy['statuses_count'] as int? ?? 0;
-          mediaCount = legacy['media_count'] as int? ?? 0;
-          favouritesCount = legacy['favourites_count'] as int? ?? 0;
-          listedCount = legacy['listed_count'] as int? ?? 0;
-          isVerified = result['verification']['verified'] as bool? ?? false;
-          isProtected = result['privacy']['protected'] as bool? ?? false;
-        }
-        final locationMap = result['location'] as Map<String, dynamic>?;
-        location = locationMap?['location'] as String?;
-      } else {
-        logger.w(
-          "addAccount: The API call succeeded, but the result field is either missing or malformed.",
-        );
-      }
+
+      // [核心修复] 2. 使用新工厂方法进行标准化解析
+      // 这会自动处理：深层嵌套剥离、生日解析、BioLinks 提取
+      final twitterUser = TwitterUser.fromUserByRestId(userProfileJson);
+
+      // [核心修复] 3. 将标准化后的对象序列化为 JSON
+      // 现在存入数据库的是扁平结构，HistoryWorker 可以识别了！
+      rawJsonString = jsonEncode(twitterUser.toJson());
+
+      // 4. 从 twitterUser 对象更新本地变量 (替代原本的手动解析)
+      name = twitterUser.name;
+      screenName = twitterUser.screenName;
+      avatarUrl = twitterUser.avatarUrl;
+      // 注意：TwitterUser 中是 joinedTime，Account 中是 joinTime
+      joinTime = twitterUser.joinedTime;
+      bio = twitterUser.bio;
+      location = twitterUser.location;
+      link = twitterUser.link;
+      bannerUrl = twitterUser.bannerUrl;
+
+      followersCount = twitterUser.followersCount;
+      followingCount = twitterUser.followingCount;
+      statusesCount = twitterUser.statusesCount;
+      mediaCount = twitterUser.mediaCount;
+      favouritesCount = twitterUser.favouritesCount;
+      listedCount = twitterUser.listedCount;
+
+      isVerified = twitterUser.isVerified;
+      isProtected = twitterUser.isProtected;
+
+      logger.i(
+        "addAccount: Profile parsed (Standardized via TwitterUser) - Name: $name, ScreenName: $screenName",
+      );
     } catch (e, s) {
       logger.e(
         "addAccount: Failed to call the API or parse the Profile.",
@@ -251,6 +229,8 @@ class AccountRepository {
       );
       rethrow;
     }
+
+    // ... 以下数据库事务逻辑保持不变 ...
     try {
       final settingsValue = _ref.read(settingsProvider);
       final imageService = _ref.read(imageHistoryServiceProvider);
@@ -263,7 +243,6 @@ class AccountRepository {
         throw Exception("无法执行操作，因为设置未准备好: $settingsValue");
       }
 
-      // [修复 2] 定义变量以捕获事务中确定的最终路径
       String? finalAvatarLocalPath;
       String? finalBannerLocalPath;
 
@@ -271,33 +250,36 @@ class AccountRepository {
         final oldProfile = await (_database.select(
           _database.loggedAccounts,
         )..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
+
         final oldJsonString = oldProfile?.latestRawJson;
+
+        // 计算 Diff (现在是基于两个标准化的 JSON 进行比较，结果更准确)
         final diffString = calculateReverseDiff(rawJsonString, oldJsonString);
+
         logger.i(
           "addAccount: Calculated reverse diff (length: ${diffString?.length ?? 'null'}) for ID: $id",
         );
+
         final String? newAvatarLocalPath = await imageService
             .processMediaUpdate(
               ownerId: id,
               userId: id,
               mediaType: MediaType.avatar,
               oldUrl: oldProfile?.avatarUrl,
-              newUrl: avatarUrl, // (这是你从 API 获取的 avatarUrl)
-              settings: settings, // 使用我们从 read 读到的 settings
+              newUrl: avatarUrl,
+              settings: settings,
             );
 
-        // 11. (新) 处理横幅下载
         final String? newBannerLocalPath = await imageService
             .processMediaUpdate(
               ownerId: id,
               userId: id,
               mediaType: MediaType.banner,
               oldUrl: oldProfile?.bannerUrl,
-              newUrl: bannerUrl, // (这是你从 API 获取的 bannerUrl)
-              settings: settings, // 使用我们从 read 读到的 settings
+              newUrl: bannerUrl,
+              settings: settings,
             );
 
-        // [修复 2] 确定最终的 Companion 值和返回对象值
         final avatarPathValue = newAvatarLocalPath != null
             ? Value<String?>(newAvatarLocalPath)
             : (avatarUrl == oldProfile?.avatarUrl
@@ -310,8 +292,6 @@ class AccountRepository {
                   ? Value<String?>(oldProfile?.bannerLocalPath)
                   : const Value<String?>.absent());
 
-        // 捕获用于返回对象的值 (如果 Value 是 absent，则 finalPath 保持为 null/旧值需要小心处理)
-        // 这里简化逻辑：如果是 absent 且没有新值，说明我们没有更改它，所以应该沿用旧值
         if (newAvatarLocalPath != null) {
           finalAvatarLocalPath = newAvatarLocalPath;
         } else if (avatarUrl == oldProfile?.avatarUrl) {
@@ -348,16 +328,19 @@ class AccountRepository {
           listedCount: Value(listedCount),
           isVerified: Value(isVerified),
           isProtected: Value(isProtected),
-          latestRawJson: Value(rawJsonString),
+          latestRawJson: Value(rawJsonString), // 存入标准化的 JSON
           avatarLocalPath: avatarPathValue,
           bannerLocalPath: bannerPathValue,
         );
+
         await _database
             .into(_database.loggedAccounts)
             .insert(companion, mode: InsertMode.replace);
+
         logger.i(
           "addAccount: Inserted/Replaced profile in LoggedAccounts for ID: $id",
         );
+
         if (diffString != null && diffString.isNotEmpty) {
           final historyCompanion = AccountProfileHistoryCompanion(
             ownerId: Value(id),
@@ -372,16 +355,15 @@ class AccountRepository {
           );
         }
       });
+
       return Account(
         id: id,
         cookie: cookie,
         name: name,
         screenName: screenName,
         avatarUrl: avatarUrl,
-        // [修复 2] 传入计算出的路径
         avatarLocalPath: finalAvatarLocalPath,
         bannerUrl: bannerUrl,
-        // [修复 2] 传入计算出的路径
         bannerLocalPath: finalBannerLocalPath,
         bio: bio,
         location: location,

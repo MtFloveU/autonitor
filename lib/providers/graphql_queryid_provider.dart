@@ -132,14 +132,9 @@ class GqlQueryIdNotifier extends StateNotifier<GqlQueryIdState> {
   ) {
     final List<GraphQLOperation> ops = [];
     for (final opName in _targetOperations) {
-      final path = paths[opName];
-      if (path != null && path.isNotEmpty && path.contains('/graphql/')) {
-        // 尝试从路径中解析 queryId
-        final parts = path.split('/');
-        if (parts.length >= 4) {
-          final queryId = parts[parts.length - 2];
-          ops.add(GraphQLOperation(queryId: queryId, operationName: opName));
-        }
+      final queryId = paths[opName];
+      if (queryId != null && queryId.isNotEmpty) {
+        ops.add(GraphQLOperation(queryId: queryId, operationName: opName));
       }
     }
     return ops;

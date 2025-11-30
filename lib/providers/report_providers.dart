@@ -71,6 +71,7 @@ final cacheProvider = FutureProvider.autoDispose<CacheData?>((ref) async {
       refollowedCount: categoryCounts['be_followed_back'] ?? 0,
       newFollowersCount: categoryCounts['new_followers_following'] ?? 0,
       temporarilyRestrictedCount: categoryCounts['temporarily_restricted'] ?? 0,
+      recoveredCount: categoryCounts['recovered'] ?? 0,
     );
   } catch (e, s) {
     logger.e(
@@ -126,7 +127,7 @@ class UserListNotifier
       return List<TwitterUser>.from(_users);
     } catch (e, s) {
       logger.e("UserListNotifier.build error", error: e, stackTrace: s);
-      throw e;
+      rethrow;
     }
   }
 

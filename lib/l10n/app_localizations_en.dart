@@ -181,6 +181,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get temporarily_restricted => 'Temporarily Restricted';
 
   @override
+  String get recovered => 'Recovered';
+
+  @override
   String get failed_to_load_user_list => 'Failed to load user list';
 
   @override

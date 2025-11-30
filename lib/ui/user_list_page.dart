@@ -446,6 +446,8 @@ class _UserListPageState extends ConsumerState<UserListPage>
         return l10n.be_followed_back;
       case 'new_followers_following':
         return l10n.new_followers_following;
+      case 'recovered':
+        return l10n.recovered;
       default:
         return widget.categoryKey;
     }

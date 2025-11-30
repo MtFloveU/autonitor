@@ -435,6 +435,12 @@ abstract class AppLocalizations {
   /// **'Temporarily Restricted'**
   String get temporarily_restricted;
 
+  /// No description provided for @recovered.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovered'**
+  String get recovered;
+
   /// No description provided for @failed_to_load_user_list.
   ///
   /// In en, this message translates to:

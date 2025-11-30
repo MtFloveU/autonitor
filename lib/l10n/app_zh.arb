@@ -63,6 +63,7 @@
   "copied_to_clipboard": "已复制到剪贴板！",
   "no_json_data_available": "无 JSON 数据",
   "temporarily_restricted": "暂时受限",
+  "recovered": "回归",
   "failed_to_load_user_list": "加载用户列表失败",
   "no_users_in_this_category": "列表为空",
   "analysis_log": "分析日志",

@@ -99,6 +99,7 @@ class _IsolateInitMessage {
 }
 
 // --- Isolate 入口 ---
+@pragma('vm:entry-point')
 void _historyIsolateEntry(_IsolateInitMessage initMsg) {
   final workerReceive = ReceivePort();
   initMsg.replyToMain.send(workerReceive.sendPort);

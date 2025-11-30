@@ -248,7 +248,28 @@ class RelationshipAnalyzer {
 
       String? changeType;
 
-      if (restrictedChecks.containsKey(keptId) &&
+      String oldStatus = 'normal';
+      String oldKeptStatus = 'normal';
+      if (oldRel?.latestRawJson != null) {
+        try {
+          final Map<String, dynamic> oldJson = jsonDecode(
+            oldRel!.latestRawJson!,
+          );
+          oldStatus = oldJson['status'] as String? ?? 'normal';
+          oldKeptStatus = oldJson['kept_ids_status'] as String? ?? 'normal';
+        } catch (_) {
+          // JSON 解析失败则默认为 normal，不触发回归逻辑
+        }
+      }
+
+      // 只要旧状态中有任意一个不是 normal，且现在还在列表中(能被fetch到说明是正常的)，就视为回归
+      final bool isRecovered =
+          (oldStatus != 'normal' || oldKeptStatus != 'normal');
+
+      if (isRecovered) {
+        // [新增] 优先判定为“新增关注/跟随”（即回归）
+        changeType = 'recovered';
+      } else if (restrictedChecks.containsKey(keptId) &&
           restrictedChecks[keptId] == 'temporarily_restricted') {
         changeType = 'temporarily_restricted';
       } else if (!wasFollower &&
@@ -279,12 +300,14 @@ class RelationshipAnalyzer {
           ),
         );
 
-        if (changeType != 'be_followed_back') {
+        // [修改] 如果是回归 (new_followers_following)，不要将其作为状态存入 keptStatusUpdates
+        // 这样 DatabaseUpdater 会使用 TwitterUser 的默认值 'normal'，从而实现状态重置。
+        if (changeType != 'be_followed_back' &&
+            changeType != 'new_followers_following') {
           keptStatusUpdates[keptId] = changeType;
         }
       }
     }
-
     return RelationshipAnalysisResult(
       addedIds: addedIds,
       removedIds: removedIds,

@@ -181,6 +181,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get temporarily_restricted => '暂时受限';
 
   @override
+  String get recovered => '回归';
+
+  @override
   String get failed_to_load_user_list => '加载用户列表失败';
 
   @override
@@ -525,6 +528,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get temporarily_restricted => '暫時受限';
+
+  @override
+  String get recovered => '回歸';
 
   @override
   String get failed_to_load_user_list => '載入用戶列表失敗';
