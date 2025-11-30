@@ -118,5 +118,9 @@
   "not_follow": "未跟隨",
   "automated_by": "由 @{automatedScreenName} 自動發推",
   "automated": "自動發推",
-  "visit": "訪問"
+  "visit": "訪問",
+  "save": "儲存",
+  "save_error": "儲存時出錯: ",
+  "image_saved": "圖片已儲存",
+  "open_in_browser": "在瀏覽器中打開"
 }

@@ -118,5 +118,9 @@
   "not_follow": "未关注",
   "automated_by": "由 @{automatedScreenName} 自动发推",
   "automated": "自动发推",
-  "visit": "访问"
+  "visit": "访问",
+  "save": "保存",
+  "save_error": "保存时出错: ",
+  "image_saved": "图片已保存",
+  "open_in_browser": "在浏览器中打开"
 }

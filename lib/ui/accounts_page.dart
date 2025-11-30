@@ -146,6 +146,7 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
               style: TextStyle(color: theme.colorScheme.onPrimaryContainer),
             ),
             backgroundColor: theme.colorScheme.primaryContainer,
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -158,6 +159,7 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
               style: TextStyle(color: theme.colorScheme.onError),
             ),
             backgroundColor: theme.colorScheme.error,
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -212,6 +214,7 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                 ), // 信息文本颜色
               ),
               backgroundColor: theme.colorScheme.secondaryContainer, // 信息背景颜色
+              duration: const Duration(seconds: 3),
             ),
           );
         }
@@ -262,6 +265,7 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
             backgroundColor: hasFailures
                 ? theme.colorScheme.errorContainer
                 : theme.colorScheme.secondaryContainer,
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -280,6 +284,7 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
               style: TextStyle(color: theme.colorScheme.onError), // 错误文本颜色
             ),
             backgroundColor: theme.colorScheme.error, // 错误背景颜色
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -458,6 +463,7 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                                     ),
                                     backgroundColor:
                                         theme.colorScheme.primaryContainer,
+                                    duration: const Duration(seconds: 3),
                                   ),
                                 );
                               },

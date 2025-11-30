@@ -294,5 +294,13 @@
   "automated": "Automated",
   "@automated": {},
   "visit": "Visit",
-  "@visit": {}
+  "@visit": {},
+  "save": "Save",
+  "@save": {},
+  "save_error": "Error while saving: ",
+  "@save_error": {},
+  "image_saved": "Image Saved",
+  "@image_saved": {},
+  "open_in_browser": "Open in Browser",
+  "@open_in_browser": {}
 }

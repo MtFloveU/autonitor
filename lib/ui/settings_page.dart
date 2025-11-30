@@ -236,6 +236,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                                       content: Text(
                                         l10n.please_enter_valid_number,
                                       ),
+                                      duration: const Duration(seconds: 3),
                                     ),
                                   );
                                   return;
@@ -250,6 +251,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                                       content: Text(
                                         l10n.path_must_start_with_slash,
                                       ),
+                                      duration: const Duration(seconds: 3),
                                     ),
                                   );
                                   return;
@@ -325,6 +327,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                                         ),
                                         backgroundColor:
                                             theme.colorScheme.error,
+                                        duration: const Duration(seconds: 3),
                                       ),
                                     );
                                   }
@@ -771,6 +774,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                                     ).colorScheme.onPrimaryContainer,
                                   ),
                                 ),
+                                duration: const Duration(seconds: 3),
                                 backgroundColor: Theme.of(
                                   context,
                                 ).colorScheme.primaryContainer,

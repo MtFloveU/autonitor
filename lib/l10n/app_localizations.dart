@@ -728,6 +728,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Visit'**
   String get visit;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @save_error.
+  ///
+  /// In en, this message translates to:
+  /// **'Error while saving: '**
+  String get save_error;
+
+  /// No description provided for @image_saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Image Saved'**
+  String get image_saved;
+
+  /// No description provided for @open_in_browser.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in Browser'**
+  String get open_in_browser;
 }
 
 class _AppLocalizationsDelegate

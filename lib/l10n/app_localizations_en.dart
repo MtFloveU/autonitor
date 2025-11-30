@@ -337,4 +337,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get visit => 'Visit';
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String get save_error => 'Error while saving: ';
+
+  @override
+  String get image_saved => 'Image Saved';
+
+  @override
+  String get open_in_browser => 'Open in Browser';
 }

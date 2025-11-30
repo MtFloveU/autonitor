@@ -13,17 +13,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/twitter_user.dart';
+import '../services/log_service.dart';
 import 'user_history_page.dart';
+import 'full_screen_image_viewer.dart';
 
 String formatJoinedTime(String? raw) {
   if (raw == null || raw.isEmpty) return '';
   try {
-    // 清理多余空格
     final cleaned = raw.replaceAll(RegExp(r'\s+'), ' ').trim();
     final parts = cleaned.split(' ');
     if (parts.length < 6) return raw;
 
-    // 月份映射
     final monthMap = {
       'Jan': 1,
       'Feb': 2,
@@ -85,11 +85,8 @@ class UserDetailPage extends ConsumerStatefulWidget {
 
 class _UserDetailPageState extends ConsumerState<UserDetailPage>
     with TickerProviderStateMixin {
-  // builders 列表（构造每一项的 Widget）
   final List<Widget Function(BuildContext)> _builders = [];
-  // 控制当前可见数量（异步逐个增加）
   int _visibleCount = 3;
-  // ✅ index < 4 我们不做 fade（保证名字立即显示）
   final List<AnimationController?> _fadeControllers = [];
 
   @override
@@ -101,7 +98,6 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
   }
 
   void _ensureControllersList() {
-    // 初始化 controllers 列表（保持与 builders 长度一致），只为 index >= 3 创建 controller
     _fadeControllers.clear();
     for (var i = 0; i < _builders.length; i++) {
       if (i >= 3) {
@@ -109,7 +105,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
           AnimationController(vsync: this, duration: _fadeDurationFor(i)),
         );
       } else {
-        _fadeControllers.add(null); // 前三个默认不使用 fade（可修改）
+        _fadeControllers.add(null);
       }
     }
   }
@@ -128,19 +124,22 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
 
   void _prepareBuilders() {
     _builders.clear();
+    // 1. Banner + Avatar + Buttons (Merged Section)
     _builders.add(_buildBannerAvatarSection);
-    _builders.add(_buildButtons);
+
+    // 2. User Info
     _builders.add((c) => const SizedBox(height: 5));
     _builders.add(_buildUserInfoColumn);
     _builders.add((c) => const SizedBox(height: 12));
 
-    // 1. 基础信息 (位置、链接、加入时间) - 之前代码里有 _buildMetadataRow
+    // 3. Metadata (Location, Link, Joined)
     _builders.add(_buildMetadataRow);
 
-    // 4. 灵活统计表格 (放在最下方)
-    _builders.add((c) => const SizedBox(height: 8));
+    // 6. Flexible Grid (Statistics Table)
+    _builders.add((c) => const SizedBox(height: 5));
     _builders.add(_buildFlexibleStatGrid);
 
+    // 7. Extra Info
     _builders.add(_buildPinnedTweetSection);
     _builders.add(_buildIdentityTile);
     _builders.add(_buildSnapshotInfo);
@@ -150,12 +149,10 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
 
-      // 确保 controllers 数量与 builders 一致（万一 builders 在 init 后被改）
       if (_fadeControllers.length != _builders.length) {
         _ensureControllersList();
       }
 
-      // 1) 等待路由（Hero）动画完成再显示主要内容
       final route = ModalRoute.of(context);
       final animation = route?.animation;
       if (animation != null && animation.status != AnimationStatus.completed) {
@@ -168,7 +165,6 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
           }
         };
         animation.addStatusListener(listener);
-        // 若 animation 已是 completed，就跳过等待（防护）
         if (animation.status != AnimationStatus.completed) {
           await completer.future;
         }
@@ -176,28 +172,19 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
 
       if (!mounted) return;
 
-      // 2) Hero 完成后立刻显示前三项（0..2）
-      //    我们保持前三项不使用淡入（可选）
       setState(() {
         _visibleCount = _visibleCount < 3 ? 3 : _visibleCount;
       });
 
-      // 3) 其余项逐个异步出现，并使用各自的 fade controller 渐显
       for (var i = 3; i < _builders.length; i++) {
         if (!mounted) return;
-
-        // 先让 Widget 被 build（加入 ListView）
         setState(() {
           _visibleCount = i + 1;
         });
-
-        // 触发对应的 fade 动画（如果存在 controller）
         final controller = _fadeControllers.length > i
             ? _fadeControllers[i]
             : null;
         controller?.forward();
-
-        // 等待下一项出现（动态节奏）
         await Future.delayed(_delayFor(i));
       }
     });
@@ -218,9 +205,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
     final Uri? uri = Uri.tryParse(urlString);
     if (uri == null) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('无法打开链接: 格式错误')));
+        logger.e('Unable to parse URL: invalid format');
       }
       return;
     }
@@ -228,9 +213,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
       await launchUrl(uri, mode: LaunchMode.platformDefault);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('无法打开链接: $e')));
+        logger.e('Unable to launch URL: $e');
       }
     }
   }
@@ -251,7 +234,6 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
               }
             },
             itemBuilder: (context) {
-              //final l10n = AppLocalizations.of(context)!;
               return [
                 PopupMenuItem(
                   value: 'json',
@@ -274,51 +256,41 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
       ),
       body: ListView(
         padding: EdgeInsets.zero,
-        children: List.generate(
-          // 仍只 build <= _visibleCount 的元素，保留异步加载意义
-          _visibleCount.clamp(0, _builders.length),
-          (index) {
-            // 前 3 项我们不做 fade（确保 Hero 与首批立即显示）
-            if (index < 3) {
-              return _builders[index](context);
-            }
-
-            // 对于后续项，如果有 controller 则使用 FadeTransition（可叠加位移）
-            final controller = _fadeControllers.length > index
-                ? _fadeControllers[index]
-                : null;
-            if (controller != null) {
-              return FadeTransition(
-                opacity: controller.drive(CurveTween(curve: Curves.easeOut)),
-                child: SlideTransition(
-                  position: controller.drive(
-                    Tween<Offset>(
-                      begin: const Offset(0, 0.03),
-                      end: Offset.zero,
-                    ).chain(CurveTween(curve: Curves.easeOut)),
-                  ),
-                  child: _builders[index](context),
+        children: List.generate(_visibleCount.clamp(0, _builders.length), (
+          index,
+        ) {
+          if (index < 3) {
+            return _builders[index](context);
+          }
+          final controller = _fadeControllers.length > index
+              ? _fadeControllers[index]
+              : null;
+          if (controller != null) {
+            return FadeTransition(
+              opacity: controller.drive(CurveTween(curve: Curves.easeOut)),
+              child: SlideTransition(
+                position: controller.drive(
+                  Tween<Offset>(
+                    begin: const Offset(0, 0.03),
+                    end: Offset.zero,
+                  ).chain(CurveTween(curve: Curves.easeOut)),
                 ),
-              );
-            } else {
-              // 保底：如果没有 controller，直接显示
-              return _builders[index](context);
-            }
-          },
-        ),
+                child: _builders[index](context),
+              ),
+            );
+          } else {
+            return _builders[index](context);
+          }
+        }),
       ),
     );
   }
 
-  // ------------------------- 以下是你原有的 builder 方法（未改动逻辑） -------------------------
+  // --- Header Section with Fixed Layout ---
 
   Widget _buildBannerAvatarSection(BuildContext context) {
-    final String highQualityNetworkUrl = (widget.user.avatarUrl ?? '')
+    final String highQualityAvatarUrl = (widget.user.avatarUrl ?? '')
         .replaceFirst(RegExp(r'_(normal|bigger|400x400)'), '_400x400');
-    const double bannerAspectRatio = 3 / 1;
-    const double avatarOverhang = 40.0;
-
-    // 直接从 Provider 获取值，不使用 await
     final mediaDir = ref.watch(appSupportDirProvider).value;
 
     final String? avatarLocalPath =
@@ -335,152 +307,189 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
         ? p.join(mediaDir, widget.user.bannerLocalPath!)
         : null;
 
-    Widget buildNetworkAvatar() {
-      if (highQualityNetworkUrl.isEmpty) return const SizedBox.shrink();
-      return CachedNetworkImage(
-        imageUrl: highQualityNetworkUrl,
-        fit: BoxFit.cover,
-        width: 84,
-        height: 84,
-        fadeInDuration: const Duration(milliseconds: 300),
-        placeholder: (c, u) => const SizedBox.shrink(),
-        errorWidget: (c, u, e) => const SizedBox.shrink(),
-      );
+    ImageProvider? avatarProvider;
+    if (avatarLocalPath != null) {
+      avatarProvider = FileImage(File(avatarLocalPath));
+    } else if (highQualityAvatarUrl.isNotEmpty) {
+      avatarProvider = CachedNetworkImageProvider(highQualityAvatarUrl);
     }
 
-    Widget buildNetworkBanner() => _buildNetworkBanner(context);
+    ImageProvider? bannerProvider;
+    if (bannerLocalPath != null) {
+      bannerProvider = FileImage(File(bannerLocalPath));
+    } else if (widget.user.bannerUrl != null &&
+        widget.user.bannerUrl!.isNotEmpty) {
+      bannerProvider = CachedNetworkImageProvider(widget.user.bannerUrl!);
+    }
 
-    return Stack(
-      clipBehavior: Clip.none,
-      alignment: Alignment.topCenter,
-      children: [
-        // Banner
-        AspectRatio(
-          aspectRatio: bannerAspectRatio,
-          child: bannerLocalPath != null
-              ? Image.file(
-                  File(bannerLocalPath),
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) =>
-                      buildNetworkBanner(),
-                )
-              : buildNetworkBanner(),
-        ),
+    final avatarHeroTag = widget.heroTag ?? 'avatar_${widget.user.restId}';
+    final bannerHeroTag = 'banner_${widget.user.restId}';
 
-        // Avatar with Hero
-        Positioned(
-          left: 16,
-          bottom: -avatarOverhang,
-          child: Hero(
-            tag: widget.heroTag ?? 'avatar_${widget.user.restId}',
-            child: CircleAvatar(
-              radius: 45,
-              backgroundColor: Colors.white,
-              child: CircleAvatar(
-                radius: 42,
-                backgroundColor: Theme.of(
-                  context,
-                ).colorScheme.surfaceContainerHighest,
-                child: ClipOval(
-                  child: SizedBox(
-                    width: 84,
-                    height: 84,
-                    child: avatarLocalPath != null
-                        ? Image.file(
-                            File(avatarLocalPath),
-                            fit: BoxFit.cover,
-                            width: 84,
-                            height: 84,
-                            errorBuilder: (context, error, stackTrace) =>
-                                buildNetworkAvatar(),
-                          )
-                        : buildNetworkAvatar(),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Calculate banner height (3:1 ratio)
+        final double bannerHeight = constraints.maxWidth / 3.0;
+        const double avatarRadius = 45.0;
+        const double avatarDiameter = avatarRadius * 2;
+
+        // Avatar top position calculation to match original overlap
+        // Original: bottom: -40. Height 90. Top = BannerHeight - (90 - 40) = BannerHeight - 50.
+        final double avatarTop = bannerHeight - 50.0;
+
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                GestureDetector(
+                  onTap: bannerProvider == null
+                      ? null
+                      : () => FullScreenImageViewer.show(
+                          context,
+                          imageProvider: bannerProvider!,
+                          heroTag: bannerHeroTag,
+                          imageUrl: widget.user.bannerUrl!,
+                          localFilePath: bannerLocalPath ?? '',
+                        ),
+                  child: Hero(
+                    tag: bannerHeroTag,
+                    child: SizedBox(
+                      height: bannerHeight,
+                      width: double.infinity,
+                      child: bannerProvider != null
+                          ? Image(
+                              image: bannerProvider,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                  _buildNetworkBanner(context),
+                            )
+                          : _buildNetworkBanner(context),
+                    ),
+                  ),
+                ),
+                // Button area
+                Container(
+                  padding: const EdgeInsets.only(top: 8.0, right: 16.0),
+                  // Ensure minimum height to cover avatar overhang (40px) plus margin
+                  constraints: const BoxConstraints(minHeight: 45.0),
+                  child: _buildButtonsRow(context),
+                ),
+              ],
+            ),
+            Positioned(
+              left: 16,
+              top: avatarTop,
+              child: GestureDetector(
+                onTap: avatarProvider == null
+                    ? null
+                    : () => FullScreenImageViewer.show(
+                        context,
+                        imageProvider: avatarProvider!,
+                        heroTag: avatarHeroTag,
+                        imageUrl: highQualityAvatarUrl,
+                        localFilePath: avatarLocalPath ?? '',
+                      ),
+                child: Hero(
+                  tag: avatarHeroTag,
+                  child: CircleAvatar(
+                    radius: avatarRadius,
+                    backgroundColor: Colors.white,
+                    child: CircleAvatar(
+                      radius: 42,
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
+                      child: ClipOval(
+                        child: SizedBox(
+                          width: avatarDiameter,
+                          height: avatarDiameter,
+                          child: avatarProvider != null
+                              ? Image(
+                                  image: avatarProvider,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) =>
+                                      const SizedBox.shrink(),
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildNetworkBanner(BuildContext context) {
+    // Fallback widget
+    return Container(color: Colors.grey.shade300);
+  }
+
+  Widget _buildButtonsRow(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final buttonHeight = 32.0;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (!widget.isFromHistory)
+          SizedBox(
+            width: buttonHeight,
+            height: buttonHeight,
+            child: FilledButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => UserHistoryPage(
+                      user: widget.user,
+                      ownerId: widget.ownerId,
+                    ),
+                  ),
+                );
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.pink.shade100,
+                foregroundColor: Colors.pink.shade800,
+                padding: EdgeInsets.zero,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Icon(Icons.history_outlined, size: 20),
+            ),
+          ),
+        const SizedBox(width: 8),
+        SizedBox(
+          height: buttonHeight,
+          child: FilledButton.tonalIcon(
+            onPressed: () => _openExternalProfile(context, l10n),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.pink.shade100,
+              foregroundColor: Colors.pink.shade800,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              minimumSize: Size(0, buttonHeight),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            icon: const Icon(Icons.open_in_new, size: 20),
+            label: Text(l10n.visit),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildNetworkBanner(BuildContext context) {
-    if (widget.user.bannerUrl != null && widget.user.bannerUrl!.isNotEmpty) {
-      return CachedNetworkImage(
-        imageUrl: widget.user.bannerUrl!,
-        fit: BoxFit.cover,
-        placeholder: (c, u) => Container(color: Colors.grey.shade300),
-        errorWidget: (c, u, e) => Container(color: Colors.grey.shade300),
-      );
-    }
-    return Container(color: Colors.grey.shade300);
-  }
-
-  Widget _buildButtons(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final buttonHeight = 32.0;
-
-    return Padding(
-      padding: const EdgeInsets.only(right: 16.0, top: 8.0),
-      child: Align(
-        alignment: Alignment.centerRight,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (!widget.isFromHistory)
-              SizedBox(
-                width: buttonHeight,
-                height: buttonHeight,
-                child: FilledButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => UserHistoryPage(
-                          user: widget.user,
-                          ownerId: widget.ownerId,
-                        ),
-                      ),
-                    );
-                  },
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.pink.shade100,
-                    foregroundColor: Colors.pink.shade800,
-                    padding: EdgeInsets.zero,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: const Icon(Icons.history_outlined, size: 20),
-                ),
-              ),
-            const SizedBox(width: 8),
-            SizedBox(
-              height: buttonHeight,
-              child: FilledButton.tonalIcon(
-                onPressed: () => _openExternalProfile(context, l10n),
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.pink.shade100,
-                  foregroundColor: Colors.pink.shade800,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  minimumSize: Size(0, buttonHeight),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                icon: const Icon(Icons.open_in_new, size: 20),
-                label: Text(l10n.visit),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // --- Info Sections ---
 
   Widget _buildUserInfoColumn(BuildContext context) {
     return Padding(
@@ -511,7 +520,6 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
-    // 匹配 @username 或 http/https 链接
     final regex = RegExp(r'(@[\w]+)|(https?:\/\/[^\s]+)');
     final List<TextSpan> spans = [];
     int lastIndex = 0;
@@ -540,7 +548,6 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
           ),
         );
       } else {
-        // http/https 链接
         spans.add(
           TextSpan(
             text: matchedText,
@@ -557,7 +564,6 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
           ),
         );
       }
-
       lastIndex = match.end;
     }
 
@@ -579,7 +585,6 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
 
     final List<Widget> items = [];
 
-    // Location
     if (widget.user.location != null && widget.user.location!.isNotEmpty) {
       items.add(
         _buildIconText(
@@ -590,12 +595,10 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
       );
     }
 
-    // Link
     if (widget.user.link != null && widget.user.link!.isNotEmpty) {
       items.add(_buildLinkItem(context, widget.user.link!));
     }
 
-    // Joined time
     items.add(
       _buildIconText(
         context,
@@ -613,20 +616,16 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
               Icons.mail_outlined,
               size: 16,
               color: widget.user.canDm
-                  ? theme
-                        .colorScheme
-                        .tertiary // active DM color
-                  : theme.highlightColor, // inactive
+                  ? theme.colorScheme.tertiary
+                  : theme.highlightColor,
             ),
             const SizedBox(width: 2),
             Icon(
               Icons.tag_outlined,
               size: 16,
               color: widget.user.canMediaTag
-                  ? theme
-                        .colorScheme
-                        .tertiary // active tag color
-                  : theme.highlightColor, // inactive
+                  ? theme.colorScheme.tertiary
+                  : theme.highlightColor,
             ),
           ],
         ),
@@ -640,6 +639,179 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
         runSpacing: 4.0,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: items,
+      ),
+    );
+  }
+
+  // ignore: unused_element
+  Widget _buildCountsRow(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Wrap(
+        spacing: 16.0,
+        runSpacing: 4.0,
+        children: [
+          _buildCountText(context, widget.user.followingCount, l10n.following),
+          _buildCountText(context, widget.user.followersCount, l10n.followers),
+        ],
+      ),
+    );
+  }
+
+  // ignore: unused_element
+  Widget _buildMetadataTiles(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 1, 0),
+          child: Text(
+            l10n.metadata,
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+        ),
+        _buildInfoTile(
+          context,
+          Icons.create,
+          l10n.tweets,
+          widget.user.statusesCount.toString(),
+        ),
+        _buildInfoTile(
+          context,
+          Icons.image,
+          l10n.media_count,
+          widget.user.mediaCount.toString(),
+        ),
+        _buildInfoTile(
+          context,
+          Icons.favorite,
+          l10n.likes,
+          widget.user.favouritesCount.toString(),
+        ),
+        _buildInfoTile(
+          context,
+          Icons.list_alt,
+          l10n.listed_count,
+          widget.user.listedCount.toString(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFlexibleStatGrid(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
+    // Prepare all 6 data items
+    final items = [
+      _StatItemData(
+        Icons.group_outlined,
+        l10n.following,
+        widget.user.followingCount.toString(),
+      ),
+      _StatItemData(
+        Icons.group,
+        l10n.followers,
+        widget.user.followersCount.toString(),
+      ),
+      _StatItemData(
+        Icons.create,
+        l10n.tweets,
+        widget.user.statusesCount.toString(),
+      ),
+      _StatItemData(
+        Icons.image,
+        l10n.media_count,
+        widget.user.mediaCount.toString(),
+      ),
+      _StatItemData(
+        Icons.favorite,
+        l10n.likes,
+        widget.user.favouritesCount.toString(),
+      ),
+      _StatItemData(
+        Icons.list_alt,
+        l10n.listed_count,
+        widget.user.listedCount.toString(),
+      ),
+    ];
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.dividerColor.withAlpha((0.2 * 255).round()),
+        ),
+      ),
+      child: Wrap(
+        spacing: 8.0,
+        runSpacing: 16.0,
+        alignment: WrapAlignment.spaceEvenly,
+        children: items.map((item) => _buildGridItem(context, item)).toList(),
+      ),
+    );
+  }
+
+  Widget _buildGridItem(BuildContext context, _StatItemData item) {
+    final double desiredWidth =
+        (MediaQuery.of(context).size.width - 32 - 16 - 20) / 3;
+    final double itemWidth = desiredWidth < 90 ? 90 : desiredWidth;
+
+    return SizedBox(
+      width: itemWidth,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    item.icon,
+                    size: 18,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        item.value,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          height: 1.1,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                item.label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Theme.of(context).colorScheme.secondary,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -918,6 +1090,24 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
     );
   }
 
+  Widget _buildCountText(BuildContext context, int? count, String label) {
+    return Text.rich(
+      TextSpan(
+        text: (count ?? 0).toString(),
+        style: const TextStyle(fontWeight: FontWeight.bold),
+        children: [
+          TextSpan(
+            text: ' $label',
+            style: const TextStyle(
+              fontWeight: FontWeight.normal,
+              color: Colors.grey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildInfoTile(
     BuildContext context,
     IconData icon,
@@ -1015,132 +1205,6 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
     } else {
       await launchUrl(webUrl, mode: LaunchMode.externalApplication);
     }
-  }
-
-  Widget _buildFlexibleStatGrid(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-
-    // 准备全部 6 个数据项
-    final items = [
-      _StatItemData(
-        Icons.group_outlined,
-        l10n.following,
-        widget.user.followingCount.toString(),
-      ),
-      _StatItemData(
-        Icons.group,
-        l10n.followers,
-        widget.user.followersCount.toString(),
-      ),
-      _StatItemData(
-        Icons.create,
-        l10n.tweets,
-        widget.user.statusesCount.toString(),
-      ),
-      _StatItemData(
-        Icons.image,
-        l10n.media_count,
-        widget.user.mediaCount.toString(),
-      ),
-      _StatItemData(
-        Icons.favorite,
-        l10n.likes,
-        widget.user.favouritesCount.toString(),
-      ),
-      _StatItemData(
-        Icons.list_alt,
-        l10n.listed_count,
-        widget.user.listedCount.toString(),
-      ),
-    ];
-
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.dividerColor.withOpacity(0.2)),
-      ),
-      child: Wrap(
-        // [核心] 使用 Wrap 实现灵活换行
-        spacing: 8.0, // 水平间距
-        runSpacing: 16.0, // 换行后的行间距
-        alignment: WrapAlignment.spaceEvenly, // 尽量均匀分布
-        children: items.map((item) => _buildGridItem(context, item)).toList(),
-      ),
-    );
-  }
-
-  // 3. 构建单行 (核心布局逻辑)
-
-  // 4. 构建单个单元格 (防止溢出逻辑)
-  Widget _buildGridItem(BuildContext context, _StatItemData item) {
-    // [核心] 动态计算宽度
-    // 屏幕宽 - 页面左右padding(32) - 容器内部padding(16) - Wrap间距预留
-    // 除以 3 试图让一行显示 3 个。如果屏幕太窄，Wrap 会自动换行。
-    final double desiredWidth =
-        (MediaQuery.of(context).size.width - 32 - 16 - 20) / 3;
-
-    // 设置最小宽度限制 (例如 90)，防止在极窄屏幕上挤成一团，而是直接换行
-    final double itemWidth = desiredWidth < 90 ? 90 : desiredWidth;
-
-    return SizedBox(
-      width: itemWidth,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            // [核心] 确保 Column 内部元素水平居中
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // 图标与数字并排 (Row 也要居中)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    item.icon,
-                    size: 18,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        item.value,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          height: 1.1,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              // 标签居中
-              Text(
-                item.label,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Theme.of(context).colorScheme.secondary,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }
 

@@ -200,6 +200,7 @@ class GqlQueryIdNotifier extends StateNotifier<GqlQueryIdState> {
             style: TextStyle(color: theme.colorScheme.onError),
           ),
           backgroundColor: theme.colorScheme.error,
+          duration: const Duration(seconds: 3),
         ),
       );
 

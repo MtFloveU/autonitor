@@ -644,6 +644,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                         ),
                       ),
                       backgroundColor: currentTheme.colorScheme.error,
+                      duration: const Duration(seconds: 3),
                     ),
                   );
                   return;

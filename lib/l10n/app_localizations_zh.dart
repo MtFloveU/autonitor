@@ -336,6 +336,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get visit => '访问';
+
+  @override
+  String get save => '保存';
+
+  @override
+  String get save_error => '保存时出错: ';
+
+  @override
+  String get image_saved => '图片已保存';
+
+  @override
+  String get open_in_browser => '在浏览器中打开';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -670,4 +682,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get visit => '訪問';
+
+  @override
+  String get save => '儲存';
+
+  @override
+  String get save_error => '儲存時出錯: ';
+
+  @override
+  String get image_saved => '圖片已儲存';
+
+  @override
+  String get open_in_browser => '在瀏覽器中打開';
 }
