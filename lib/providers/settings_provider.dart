@@ -71,11 +71,14 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
     final newState = AppSettings(
       locale: newLocale,
       themeMode: currentSettings.themeMode,
+      theme: currentSettings.theme, // 保持当前的主题颜色
       saveAvatarHistory: currentSettings.saveAvatarHistory,
       saveBannerHistory: currentSettings.saveBannerHistory,
       avatarQuality: currentSettings.avatarQuality,
       historyStrategy: currentSettings.historyStrategy,
       historyLimitN: currentSettings.historyLimitN,
+      customGqlQueryIds: currentSettings.customGqlQueryIds,
+      gqlQueryIdSource: currentSettings.gqlQueryIdSource,
     );
 
     state = AsyncValue.data(newState);
@@ -154,6 +157,21 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
     } catch (e, s) {
       state = AsyncValue.error('Failed to save theme: $e', s);
       _log.e('Failed to save themeMode setting', error: e, stackTrace: s);
+    }
+  }
+
+  // [新增] 更新主题颜色
+  Future<void> updateThemeColor(ThemeColor newColor) async {
+    final currentSettings = state.value ?? AppSettings();
+    final newState = currentSettings.copyWith(theme: newColor);
+
+    state = AsyncValue.data(newState);
+
+    try {
+      await _settingsService.saveSettings(newState);
+    } catch (e, s) {
+      state = AsyncValue.error('Failed to save theme color: $e', s);
+      _log.e('Failed to save theme color setting', error: e, stackTrace: s);
     }
   }
 

@@ -52,13 +52,6 @@
   "log_in": "登录",
   "delete": "删除",
   "confirm_delete_account": "您确定要删除账号 {accountId} 吗？此操作无法撤销。删除账号将永久移除其所有关联数据（历史记录、关注者/关注列表等）。如果您只想更新 Cookie，请直接重新添加该账号。",
-  "@confirm_delete_account": {
-    "placeholders": {
-      "accountId": {
-        "description": "The ID of the account to be deleted"
-      }
-    }
-  },
   "copy": "复制",
   "copied_to_clipboard": "已复制到剪贴板！",
   "no_json_data_available": "无 JSON 数据",
@@ -72,13 +65,6 @@
   "no_analysis_data": "尚未生成分析数据",
   "run_analysis_now": "立即运行分析",
   "last_updated_at": "上次更新：{date}",
-  "@last_updated_at": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
-  },
   "user_history_page_title": "个人资料历史",
   "storage_settings": "存储设置",
   "save_avatar_history": "保存头像",
@@ -91,10 +77,11 @@
   "strategy_save_latest": "仅保留最新",
   "strategy_save_last_n": "删除早于最近",
   "strategy_save_last_n_suffix": "次更改的头像/横幅",
-  "theme_mode": "主题",
-  "theme_mode_system": "跟随系统",
+  "theme_mode": "主题模式",
+  "follow_system": "跟随系统",
   "theme_mode_light": "浅色",
   "theme_mode_dark": "深色",
+  "theme": "主题",
   "log": "日志",
   "view_log": "查看日志",
   "clear": "清除",
@@ -117,11 +104,31 @@
   "graphql_path_config": "GQL QueryId 配置",
   "follows_you": "关注了你",
   "not_follow": "未关注",
-  "automated_by": "由 @{automatedScreenName} 自动发推",
+  "automated_by": "由 {automatedScreenName} 自动发推",
   "automated": "自动发推",
   "visit": "访问",
   "save": "保存",
   "save_error": "保存时出错: ",
   "image_saved": "图片已保存",
-  "open_in_browser": "在浏览器中打开"
+  "open_in_browser": "在浏览器中打开",
+  "search": "搜索",
+  "color_red": "红色",
+  "color_pink": "粉色",
+  "color_purple": "紫色",
+  "color_deepPurple": "深紫色",
+  "color_indigo": "靛青色",
+  "color_blue": "蓝色",
+  "color_lightBlue": "浅蓝色",
+  "color_cyan": "青色",
+  "color_teal": "蓝绿色",
+  "color_green": "绿色",
+  "color_lightGreen": "浅绿色",
+  "color_lime": "酸橙色",
+  "color_yellow": "黄色",
+  "color_amber": "琥珀色",
+  "color_orange": "橙色",
+  "color_deepOrange": "深橙色",
+  "color_brown": "棕色",
+  "color_grey": "灰色",
+  "color_blueGrey": "蓝灰色"
 }

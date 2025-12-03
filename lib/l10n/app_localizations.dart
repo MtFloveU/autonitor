@@ -564,14 +564,20 @@ abstract class AppLocalizations {
   /// No description provided for @theme_mode.
   ///
   /// In en, this message translates to:
-  /// **'Theme'**
+  /// **'Theme Mode'**
   String get theme_mode;
 
-  /// No description provided for @theme_mode_system.
+  /// No description provided for @theme.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme'**
+  String get theme;
+
+  /// No description provided for @follow_system.
   ///
   /// In en, this message translates to:
   /// **'Follow System'**
-  String get theme_mode_system;
+  String get follow_system;
 
   /// No description provided for @theme_mode_light.
   ///
@@ -584,6 +590,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dark'**
   String get theme_mode_dark;
+
+  /// No description provided for @color_red.
+  ///
+  /// In en, this message translates to:
+  /// **'Red'**
+  String get color_red;
+
+  /// No description provided for @color_pink.
+  ///
+  /// In en, this message translates to:
+  /// **'Pink'**
+  String get color_pink;
+
+  /// No description provided for @color_purple.
+  ///
+  /// In en, this message translates to:
+  /// **'Purple'**
+  String get color_purple;
+
+  /// No description provided for @color_deepPurple.
+  ///
+  /// In en, this message translates to:
+  /// **'Deep Purple'**
+  String get color_deepPurple;
+
+  /// No description provided for @color_indigo.
+  ///
+  /// In en, this message translates to:
+  /// **'Indigo'**
+  String get color_indigo;
+
+  /// No description provided for @color_blue.
+  ///
+  /// In en, this message translates to:
+  /// **'Blue'**
+  String get color_blue;
+
+  /// No description provided for @color_lightBlue.
+  ///
+  /// In en, this message translates to:
+  /// **'Light Blue'**
+  String get color_lightBlue;
+
+  /// No description provided for @color_cyan.
+  ///
+  /// In en, this message translates to:
+  /// **'Cyan'**
+  String get color_cyan;
+
+  /// No description provided for @color_teal.
+  ///
+  /// In en, this message translates to:
+  /// **'Teal'**
+  String get color_teal;
+
+  /// No description provided for @color_green.
+  ///
+  /// In en, this message translates to:
+  /// **'Green'**
+  String get color_green;
+
+  /// No description provided for @color_lightGreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Light Green'**
+  String get color_lightGreen;
+
+  /// No description provided for @color_lime.
+  ///
+  /// In en, this message translates to:
+  /// **'Lime'**
+  String get color_lime;
+
+  /// No description provided for @color_yellow.
+  ///
+  /// In en, this message translates to:
+  /// **'Yellow'**
+  String get color_yellow;
+
+  /// No description provided for @color_amber.
+  ///
+  /// In en, this message translates to:
+  /// **'Amber'**
+  String get color_amber;
+
+  /// No description provided for @color_orange.
+  ///
+  /// In en, this message translates to:
+  /// **'Orange'**
+  String get color_orange;
+
+  /// No description provided for @color_deepOrange.
+  ///
+  /// In en, this message translates to:
+  /// **'Deep Orange'**
+  String get color_deepOrange;
+
+  /// No description provided for @color_brown.
+  ///
+  /// In en, this message translates to:
+  /// **'Brown'**
+  String get color_brown;
+
+  /// No description provided for @color_grey.
+  ///
+  /// In en, this message translates to:
+  /// **'Grey'**
+  String get color_grey;
+
+  /// No description provided for @color_blueGrey.
+  ///
+  /// In en, this message translates to:
+  /// **'Blue Grey'**
+  String get color_blueGrey;
 
   /// No description provided for @log.
   ///
@@ -720,7 +840,7 @@ abstract class AppLocalizations {
   ///
   ///
   /// In en, this message translates to:
-  /// **'Automated by @{automatedScreenName}'**
+  /// **'Automated by {automatedScreenName}'**
   String automated_by(String automatedScreenName);
 
   /// No description provided for @automated.
@@ -758,6 +878,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open in Browser'**
   String get open_in_browser;
+
+  /// No description provided for @search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get search;
 }
 
 class _AppLocalizationsDelegate

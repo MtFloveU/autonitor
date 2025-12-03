@@ -386,7 +386,6 @@ class _UserListPageState extends ConsumerState<UserListPage>
   void initState() {
     super.initState();
 
-    // ✅ 监听路由进入动画
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final route = ModalRoute.of(context);
       final animation = route?.animation;
@@ -475,25 +474,16 @@ class _UserListPageState extends ConsumerState<UserListPage>
           _buildSuspendedBanner(context),
 
           Expanded(
-            // 1. 移除外层的三元运算符 !_routeAnimationCompleted ? ... : ...
-            // 直接使用 Builder，在内部进行状态判断，以便复用同一个 Loading 组件
             child: Builder(
               builder: (context) {
-                // 2. 定义统一的 Loading 组件
-                // 使用 const 是关键，确保在状态切换时（从路由动画结束 -> 开始网络请求），
-                // Loading 组件的实例不变，从而让旋转动画不中断（合并成一个圈）。
-                // 去掉 strokeWidth 设置，使用默认值，与 HomePage 等其他页面保持一致。
                 const loadingWidget = Center(
                   child: CircularProgressIndicator(),
                 );
 
-                // 3. 第一阶段：路由过渡动画未完成
-                // 直接返回统一的 loadingWidget，此时不触发 ref.watch，避免卡顿
                 if (!_routeAnimationCompleted) {
                   return loadingWidget;
                 }
 
-                // 4. 第二阶段：动画完成，开始监听 Provider (触发网络请求)
                 final param = UserListParam(
                   ownerId: widget.ownerId,
                   categoryKey: widget.categoryKey,
@@ -503,9 +493,6 @@ class _UserListPageState extends ConsumerState<UserListPage>
                 final mediaDirAsync = ref.watch(appSupportDirProvider);
 
                 return userListAsync.when(
-                  // 5. 第三阶段：网络请求加载中
-                  // 再次返回同一个 loadingWidget。
-                  // 因为前后返回的是同一个 const Widget，用户看到的圈圈会流畅地继续转动，不会重置。
                   loading: () => loadingWidget,
 
                   error: (err, stack) => Center(
@@ -518,7 +505,6 @@ class _UserListPageState extends ConsumerState<UserListPage>
                       );
                     }
 
-                    // ... 保持原本的 ListView 代码不变 ...
                     final bool hasMore = ref
                         .read(userListProvider(param).notifier)
                         .hasMore();
@@ -527,57 +513,35 @@ class _UserListPageState extends ConsumerState<UserListPage>
 
                     final mediaDir = mediaDirAsync.value;
 
+                    // 使用 ListView + Center + ConstrainedBox 替代 GridView
+                    // 彻底解决像素溢出问题，同时适配大屏幕
                     return ListView.builder(
                       physics: const AlwaysScrollableScrollPhysics(),
                       cacheExtent: 1000,
                       itemCount: itemCount,
                       itemBuilder: (context, index) {
                         if (index == users.length) {
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            final notifier = ref.read(
-                              userListProvider(param).notifier,
-                            );
-                            if (notifier.hasMore()) {
-                              notifier.fetchMore();
-                            }
-                          });
-
-                          return const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(16.0),
-                              child: SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 3,
-                                ),
-                              ),
-                            ),
-                          );
+                          return _buildLoadingFooter(param);
                         }
 
-                        final user = users[index];
-
-                        void onTapAction() {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => UserDetailPage(
-                                key: ValueKey(user.restId),
-                                user: user,
-                                ownerId: widget.ownerId,
+                        // 核心修改：在每个 Item 外层包裹 Center 和 ConstrainedBox
+                        // 这样在宽屏下内容居中且宽度受限，在窄屏下自适应
+                        return Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 800),
+                            child: Card(
+                              elevation: 0, // 列表模式下通常不需要高阴影，0或默认即可，视设计而定
+                              margin: EdgeInsets
+                                  .zero, // 移除 Card 默认边距，由 UserListTile 控制或外部 Padding 控制
+                              color: Colors.transparent, // 透明背景，让 Tile 自己处理
+                              child: _buildListItem(
+                                context,
+                                users[index],
+                                mediaDir,
+                                l10n,
                               ),
                             ),
-                          );
-                        }
-
-                        return UserListTile(
-                          key: ValueKey(user.restId),
-                          user: user,
-                          mediaDir: mediaDir,
-                          onTap: onTapAction,
-                          followingLabel: l10n.following,
-                          isFollower: user.isFollower,
+                          ),
                         );
                       },
                     );
@@ -588,6 +552,55 @@ class _UserListPageState extends ConsumerState<UserListPage>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLoadingFooter(UserListParam param) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final notifier = ref.read(userListProvider(param).notifier);
+      if (notifier.hasMore()) {
+        notifier.fetchMore();
+      }
+    });
+
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 3),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListItem(
+    BuildContext context,
+    TwitterUser user,
+    String? mediaDir,
+    AppLocalizations l10n,
+  ) {
+    void onTapAction() {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => UserDetailPage(
+            key: ValueKey(user.restId),
+            user: user,
+            ownerId: widget.ownerId,
+          ),
+        ),
+      );
+    }
+
+    return UserListTile(
+      key: ValueKey(user.restId),
+      user: user,
+      mediaDir: mediaDir,
+      onTap: onTapAction,
+      followingLabel: l10n.following,
+      isFollower: user.isFollower,
     );
   }
 }

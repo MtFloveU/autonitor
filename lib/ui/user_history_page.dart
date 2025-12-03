@@ -76,99 +76,106 @@ class _UserHistoryPageState extends ConsumerState<UserHistoryPage> {
         ),
       ),
       // 4. 使用 Builder 来包含逻辑
-      body: Builder(
-        builder: (context) {
-          // 定义统一的 Loading 组件
-          const loadingWidget = Center(child: CircularProgressIndicator());
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: 800,
+          ),
+          child: Builder(
+            builder: (context) {
+              // 定义统一的 Loading 组件
+              const loadingWidget = Center(child: CircularProgressIndicator());
 
-          // 5. 阻断逻辑：动画未完成时，直接返回 Loading，不 Watch Provider
-          if (!_routeAnimationCompleted) {
-            return loadingWidget;
-          }
-
-          // 6. 动画完成，开始 Watch Provider (触发后台 Worker 计算)
-          final params = ProfileHistoryParams(
-            ownerId: widget.ownerId,
-            userId: userId,
-          );
-          final historyAsync = ref.watch(profileHistoryProvider(params));
-          final mediaDirAsync = ref.watch(appSupportDirProvider);
-
-          return historyAsync.when(
-            // 加载中：继续显示同一个 Loading 组件，无缝衔接
-            loading: () => loadingWidget,
-
-            error: (err, stack) => Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text('${l10n.failed_to_load_user_list}:\n$err'),
-              ),
-            ),
-            data: (snapshots) {
-              if (snapshots.isEmpty) {
-                return Center(child: Text(l10n.no_users_in_this_category));
+              // 5. 阻断逻辑：动画未完成时，直接返回 Loading，不 Watch Provider
+              if (!_routeAnimationCompleted) {
+                return loadingWidget;
               }
 
-              return ListView.builder(
-                itemCount: snapshots.length,
-                itemBuilder: (context, index) {
-                  final snapshot = snapshots[index];
-                  final snapshotUser = snapshot.user;
+              // 6. 动画完成，开始 Watch Provider (触发后台 Worker 计算)
+              final params = ProfileHistoryParams(
+                ownerId: widget.ownerId,
+                userId: userId,
+              );
+              final historyAsync = ref.watch(profileHistoryProvider(params));
+              final mediaDirAsync = ref.watch(appSupportDirProvider);
 
-                  // 2. 只需要获取 mediaDir (UserListTile 内部会处理路径计算)
-                  final mediaDir = mediaDirAsync.value;
-                  final String uniqueHeroTag =
-                      'avatar_${snapshotUser.restId}_${snapshot.entry.id}';
+              return historyAsync.when(
+                // 加载中：继续显示同一个 Loading 组件，无缝衔接
+                loading: () => loadingWidget,
 
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // 3. 保留顶部的 ID 和时间戳 Header
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-                        child: Text(
-                          "ID: ${snapshot.entry.id}  (${snapshot.entry.timestamp.toLocal().toString().substring(0, 16)})",
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
+                error: (err, stack) => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text('${l10n.failed_to_load_user_list}:\n$err'),
+                  ),
+                ),
+                data: (snapshots) {
+                  if (snapshots.isEmpty) {
+                    return Center(child: Text(l10n.no_users_in_this_category));
+                  }
 
-                      // 4. 使用 UserListTile 替换原有的手动 ListTile
-                      UserListTile(
-                        user: snapshotUser,
-                        mediaDir: mediaDir,
-                        followingLabel: l10n.following,
-                        isFollower: snapshotUser.isFollower,
+                  return ListView.builder(
+                    itemCount: snapshots.length,
+                    itemBuilder: (context, index) {
+                      final snapshot = snapshots[index];
+                      final snapshotUser = snapshot.user;
 
-                        // [关键] 传入唯一的 Hero Tag，结合 User ID 和 快照 ID
-                        customHeroTag: uniqueHeroTag,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => UserDetailPage(
-                                user: snapshotUser,
-                                ownerId: widget.ownerId,
-                                isFromHistory: true,
-                                snapshotJson: snapshot.fullJson,
-                                snapshotId: snapshot.entry.id,
-                                snapshotTimestamp: snapshot.entry.timestamp,
-                                heroTag: uniqueHeroTag,
+                      // 2. 只需要获取 mediaDir (UserListTile 内部会处理路径计算)
+                      final mediaDir = mediaDirAsync.value;
+                      final String uniqueHeroTag =
+                          'avatar_${snapshotUser.restId}_${snapshot.entry.id}';
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 3. 保留顶部的 ID 和时间戳 Header
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                            child: Text(
+                              "ID: ${snapshot.entry.id}  (${snapshot.entry.timestamp.toLocal().toString().substring(0, 16)})",
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
                               ),
                             ),
-                          );
-                        },
-                      ),
-                    ],
+                          ),
+
+                          // 4. 使用 UserListTile 替换原有的手动 ListTile
+                          UserListTile(
+                            user: snapshotUser,
+                            mediaDir: mediaDir,
+                            followingLabel: l10n.following,
+                            isFollower: snapshotUser.isFollower,
+
+                            // [关键] 传入唯一的 Hero Tag，结合 User ID 和 快照 ID
+                            customHeroTag: uniqueHeroTag,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => UserDetailPage(
+                                    user: snapshotUser,
+                                    ownerId: widget.ownerId,
+                                    isFromHistory: true,
+                                    snapshotJson: snapshot.fullJson,
+                                    snapshotId: snapshot.entry.id,
+                                    snapshotTimestamp: snapshot.entry.timestamp,
+                                    heroTag: uniqueHeroTag,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      );
+                    },
                   );
                 },
               );
             },
-          );
-        },
+          ),
+        ),
       ),
     );
   }

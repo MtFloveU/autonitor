@@ -5,6 +5,30 @@ enum AvatarQuality { low, high }
 
 enum HistoryStrategy { saveAll, saveLatest, saveLastN }
 
+// [已更新] 包含所有 Material 3 基础色系
+enum ThemeColor {
+  defaultThemeColor,
+  red,
+  pink,
+  purple,
+  deepPurple,
+  indigo,
+  blue,
+  lightBlue,
+  cyan,
+  teal,
+  green,
+  lightGreen,
+  lime,
+  yellow,
+  amber,
+  orange,
+  deepOrange,
+  brown,
+  grey,
+  blueGrey,
+}
+
 extension _EnumParser on String? {
   T toEnum<T>(List<T> values, T defaultValue) {
     if (this == null) return defaultValue;
@@ -18,6 +42,7 @@ extension _EnumParser on String? {
 class AppSettings {
   final Locale? locale;
   final ThemeMode themeMode;
+  final ThemeColor theme;
   final bool saveAvatarHistory;
   final bool saveBannerHistory;
   final AvatarQuality avatarQuality;
@@ -36,10 +61,12 @@ class AppSettings {
     this.historyLimitN = 5,
     this.customGqlQueryIds = const {},
     this.gqlQueryIdSource = QueryIdSource.apiDocument,
+    this.theme = ThemeColor.defaultThemeColor,
   });
 
   AppSettings copyWith({
     ThemeMode? themeMode,
+    ThemeColor? theme,
     bool? saveAvatarHistory,
     bool? saveBannerHistory,
     AvatarQuality? avatarQuality,
@@ -51,6 +78,7 @@ class AppSettings {
     return AppSettings(
       locale: locale,
       themeMode: themeMode ?? this.themeMode,
+      theme: theme ?? this.theme,
       saveAvatarHistory: saveAvatarHistory ?? this.saveAvatarHistory,
       saveBannerHistory: saveBannerHistory ?? this.saveBannerHistory,
       avatarQuality: avatarQuality ?? this.avatarQuality,
@@ -65,6 +93,7 @@ class AppSettings {
     'languageCode': locale?.languageCode,
     'countryCode': locale?.countryCode,
     'themeMode': themeMode.name,
+    'theme': theme.name,
     'saveAvatarHistory': saveAvatarHistory,
     'saveBannerHistory': saveBannerHistory,
     'avatarQuality': avatarQuality.toString().split('.').last,
@@ -91,6 +120,10 @@ class AppSettings {
       themeMode: (json['themeMode'] as String?).toEnum(
         ThemeMode.values,
         defaultSettings.themeMode,
+      ),
+      theme: (json['theme'] as String?).toEnum(
+        ThemeColor.values,
+        defaultSettings.theme,
       ),
       saveAvatarHistory:
           json['saveAvatarHistory'] as bool? ??

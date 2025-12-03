@@ -246,16 +246,76 @@ class AppLocalizationsZh extends AppLocalizations {
   String get strategy_save_last_n_suffix => '次更改的头像/横幅';
 
   @override
-  String get theme_mode => '主题';
+  String get theme_mode => '主题模式';
 
   @override
-  String get theme_mode_system => '跟随系统';
+  String get theme => '主题';
+
+  @override
+  String get follow_system => '跟随系统';
 
   @override
   String get theme_mode_light => '浅色';
 
   @override
   String get theme_mode_dark => '深色';
+
+  @override
+  String get color_red => '红色';
+
+  @override
+  String get color_pink => '粉色';
+
+  @override
+  String get color_purple => '紫色';
+
+  @override
+  String get color_deepPurple => '深紫色';
+
+  @override
+  String get color_indigo => '靛青色';
+
+  @override
+  String get color_blue => '蓝色';
+
+  @override
+  String get color_lightBlue => '浅蓝色';
+
+  @override
+  String get color_cyan => '青色';
+
+  @override
+  String get color_teal => '蓝绿色';
+
+  @override
+  String get color_green => '绿色';
+
+  @override
+  String get color_lightGreen => '浅绿色';
+
+  @override
+  String get color_lime => '酸橙色';
+
+  @override
+  String get color_yellow => '黄色';
+
+  @override
+  String get color_amber => '琥珀色';
+
+  @override
+  String get color_orange => '橙色';
+
+  @override
+  String get color_deepOrange => '深橙色';
+
+  @override
+  String get color_brown => '棕色';
+
+  @override
+  String get color_grey => '灰色';
+
+  @override
+  String get color_blueGrey => '蓝灰色';
 
   @override
   String get log => '日志';
@@ -331,7 +391,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String automated_by(String automatedScreenName) {
-    return '由 @$automatedScreenName 自动发推';
+    return '由 $automatedScreenName 自动发推';
   }
 
   @override
@@ -351,6 +411,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get open_in_browser => '在浏览器中打开';
+
+  @override
+  String get search => '搜索';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -595,16 +658,76 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get strategy_save_last_n_suffix => '次更改的頭像/橫幅';
 
   @override
-  String get theme_mode => '主題';
+  String get theme_mode => '主題模式';
 
   @override
-  String get theme_mode_system => '跟隨系統';
+  String get theme => '主題';
+
+  @override
+  String get follow_system => '跟隨系統';
 
   @override
   String get theme_mode_light => '淺色';
 
   @override
   String get theme_mode_dark => '深色';
+
+  @override
+  String get color_red => '紅色';
+
+  @override
+  String get color_pink => '粉色';
+
+  @override
+  String get color_purple => '紫色';
+
+  @override
+  String get color_deepPurple => '深紫色';
+
+  @override
+  String get color_indigo => '靛青色';
+
+  @override
+  String get color_blue => '藍色';
+
+  @override
+  String get color_lightBlue => '淺藍色';
+
+  @override
+  String get color_cyan => '青色';
+
+  @override
+  String get color_teal => '藍綠色';
+
+  @override
+  String get color_green => '綠色';
+
+  @override
+  String get color_lightGreen => '淺綠色';
+
+  @override
+  String get color_lime => '酸橙色';
+
+  @override
+  String get color_yellow => '黃色';
+
+  @override
+  String get color_amber => '琥珀色';
+
+  @override
+  String get color_orange => '橙色';
+
+  @override
+  String get color_deepOrange => '深橙色';
+
+  @override
+  String get color_brown => '棕色';
+
+  @override
+  String get color_grey => '灰色';
+
+  @override
+  String get color_blueGrey => '藍灰色';
 
   @override
   String get log => '日誌';
@@ -680,7 +803,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String automated_by(String automatedScreenName) {
-    return '由 @$automatedScreenName 自動發推';
+    return '由 $automatedScreenName 自動發推';
   }
 
   @override
@@ -700,4 +823,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get open_in_browser => '在瀏覽器中打開';
+
+  @override
+  String get search => '搜索';
 }

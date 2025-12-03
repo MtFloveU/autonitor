@@ -14,7 +14,14 @@ class HistoryRebuildWorker {
   HistoryRebuildWorker();
 
   Future<void> initIfNeeded() async {
+    // ✅ 如果 sendPort 还活着，直接用
     if (_sendPort != null && _receivePort != null) return;
+
+    // ✅ 如果之前被 dispose 过，允许重建
+    _sendPort = null;
+    _receivePort?.close();
+    _receivePort = null;
+    _isolate = null;
 
     if (_initializing) {
       while (_sendPort == null) {
@@ -22,6 +29,7 @@ class HistoryRebuildWorker {
       }
       return;
     }
+
     _initializing = true;
 
     try {
@@ -31,28 +39,21 @@ class HistoryRebuildWorker {
       _receivePort!.listen((message) {
         if (message is SendPort) {
           _sendPort = message;
-          completer.complete();
+          if (!completer.isCompleted) {
+            completer.complete();
+          }
         } else {
           _handleMessageFromWorker(message);
         }
       });
 
-      _isolate = await Isolate.spawn<_IsolateInitMessage>(
+      _isolate = await Isolate.spawn<SendPort>(
         _historyIsolateEntry,
-        _IsolateInitMessage(_receivePort!.sendPort),
+        _receivePort!.sendPort,
       );
 
-      await completer.future.timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          throw TimeoutException(
-            "Worker isolate failed to start (likely due to import errors)",
-          );
-        },
-      );
-    } catch (e) {
-      _cleanup();
-      rethrow;
+      // ✅ 不再使用 timeout，等待真实初始化完成
+      await completer.future;
     } finally {
       _initializing = false;
     }
@@ -93,30 +94,24 @@ class HistoryRebuildWorker {
   }
 }
 
-class _IsolateInitMessage {
-  final SendPort replyToMain;
-  _IsolateInitMessage(this.replyToMain);
-}
-
 // --- Isolate 入口 ---
 @pragma('vm:entry-point')
-void _historyIsolateEntry(_IsolateInitMessage initMsg) {
+void _historyIsolateEntry(SendPort replyToMain) {
   final workerReceive = ReceivePort();
-  initMsg.replyToMain.send(workerReceive.sendPort);
+
+  // ✅ 把 worker 的 SendPort 发回主 isolate
+  replyToMain.send(workerReceive.sendPort);
 
   workerReceive.listen((message) async {
     if (message is List && message.length == 2) {
       final int id = message[0] as int;
-      final Map<String, dynamic> payload =
-          message[1] as Map<String, dynamic>; // 自动强转
+      final Map<String, dynamic> payload = message[1] as Map<String, dynamic>;
 
       try {
-        // 在这里进行繁重的计算
         final result = _processHistory(payload);
-        initMsg.replyToMain.send([id, result]);
-      } catch (e) {
-        // 发生错误返回空列表，避免死锁
-        initMsg.replyToMain.send([id, []]);
+        replyToMain.send([id, result]);
+      } catch (_) {
+        replyToMain.send([id, []]);
       }
     }
   });

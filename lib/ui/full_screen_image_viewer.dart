@@ -48,10 +48,95 @@ class FullScreenImageViewer extends StatefulWidget {
 }
 
 class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
+  late final PhotoViewController _controller;
+  Size? _imageSize;
+  PhotoViewControllerValue? _storedValue;
+  static const double _hardMaxMult = 5.0;
+  static const double _hardMinMult = 0.6;
   Offset _offset = Offset.zero;
   bool _isInitialScale = true;
   int _pointerCount = 0;
   bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = PhotoViewController();
+
+    // [新增] 3. 监听控制器，实施硬性拦截
+    _controller.outputStateStream.listen((_) {
+      // 我们在 build 中计算并检查限制，或者在这里检查
+      // 由于需要屏幕尺寸，这里只是触发器，实际逻辑建议结合 Layout 后的数据
+      // 但为了最小化，我们在 build 更新 limit 变量供此处使用
+    });
+    // 更稳妥的方式是添加普通 listener
+    _controller.addIgnorableListener(_onControllerUpdate);
+
+    // [新增] 4. 解析图片尺寸 (异步)
+    widget.imageProvider
+        .resolve(const ImageConfiguration())
+        .addListener(
+          ImageStreamListener((info, _) {
+            if (mounted) {
+              setState(() {
+                _imageSize = Size(
+                  info.image.width.toDouble(),
+                  info.image.height.toDouble(),
+                );
+              });
+            }
+          }),
+        );
+  }
+
+  // [新增] 5. 核心拦截逻辑
+  void _onControllerUpdate() {
+    if (_imageSize == null || !mounted) return;
+
+    final screenSize = MediaQuery.of(context).size;
+    if (screenSize.isEmpty) return;
+
+    // 计算基准比例
+    final double scaleX = screenSize.width / _imageSize!.width;
+    final double scaleY = screenSize.height / _imageSize!.height;
+
+    final double containedScale = scaleX < scaleY ? scaleX : scaleY;
+    final double coveredScale = scaleX > scaleY ? scaleX : scaleY;
+
+    final double hardMax = coveredScale * _hardMaxMult;
+    final double hardMin = containedScale * _hardMinMult;
+
+    final PhotoViewControllerValue current = _controller.value;
+    final double currentScale = current.scale ?? containedScale;
+
+    // [修复] 使用构造函数替代 copyWith
+    if (currentScale > hardMax) {
+      _controller.value = PhotoViewControllerValue(
+        position: _storedValue?.position ?? current.position,
+        scale: hardMax,
+        rotation: current.rotation,
+        rotationFocusPoint: current.rotationFocusPoint,
+      );
+      return;
+    } else if (currentScale < hardMin) {
+      _controller.value = PhotoViewControllerValue(
+        position: _storedValue?.position ?? current.position,
+        scale: hardMin,
+        rotation: current.rotation,
+        rotationFocusPoint: current.rotationFocusPoint,
+      );
+      return;
+    }
+
+    // 如果未越界，记录当前状态为“合法状态”
+    _storedValue = current;
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   Future<({Uint8List bytes, String extension})> _getImageData() async {
     final provider = widget.imageProvider;
@@ -124,9 +209,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
       if (outputFile != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              AppLocalizations.of(context)!.image_saved,
-            ),
+            content: Text(AppLocalizations.of(context)!.image_saved),
             backgroundColor: Theme.of(context).colorScheme.primary,
             duration: const Duration(seconds: 3),
           ),
@@ -250,6 +333,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
           offset: _offset,
           child: Center(
             child: PhotoView(
+              controller: _controller,
               imageProvider: widget.imageProvider,
               heroAttributes: PhotoViewHeroAttributes(tag: widget.heroTag),
               minScale: PhotoViewComputedScale.contained,

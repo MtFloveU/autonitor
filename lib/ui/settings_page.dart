@@ -46,24 +46,32 @@ class SettingsPage extends ConsumerStatefulWidget {
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
   late TextEditingController _historyLimitController;
-
   String selectedMethod = "GET";
 
-  // --- (保留 _showGenerateDialog 的完整代码，不修改) ---
+  @override
+  void initState() {
+    super.initState();
+    _historyLimitController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _historyLimitController.dispose();
+    super.dispose();
+  }
+
+  // --- 生成对话框逻辑 ---
   void _showGenerateDialog() {
     final TextEditingController countController = TextEditingController(
       text: '1',
     );
-    // (新) 为 Path 添加 Controller
     final TextEditingController pathController = TextEditingController(
       text: 'https://api.x.com/graphql/Efm7xwLreAw77q2Fq7rX-Q/Followers',
     );
     final TextEditingController resultController = TextEditingController();
     final ValueNotifier<bool> isGenerating = ValueNotifier<bool>(false);
     final l10n = AppLocalizations.of(context)!;
-    bool _isCanceled = false;
-
-    // 捕获 StatefulBuilder 的 setState 函数
+    bool isCanceled = false;
     late StateSetter dialogSetState;
 
     showDialog(
@@ -71,16 +79,16 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       barrierDismissible: false,
       builder: (dialogContext) {
         return PopScope(
-          // 允许通过返回键关闭，并在关闭时设置取消标志
           canPop: true,
           onPopInvokedWithResult: (didPop, result) {
             if (didPop) {
-              _isCanceled = true; // 设置取消标志
+              isCanceled = true;
             }
           },
           child: StatefulBuilder(
             builder: (context, setState) {
               dialogSetState = setState;
+              final theme = Theme.of(context);
 
               return AlertDialog(
                 title: Text(l10n.xclient_generator_title),
@@ -88,72 +96,71 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // --- 数量输入框 ---
                       Row(
                         children: [
                           Expanded(child: Text(l10n.num_ids_to_generate)),
                           const SizedBox(width: 8),
                           SizedBox(
-                            width: 60,
+                            width: 80,
                             child: TextField(
                               controller: countController,
                               keyboardType: TextInputType.number,
-                              // ------------------------------------------------
-                              // (关键修改) 1. 添加 InputFormatters
-                              // ------------------------------------------------
                               inputFormatters: [
                                 FilteringTextInputFormatter.digitsOnly,
                                 NumberRangeInputFormatter(min: 1, max: 100),
                               ],
-                              // ------------------------------------------------
                               textAlign: TextAlign.center,
-                              decoration: const InputDecoration(
-                                border: OutlineInputBorder(),
+                              decoration: InputDecoration(
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                                 isDense: true,
-                                contentPadding: EdgeInsets.symmetric(
-                                  vertical: 8,
-                                  horizontal: 4,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                  horizontal: 8,
                                 ),
                               ),
                             ),
                           ),
                         ],
                       ),
-
-                      // (新) Path 输入框
-                      const SizedBox(height: 12),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            // --- Path 输入框 （左侧） ---
-                            Expanded(
-                              child: TextField(
-                                controller: pathController,
-                                decoration: const InputDecoration(
-                                  border: OutlineInputBorder(),
-                                  isDense: true,
-                                  contentPadding: EdgeInsets.symmetric(
-                                    vertical: 8,
-                                    horizontal: 8,
-                                  ),
+                      const SizedBox(height: 16),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: pathController,
+                              decoration: InputDecoration(
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                                style: const TextStyle(
-                                  fontFamily: 'monospace',
-                                  fontSize: 13,
+                                labelText: 'API Path / URL',
+                                isDense: true,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                  horizontal: 12,
                                 ),
                               ),
+                              style: const TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: 13,
+                              ),
                             ),
-
-                            const SizedBox(width: 8),
-
-                            // --- (新增) GET / POST 选择框（右侧） ---
-                            SizedBox(
-                              height: 40,
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: theme.colorScheme.outlineVariant,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: DropdownButtonHideUnderline(
                               child: DropdownButton<String>(
-                                value: selectedMethod, // 👈 你需要在外层 state 定义
-                                underline: const SizedBox(),
+                                value: selectedMethod,
+                                borderRadius: BorderRadius.circular(12),
                                 items: const [
                                   DropdownMenuItem(
                                     value: 'GET',
@@ -171,30 +178,30 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                                 },
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-
-                      const SizedBox(height: 12),
-
-                      // --- 结果框 (保持不变) ---
+                      const SizedBox(height: 16),
                       Container(
                         width: double.maxFinite,
                         constraints: BoxConstraints(
                           maxHeight: MediaQuery.of(context).size.height * 0.35,
                         ),
-                        child: SingleChildScrollView(
-                          child: TextField(
-                            controller: resultController,
-                            readOnly: true,
-                            maxLines: null,
-                            decoration: InputDecoration(
-                              border: const OutlineInputBorder(),
+                        child: TextField(
+                          controller: resultController,
+                          readOnly: true,
+                          maxLines: null,
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            style: const TextStyle(
-                              fontFamily: 'monospace',
-                              fontSize: 13,
-                            ),
+                            filled: true,
+                            fillColor: theme.colorScheme.surfaceContainerLow,
+                            contentPadding: const EdgeInsets.all(12),
+                          ),
+                          style: const TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 13,
                           ),
                         ),
                       ),
@@ -202,41 +209,35 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   ),
                 ),
                 actions: [
-                  // 1. 取消/关闭按钮 (保持不变)
                   TextButton(
                     onPressed: () {
-                      _isCanceled = true; // 立即设置取消标志
+                      isCanceled = true;
                       Navigator.pop(dialogContext);
                     },
                     child: Text(l10n.close),
                   ),
-
-                  // 2. 生成按钮
                   ValueListenableBuilder<bool>(
                     valueListenable: isGenerating,
                     builder: (context, generating, _) {
-                      final theme = Theme.of(context);
-                      return ElevatedButton(
-                        // (核心逻辑已在上一轮修改)
+                      // 主要操作使用 FilledButton 风格 (ElevatedButton 默认样式)
+                      return FilledButton.tonal(
                         onPressed: generating
                             ? null
                             : () async {
                                 final input = countController.text.trim();
                                 final count = int.tryParse(input);
-                                // --- (关键修改) 获取当前选中的 Path ---
-                                // 使用旧的 pathController.text，因为您要求不修改此对话框
                                 final path = pathController.text.trim();
-                                // --- (关键修改结束) ---
+                                final messenger = ScaffoldMessenger.of(
+                                  dialogContext,
+                                );
 
-                                // --- (校验) ---
-                                // 这里的校验仍然是必要的，因为用户可能输入了空字符串
                                 if (count == null || count <= 0) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
+                                  messenger.showSnackBar(
                                     SnackBar(
                                       content: Text(
                                         l10n.please_enter_valid_number,
                                       ),
-                                      duration: const Duration(seconds: 3),
+                                      behavior: SnackBarBehavior.floating,
                                     ),
                                   );
                                   return;
@@ -246,20 +247,19 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                                     !(Uri.tryParse(path)?.scheme == 'http' ||
                                         Uri.tryParse(path)?.scheme ==
                                             'https')) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
+                                  messenger.showSnackBar(
                                     SnackBar(
                                       content: Text(
                                         l10n.path_must_start_with_slash,
                                       ),
-                                      duration: const Duration(seconds: 3),
+                                      behavior: SnackBarBehavior.floating,
                                     ),
                                   );
                                   return;
                                 }
-                                // --- (校验结束) ---
 
                                 isGenerating.value = true;
-                                _isCanceled = false; // 重置取消标志
+                                isCanceled = false;
 
                                 dialogSetState(() {
                                   resultController.text =
@@ -267,11 +267,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                                 });
 
                                 try {
-                                  // 步骤 1: (仅一次网络请求)
                                   final XClientTransactionService service =
                                       await ref.read(xctServiceProvider.future);
 
-                                  if (_isCanceled) throw Exception("Canceled");
+                                  if (isCanceled) throw Exception("Canceled");
 
                                   dialogSetState(() {
                                     resultController.text =
@@ -283,9 +282,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
                                   List<String> generatedIds = [];
 
-                                  // 步骤 2: (本地循环)
                                   for (int i = 0; i < count; i++) {
-                                    if (_isCanceled) {
+                                    if (isCanceled) {
                                       generatedIds.add("\n--- CANCELED ---");
                                       break;
                                     }
@@ -310,14 +308,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                                     }
                                   }
                                 } catch (e) {
-                                  // (错误处理)
                                   final String errorMsg =
-                                      (e is Exception && _isCanceled)
+                                      (e is Exception && isCanceled)
                                       ? l10n.generation_canceled
                                       : "ID Generation Failed: $e";
 
-                                  if (mounted && !_isCanceled) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
+                                  if (mounted && !isCanceled) {
+                                    messenger.showSnackBar(
                                       SnackBar(
                                         content: Text(
                                           errorMsg,
@@ -327,7 +324,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                                         ),
                                         backgroundColor:
                                             theme.colorScheme.error,
-                                        duration: const Duration(seconds: 3),
+                                        behavior: SnackBarBehavior.floating,
                                       ),
                                     );
                                   }
@@ -339,7 +336,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                                     });
                                   }
                                 } finally {
-                                  if (!_isCanceled) {
+                                  if (!isCanceled) {
                                     isGenerating.value = false;
                                   }
                                   if (context.mounted) {
@@ -373,433 +370,302 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         );
       },
     ).then((_) {
-      // 对话框关闭后释放资源
       countController.dispose();
-      pathController.dispose(); // (新) 释放 Path Controller
+      pathController.dispose();
       resultController.dispose();
       isGenerating.dispose();
     });
   }
-  // --- (保留 _showGenerateDialog 的完整代码，不修改) ---
 
-  // --- (新) GraphQL Path 配置对话框入口 ---
+  // --- GraphQL Path 配置入口 ---
   void _showGqlPathDialog() {
     showDialog(
       context: context,
       barrierDismissible: true,
       builder: (context) {
-        // 使用 ProviderScope.containerOf(context) 来确保在 Dialog 中可以访问 ref
-        return ProviderScope(
-          parent: ProviderScope.containerOf(context),
+        return UncontrolledProviderScope(
+          container: ProviderScope.containerOf(context),
           child: const GraphQLPathDialog(),
         );
       },
     );
   }
-  // --- (新) GraphQL Path 配置对话框入口 结束 ---
-
-  @override
-  void initState() {
-    super.initState();
-    _historyLimitController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _historyLimitController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
-    // 1. 获取 l10n
     final l10n = AppLocalizations.of(context)!;
-
-    // 2. 监听 settingsProvider
     final settingsValue = ref.watch(settingsProvider);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
-    // 3. 返回一个 Scaffold
     return Scaffold(
-      // 4. 添加 AppBar
-      appBar: AppBar(title: Text(l10n.settings)),
-      // 5. body 是 .when() 逻辑
       body: settingsValue.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stackTrace) => Center(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Text('加载设置失败: $error'),
+            child: Text('Error: $error'),
           ),
         ),
         data: (settings) {
-          // (构建设置列表 UI)
-          final currentTextInField = _historyLimitController.text;
           final settingsValue = settings.historyLimitN.toString();
-          if (currentTextInField != settingsValue) {
+          if (_historyLimitController.text.isEmpty ||
+              (_historyLimitController.text != settingsValue &&
+                  !_historyLimitController.selection.isValid)) {
             _historyLimitController.text = settingsValue;
-            _historyLimitController.selection = TextSelection.fromPosition(
-              TextPosition(offset: _historyLimitController.text.length),
-            );
           }
 
-          return ListView(
-            children: [
-              ListTile(
-                title: Text(
-                  l10n.general,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.bold,
+          return CustomScrollView(
+            slivers: [
+              /// ✅【关键：大标题滚动缩小 AppBar】
+              SliverAppBar(
+                expandedHeight: kToolbarHeight,
+                pinned: true,
+                toolbarHeight: kToolbarHeight,
+                automaticallyImplyLeading: false,
+
+                flexibleSpace: FlexibleSpaceBar(
+                  title: Padding(
+                    // ✅ 只能靠手动 Padding
+                    padding: const EdgeInsets.only(left: 16),
+                    child: Text(l10n.settings),
                   ),
+                  collapseMode: CollapseMode.pin,
                 ),
-                dense: true,
               ),
-              ListTile(
-                title: Text(l10n.language),
-                leading: const Icon(Icons.language),
-                trailing: DropdownButton<String>(
-                  alignment: Alignment.centerRight,
-                  value: settings.locale?.toLanguageTag() ?? 'Auto',
-                  items: const [
-                    DropdownMenuItem<String>(
-                      value: 'Auto',
-                      child: Text('Auto'),
-                    ),
-                    DropdownMenuItem<String>(
-                      value: 'en',
-                      child: Text('English'),
-                    ),
-                    DropdownMenuItem<String>(
-                      value: 'zh-CN',
-                      child: Text('中文（中国）'),
-                    ),
-                    DropdownMenuItem<String>(
-                      value: 'zh-TW',
-                      child: Text('中文（台灣）'),
-                    ),
-                  ],
-                  onChanged: (String? newValue) {
-                    if (newValue != null) {
-                      Locale? newLocale;
-                      if (newValue == 'Auto') {
-                        newLocale = null;
-                      } else if (newValue == 'en') {
-                        newLocale = const Locale('en');
+
+              /// ✅ 你的原 ListView 改成 SliverList
+              SliverList(
+                delegate: SliverChildListDelegate([
+                  _buildSectionHeader(context, l10n.general),
+
+                  // ✅ 下面你原来的所有 ListTile、SwitchListTile
+                  // ✅ 一行都不用改，全部原封不动粘进来
+                  _SettingsDropdownTile<String>(
+                    title: l10n.language,
+                    icon: Icons.language,
+                    currentValue: settings.locale?.toLanguageTag() ?? 'Auto',
+                    options: {
+                      'Auto': l10n.follow_system,
+                      'en': 'English',
+                      'zh-CN': '中文（简体）',
+                      'zh-TW': '中文（繁體）',
+                    },
+                    onChanged: (newValue) {
+                      if (newValue == null) return;
+                      Locale? locale;
+                      if (newValue == 'en') {
+                        locale = const Locale('en');
                       } else if (newValue == 'zh-CN') {
-                        newLocale = const Locale('zh', 'CN');
+                        locale = const Locale('zh', 'CN');
                       } else if (newValue == 'zh-TW') {
-                        newLocale = const Locale('zh', 'TW');
+                        locale = const Locale('zh', 'TW');
                       }
-                      ref
-                          .read(settingsProvider.notifier)
-                          .updateLocale(newLocale);
-                    }
-                  },
-                  underline: Container(),
-                ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.brightness_6_outlined),
-                title: Text(l10n.theme_mode),
-                trailing: DropdownButton<ThemeMode>(
-                  alignment: Alignment.centerRight,
-                  value: settings.themeMode,
-                  items: [
-                    DropdownMenuItem(
-                      value: ThemeMode.system,
-                      child: Text(l10n.theme_mode_system),
-                    ),
-                    DropdownMenuItem(
-                      value: ThemeMode.light,
-                      child: Text(l10n.theme_mode_light),
-                    ),
-                    DropdownMenuItem(
-                      value: ThemeMode.dark,
-                      child: Text(l10n.theme_mode_dark),
-                    ),
-                  ],
-                  onChanged: (ThemeMode? newValue) {
-                    if (newValue != null) {
-                      ref
-                          .read(settingsProvider.notifier)
-                          .updateThemeMode(newValue);
-                    }
-                  },
-                  underline: Container(),
-                ),
-              ),
-              const Divider(),
-              ListTile(
-                title: Text(
-                  l10n.api_request_settings,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.bold,
+                      ref.read(settingsProvider.notifier).updateLocale(locale);
+                    },
                   ),
-                ),
-                dense: true,
-              ),
-              // --- (新) GraphQL Path 配置入口 ---
-              ListTile(
-                leading: const Icon(Icons.api_outlined),
-                title: Text(l10n.graphql_path_config),
-                trailing: const Icon(Icons.open_in_new),
-                onTap: _showGqlPathDialog,
-              ),
-              // --- (新) GraphQL Path 配置入口 结束 ---
-              ListTile(
-                leading: const Icon(Icons.build_circle_outlined),
-                title: Text(l10n.xclient_generator_title),
-                trailing: const Icon(Icons.open_in_new),
-                onTap: _showGenerateDialog,
-              ),
-              const Divider(),
-              ListTile(
-                title: Text(
-                  l10n.storage_settings,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.bold,
+
+                  // 2. Theme Mode
+                  _SettingsDropdownTile<ThemeColor>(
+                    title: l10n.theme,
+                    icon: Icons.format_color_fill_outlined,
+                    currentValue: settings.theme,
+                    options: {
+                      ThemeColor.defaultThemeColor: l10n.follow_system,
+                      ThemeColor.red: l10n.color_red,
+                      ThemeColor.pink: l10n.color_pink,
+                      ThemeColor.purple: l10n.color_purple,
+                      ThemeColor.deepPurple: l10n.color_deepPurple,
+                      ThemeColor.indigo: l10n.color_indigo,
+                      ThemeColor.blue: l10n.color_blue,
+                      ThemeColor.lightBlue: l10n.color_lightBlue,
+                      ThemeColor.cyan: l10n.color_cyan,
+                      ThemeColor.teal: l10n.color_teal,
+                      ThemeColor.green: l10n.color_green,
+                      ThemeColor.lightGreen: l10n.color_lightGreen,
+                      ThemeColor.lime: l10n.color_lime,
+                      ThemeColor.yellow: l10n.color_yellow,
+                      ThemeColor.amber: l10n.color_amber,
+                      ThemeColor.orange: l10n.color_orange,
+                      ThemeColor.deepOrange: l10n.color_deepOrange,
+                      ThemeColor.brown: l10n.color_brown,
+                      ThemeColor.grey: l10n.color_grey,
+                      ThemeColor.blueGrey: l10n.color_blueGrey,
+                    },
+                    onChanged: (newValue) {
+                      if (newValue != null) {
+                        ref
+                            .read(settingsProvider.notifier)
+                            .updateThemeColor(newValue);
+                      }
+                    },
                   ),
-                ),
-                dense: true,
-              ),
-              SwitchListTile(
-                secondary: const Icon(Icons.person_outline_outlined),
-                title: Text(l10n.save_avatar_history),
-                value: settings.saveAvatarHistory,
-                onChanged: (bool newValue) {
-                  ref
-                      .read(settingsProvider.notifier)
-                      .updateSaveAvatarHistory(newValue);
-                },
-              ),
-              ListTile(
-                enabled: settings.saveAvatarHistory,
-                leading: const Icon(null),
-                title: Text(l10n.avatar_quality),
-                trailing: DropdownButton<AvatarQuality>(
-                  value: settings.avatarQuality,
-                  items: [
-                    DropdownMenuItem(
-                      value: AvatarQuality.high,
-                      child: Text(l10n.quality_high),
+                  _SettingsDropdownTile<ThemeMode>(
+                    title: l10n.theme_mode,
+                    icon: Icons.brightness_6_outlined,
+                    currentValue: settings.themeMode,
+                    options: {
+                      ThemeMode.system: l10n.follow_system,
+                      ThemeMode.light: l10n.theme_mode_light,
+                      ThemeMode.dark: l10n.theme_mode_dark,
+                    },
+                    onChanged: (newValue) {
+                      if (newValue != null) {
+                        ref
+                            .read(settingsProvider.notifier)
+                            .updateThemeMode(newValue);
+                      }
+                    },
+                  ),
+
+                  _buildSectionHeader(context, l10n.api_request_settings),
+
+                  ListTile(
+                    leading: Icon(
+                      Icons.api_outlined,
+                      color: colorScheme.onSurfaceVariant,
                     ),
-                    DropdownMenuItem(
-                      value: AvatarQuality.low,
-                      child: Text(l10n.quality_low),
+                    title: Text(l10n.graphql_path_config),
+                    onTap: _showGqlPathDialog,
+                  ),
+                  ListTile(
+                    leading: Icon(
+                      Icons.build_circle_outlined,
+                      color: colorScheme.onSurfaceVariant,
                     ),
-                  ],
-                  onChanged: settings.saveAvatarHistory
-                      ? (AvatarQuality? newValue) {
-                          if (newValue != null) {
-                            ref
-                                .read(settingsProvider.notifier)
-                                .updateAvatarQuality(newValue);
-                          }
-                        }
-                      : null,
-                ),
-              ),
-              SwitchListTile(
-                secondary: const Icon(Icons.image_outlined),
-                title: Text(l10n.save_banner_history),
-                value: settings.saveBannerHistory,
-                onChanged: (bool newValue) {
-                  ref
-                      .read(settingsProvider.notifier)
-                      .updateSaveBannerHistory(newValue);
-                },
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Text(
-                  l10n.history_strategy,
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-              ),
-              RadioListTile<HistoryStrategy>(
-                title: Text(l10n.strategy_save_all),
-                value: HistoryStrategy.saveAll,
-                groupValue: settings.historyStrategy,
-                onChanged: (HistoryStrategy? newValue) {
-                  if (newValue != null) {
-                    ref
+                    title: Text(l10n.xclient_generator_title),
+                    onTap: _showGenerateDialog,
+                  ),
+
+                  _buildSectionHeader(context, l10n.storage_settings),
+
+                  SwitchListTile(
+                    secondary: Icon(
+                      Icons.person_outline_outlined,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    title: Text(l10n.save_avatar_history),
+                    value: settings.saveAvatarHistory,
+                    onChanged: (v) => ref
                         .read(settingsProvider.notifier)
-                        .updateHistoryStrategy(newValue);
-                  }
-                },
-              ),
-              RadioListTile<HistoryStrategy>(
-                title: Text(l10n.strategy_save_latest),
-                value: HistoryStrategy.saveLatest,
-                groupValue: settings.historyStrategy,
-                onChanged: (HistoryStrategy? newValue) {
-                  if (newValue != null) {
-                    ref
-                        .read(settingsProvider.notifier)
-                        .updateHistoryStrategy(newValue);
-                  }
-                },
-              ),
-              RadioListTile<HistoryStrategy>(
-                value: HistoryStrategy.saveLastN,
-                groupValue: settings.historyStrategy,
-                onChanged: (HistoryStrategy? newValue) {
-                  if (newValue != null) {
-                    ref
-                        .read(settingsProvider.notifier)
-                        .updateHistoryStrategy(newValue);
-                  }
-                },
-                title: Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 2.0,
-                  runSpacing: 4.0,
-                  children: [
-                    Text(l10n.strategy_save_last_n),
-                    const SizedBox(width: 8),
-                    SizedBox(
-                      width: 60,
-                      child: TextFormField(
-                        controller: _historyLimitController,
-                        enabled:
-                            settings.historyStrategy ==
-                            HistoryStrategy.saveLastN,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        textAlign: TextAlign.center,
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 8.0,
-                            vertical: 12.0,
-                          ),
-                          isDense: true,
-                        ),
-                        onEditingComplete: () {
-                          final String value = _historyLimitController.text;
-                          int n = int.tryParse(value) ?? 1;
-                          if (n < 1) n = 1;
-                          if (n > 500) n = 500;
+                        .updateSaveAvatarHistory(v),
+                  ),
+
+                  if (settings.saveAvatarHistory)
+                    _SettingsDropdownTile<AvatarQuality>(
+                      title: l10n.avatar_quality,
+                      icon: Icons.high_quality,
+                      currentValue: settings.avatarQuality,
+                      options: {
+                        AvatarQuality.high: l10n.quality_high,
+                        AvatarQuality.low: l10n.quality_low,
+                      },
+                      onChanged: (v) {
+                        if (v != null) {
                           ref
                               .read(settingsProvider.notifier)
-                              .updateHistoryLimitN(n);
-                          FocusScope.of(context).unfocus();
-                        },
-                        onTapOutside: (event) {
-                          final String value = _historyLimitController.text;
-                          int n = int.tryParse(value) ?? 1;
-                          if (n < 1) n = 1;
-                          if (n > 500) n = 500;
-                          if (n != settings.historyLimitN) {
-                            ref
-                                .read(settingsProvider.notifier)
-                                .updateHistoryLimitN(n);
-                          }
-                          FocusScope.of(context).unfocus();
-                        },
-                      ),
+                              .updateAvatarQuality(v);
+                        }
+                      },
                     ),
-                    const SizedBox(width: 6),
-                    Text(l10n.strategy_save_last_n_suffix),
-                  ],
-                ),
-              ),
-              const Divider(),
-              ListTile(
-                title: Text(
-                  l10n.log,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.bold,
+                  SwitchListTile(
+                    secondary: Icon(
+                      Icons.image_outlined,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    title: Text(l10n.save_banner_history),
+                    value: settings.saveBannerHistory,
+                    onChanged: (bool newValue) {
+                      ref
+                          .read(settingsProvider.notifier)
+                          .updateSaveBannerHistory(newValue);
+                    },
                   ),
-                ),
-                dense: true,
-              ),
-              ListTile(
-                leading: const Icon(Icons.view_list_outlined),
-                title: Text(l10n.view_log),
-                trailing: const Icon(Icons.open_in_new),
-                onTap: () {
-                  final logs = ref.read(logHistoryProvider);
-                  final theme = Theme.of(context);
-                  final logText = logs.join('\n');
 
-                  showDialog(
-                    context: context,
-                    builder: (dialogContext) => AlertDialog(
-                      title: Text(l10n.view_log),
-                      content: Container(
-                        width: double.maxFinite,
-                        constraints: BoxConstraints(
-                          maxHeight: MediaQuery.of(context).size.height * 0.7,
-                        ),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                        child: SingleChildScrollView(
-                          reverse: true,
-                          padding: const EdgeInsets.all(8.0),
-                          child: TextField(
-                            controller: TextEditingController(text: logText),
-                            readOnly: true,
-                            maxLines: null,
-                            decoration: InputDecoration.collapsed(
-                              hintText: null,
+                  _HistoryStrategyTile(
+                    l10n: l10n,
+                    settings: settings,
+                    controller: _historyLimitController,
+                  ),
+
+                  _buildSectionHeader(context, l10n.log),
+
+                  ListTile(
+                    leading: Icon(
+                      Icons.view_list_outlined,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    title: Text(l10n.view_log),
+                    onTap: () {
+                      final logs = ref.read(logHistoryProvider);
+                      final logText = logs.join('\n');
+                      showDialog(
+                        context: context,
+                        builder: (dialogContext) => AlertDialog(
+                          title: Text(l10n.view_log),
+                          content: Container(
+                            width: double.maxFinite,
+                            constraints: BoxConstraints(
+                              maxHeight:
+                                  MediaQuery.of(context).size.height * 0.7,
                             ),
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontFamily: 'monospace',
-                              color: theme.colorScheme.onSurfaceVariant,
+                            decoration: BoxDecoration(
+                              color: colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: SingleChildScrollView(
+                              reverse: true,
+                              padding: const EdgeInsets.all(12),
+                              child: SelectableText(
+                                logText,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontFamily: 'monospace',
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                      actions: [
-                        TextButton(
-                          child: Text(l10n.copy),
-                          onPressed: () {
-                            Clipboard.setData(ClipboardData(text: logText));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  l10n.copied_to_clipboard,
-                                  style: TextStyle(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onPrimaryContainer,
+                          actions: [
+                            TextButton(
+                              child: Text(l10n.copy),
+                              onPressed: () {
+                                Clipboard.setData(ClipboardData(text: logText));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      l10n.copied_to_clipboard,
+                                      style: TextStyle(
+                                        color: colorScheme.onPrimaryContainer,
+                                      ),
+                                    ),
+                                    behavior: SnackBarBehavior.floating,
+                                    backgroundColor:
+                                        colorScheme.primaryContainer,
                                   ),
-                                ),
-                                duration: const Duration(seconds: 3),
-                                backgroundColor: Theme.of(
-                                  context,
-                                ).colorScheme.primaryContainer,
-                              ),
-                            );
-                            Navigator.pop(dialogContext);
-                          },
+                                );
+                                Navigator.pop(dialogContext);
+                              },
+                            ),
+                            TextButton(
+                              child: Text(l10n.clear),
+                              onPressed: () {
+                                ref
+                                    .read(logHistoryNotifierProvider.notifier)
+                                    .clearLog();
+                                Navigator.pop(dialogContext);
+                              },
+                            ),
+                            TextButton(
+                              child: Text(l10n.close),
+                              onPressed: () => Navigator.pop(dialogContext),
+                            ),
+                          ],
                         ),
-                        TextButton(
-                          child: Text(l10n.clear),
-                          onPressed: () {
-                            ref
-                                .read(logHistoryNotifierProvider.notifier)
-                                .clearLog();
-                            Navigator.pop(dialogContext);
-                          },
-                        ),
-                        TextButton(
-                          child: Text(l10n.close),
-                          onPressed: () => Navigator.pop(dialogContext),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+                      );
+                    },
+                  ),
+                ]),
               ),
             ],
           );
@@ -809,14 +675,321 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 }
 
-// ------------------------------------------------
-// (新) GraphQLPathDialog Widget
-// ------------------------------------------------
-// ... (保留原有内容)
+// ---------------------------------------------------------------------------
+// 辅助方法：Section Header (MD3 Style)
+// ---------------------------------------------------------------------------
+Widget _buildSectionHeader(BuildContext context, String title) {
+  return Padding(
+    padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+    child: Text(
+      title,
+      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+        color: Theme.of(context).colorScheme.primary,
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+  );
+}
 
-// ------------------------------------------------
-// (修改) GraphQLPathDialog Widget
-// ------------------------------------------------
+// ---------------------------------------------------------------------------
+// 一体化设置项：_SettingsDropdownTile
+// ---------------------------------------------------------------------------
+class _SettingsDropdownTile<T> extends StatefulWidget {
+  final String title;
+  final IconData icon;
+  final T currentValue;
+  final Map<T, String> options;
+  final ValueChanged<T?> onChanged;
+
+  const _SettingsDropdownTile({
+    required this.title,
+    required this.icon,
+    required this.currentValue,
+    required this.options,
+    required this.onChanged,
+  });
+
+  @override
+  State<_SettingsDropdownTile<T>> createState() =>
+      _SettingsDropdownTileState<T>();
+}
+
+class _SettingsDropdownTileState<T> extends State<_SettingsDropdownTile<T>> {
+  final GlobalKey _dropdownKey = GlobalKey();
+
+  void _openDropdown() {
+    final context = _dropdownKey.currentContext;
+    if (context == null) return;
+
+    void findGestureDetector(Element element) {
+      if (element.widget is GestureDetector) {
+        final gd = element.widget as GestureDetector;
+        if (gd.onTap != null) {
+          gd.onTap!();
+          return;
+        }
+      }
+      element.visitChildElements(findGestureDetector);
+    }
+
+    context.visitChildElements(findGestureDetector);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
+    // 获取 entries 列表以便使用 index
+    final entries = widget.options.entries.toList();
+
+    return ListTile(
+      leading: Icon(widget.icon, color: colorScheme.onSurfaceVariant),
+      title: Text(widget.title, style: textTheme.bodyLarge),
+      onTap: _openDropdown, // 点击整个列表项触发
+      subtitle: Align(
+        alignment: Alignment.centerLeft,
+        child: IgnorePointer(
+          // 忽略 DropdownButton 自身的点击，统一由 ListTile 处理
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<T>(
+              key: _dropdownKey,
+              isExpanded: false, // 宽度自适应内容
+              isDense: true,
+              value: widget.currentValue,
+              focusColor: Colors.transparent, // 禁用焦点色
+              // ------------------ 已修改：移除自定义动画 ------------------
+              items: List.generate(entries.length, (index) {
+                final entry = entries[index];
+                return DropdownMenuItem<T>(
+                  value: entry.key,
+                  child: Text(
+                    entry.value,
+                    style: textTheme.bodyMedium, // 统一文字大小
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+              }),
+              onChanged: widget.onChanged,
+              selectedItemBuilder: (context) {
+                return widget.options.entries.map((entry) {
+                  // ------------------ 已修改：移除副标题切换动画 ------------------
+                  return Text(
+                    entry.value,
+                    key: ValueKey<String>(entry.value),
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  );
+                }).toList();
+              },
+              icon: const SizedBox.shrink(),
+              dropdownColor: colorScheme.surfaceContainer,
+              borderRadius: BorderRadius.circular(12),
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 历史记录策略 Tile (含优化后的输入框逻辑)
+// ---------------------------------------------------------------------------
+class _HistoryStrategyTile extends ConsumerStatefulWidget {
+  final AppLocalizations l10n;
+  final AppSettings settings;
+  final TextEditingController controller;
+
+  const _HistoryStrategyTile({
+    required this.l10n,
+    required this.settings,
+    required this.controller,
+  });
+
+  @override
+  ConsumerState<_HistoryStrategyTile> createState() =>
+      _HistoryStrategyTileState();
+}
+
+class _HistoryStrategyTileState extends ConsumerState<_HistoryStrategyTile> {
+  final GlobalKey _dropdownKey = GlobalKey();
+
+  void _openDropdown() {
+    final context = _dropdownKey.currentContext;
+    if (context == null) return;
+
+    void findGestureDetector(Element element) {
+      if (element.widget is GestureDetector) {
+        final gd = element.widget as GestureDetector;
+        if (gd.onTap != null) {
+          gd.onTap!();
+          return;
+        }
+      }
+      element.visitChildElements(findGestureDetector);
+    }
+
+    context.visitChildElements(findGestureDetector);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
+    final Map<HistoryStrategy, String> options = {
+      HistoryStrategy.saveAll: widget.l10n.strategy_save_all,
+      HistoryStrategy.saveLatest: widget.l10n.strategy_save_latest,
+      HistoryStrategy.saveLastN: widget.l10n.strategy_save_last_n,
+    };
+
+    // 获取 entries 列表以便使用 index
+    final entries = options.entries.toList();
+
+    final bool showInput =
+        widget.settings.historyStrategy == HistoryStrategy.saveLastN;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ListTile(
+          leading: Icon(
+            Icons.history_outlined,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          title: Text(widget.l10n.history_strategy, style: textTheme.bodyLarge),
+          onTap: _openDropdown,
+          subtitle: Align(
+            alignment: Alignment.centerLeft,
+            child: IgnorePointer(
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<HistoryStrategy>(
+                  key: _dropdownKey,
+                  isExpanded: true, // 设置为 true 以限制宽度防止溢出
+                  isDense: true,
+                  value: widget.settings.historyStrategy,
+                  focusColor: Colors.transparent, // 禁用焦点色
+                  // ------------------ 已修改：移除自定义动画 ------------------
+                  items: List.generate(entries.length, (index) {
+                    final entry = entries[index];
+                    return DropdownMenuItem<HistoryStrategy>(
+                      value: entry.key,
+                      child: Text(
+                        entry.value,
+                        style: textTheme.bodyMedium, // 统一文字大小
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }),
+                  onChanged: (value) {
+                    if (value != null) {
+                      ref
+                          .read(settingsProvider.notifier)
+                          .updateHistoryStrategy(value);
+                    }
+                  },
+                  selectedItemBuilder: (context) {
+                    return options.entries.map((entry) {
+                      // ------------------ 已修改：移除副标题切换动画 ------------------
+                      return Text(
+                        entry.value,
+                        key: ValueKey<String>(entry.value),
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        overflow: TextOverflow.ellipsis, // 防止溢出
+                        maxLines: 1, // 限制单行
+                      );
+                    }).toList();
+                  },
+                  icon: const SizedBox.shrink(),
+                  dropdownColor: colorScheme.surfaceContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        // 优化后的输入框显示
+        if (showInput)
+          Padding(
+            padding: const EdgeInsets.only(left: 56, right: 24, bottom: 16),
+            child: Row(
+              children: [
+                Container(
+                  width: 80,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.5,
+                    ), // 修复: 使用 withValues(alpha: ...)
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: TextField(
+                    controller: widget.controller,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    textAlign: TextAlign.center,
+                    style: textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 10,
+                        horizontal: 8,
+                      ),
+                    ),
+                    onEditingComplete: () {
+                      _updateLimit(ref, widget.settings.historyLimitN);
+                      FocusScope.of(context).unfocus();
+                    },
+                    onTapOutside: (event) {
+                      _updateLimit(ref, widget.settings.historyLimitN);
+                      FocusScope.of(context).unfocus();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    widget.l10n.strategy_save_last_n_suffix,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  void _updateLimit(WidgetRef ref, int currentLimit) {
+    final value = widget.controller.text;
+    int n = int.tryParse(value) ?? 1;
+    if (n < 1) n = 1;
+    if (n > 500) n = 500;
+    if (n != currentLimit) {
+      ref.read(settingsProvider.notifier).updateHistoryLimitN(n);
+    }
+  }
+}
+
 class GraphQLPathDialog extends ConsumerStatefulWidget {
   const GraphQLPathDialog({super.key});
 
@@ -825,13 +998,11 @@ class GraphQLPathDialog extends ConsumerStatefulWidget {
 }
 
 class _GraphQLPathDialogState extends ConsumerState<GraphQLPathDialog> {
-  // 为所有可配置的 Path 创建 Controller Map
   late final Map<String, TextEditingController> _pathControllers;
 
   @override
   void initState() {
     super.initState();
-    // 初始化 Custom Path Controllers
     final targetOperations = ref
         .read(gqlQueryIdProvider.notifier)
         .targetOperations;
@@ -851,160 +1022,131 @@ class _GraphQLPathDialogState extends ConsumerState<GraphQLPathDialog> {
     final l10n = AppLocalizations.of(context)!;
     final pathState = ref.watch(gqlQueryIdProvider);
     final pathNotifier = ref.read(gqlQueryIdProvider.notifier);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
-    // --- 动态更新所有 Controller 的文本 ---
     final isCustom = pathState.source == QueryIdSource.custom;
     for (final opName in pathNotifier.targetOperations) {
       final path = isCustom
           ? pathState.customQueryIds[opName] ?? ''
           : pathNotifier.getCurrentQueryIdForDisplay(opName);
       if (_pathControllers.containsKey(opName)) {
-        // 仅在文本不同时更新，以避免光标跳动
         if (_pathControllers[opName]!.text != path) {
           _pathControllers[opName]!.text = path;
         }
       }
     }
-    // --- 动态更新结束 ---
 
     return AlertDialog(
       title: Text(l10n.graphql_path_config),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- Source 选择下拉菜单 ---
-            Row(
-              children: [
-                Expanded(child: Text(l10n.xclient_generator_source)),
-                const SizedBox(width: 8),
-                DropdownButton<QueryIdSource>(
-                  value: pathState.source,
-                  items: QueryIdSource.values
-                      .map(
-                        (e) => DropdownMenuItem(
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      l10n.xclient_generator_source,
+                      style: theme.textTheme.labelLarge,
+                    ),
+                  ),
+                  DropdownButtonHideUnderline(
+                    child: DropdownButton<QueryIdSource>(
+                      value: pathState.source,
+                      borderRadius: BorderRadius.circular(12),
+                      items: QueryIdSource.values.map((e) {
+                        return DropdownMenuItem(
                           value: e,
                           child: Text(
-                            e == QueryIdSource.apiDocument
-                                ? 'TIAD'
-                                : 'Custom',
+                            e == QueryIdSource.apiDocument ? 'TIAD' : 'Custom',
                           ),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: pathState.isLoading
-                      ? null
-                      : (value) {
-                          if (value != null) {
-                            pathNotifier.setSource(value); // 调用新的持久化方法
-                          }
-                        },
-                ),
-                if (!isCustom)
-                  IconButton(
-                    icon: const Icon(Icons.link_outlined),
-                    onPressed: () {
-                      // ignore: deprecated_member_use
-                      launchUrl(
-                        Uri.parse(
-                          'https://github.com/fa0311/TwitterInternalAPIDocument/tree/develop',
-                        ),
-                      );
-                    },
+                        );
+                      }).toList(),
+                      onChanged: pathState.isLoading
+                          ? null
+                          : (value) {
+                              if (value != null) {
+                                pathNotifier.setSource(value);
+                              }
+                            },
+                    ),
                   ),
-              ],
+                  if (!isCustom)
+                    IconButton(
+                      icon: const Icon(Icons.link_outlined),
+                      tooltip: 'View Source',
+                      onPressed: () {
+                        launchUrl(
+                          Uri.parse(
+                            'https://github.com/fa0311/TwitterInternalAPIDocument/tree/develop',
+                          ),
+                        );
+                      },
+                    ),
+                ],
+              ),
             ),
-
             if (pathState.error != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8.0),
                 child: Text(
                   'Error: ${pathState.error}',
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  style: TextStyle(color: colorScheme.error),
                 ),
               ),
-
-            const SizedBox(height: 12),
-
-            // --- API Data Status 提示 ---
-            if (pathState.source == QueryIdSource.apiDocument &&
-                !pathState.isApiDataLoaded &&
-                !pathState.isLoading)
-              Padding(padding: const EdgeInsets.only(bottom: 8.0)),
-
-            // --- Path 列表 ---
+            const SizedBox(height: 16),
             ...pathNotifier.targetOperations.map((opName) {
               final isCustom = pathState.source == QueryIdSource.custom;
               final controller = _pathControllers[opName]!;
-
-              // 检查是否应该禁用输入框
               final bool readOnly = !isCustom || pathState.isLoading;
 
               return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      opName,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                padding: const EdgeInsets.only(bottom: 12),
+                child: TextField(
+                  controller: controller,
+                  readOnly: readOnly,
+                  onChanged: (newQueryId) {
+                    if (isCustom) {
+                      pathNotifier.updateCustomQueryId(opName, newQueryId);
+                    }
+                  },
+                  maxLines: null,
+                  keyboardType: TextInputType.multiline,
+                  decoration: InputDecoration(
+                    labelText: opName,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start, // 顶部对齐
-                      children: [
-                        // --- (新) 移除 Text，改用 prefixText ---
-                        Flexible(
-                          child: TextField(
-                            controller: controller,
-                            readOnly: readOnly,
-                            onChanged: (newQueryId) {
-                              if (isCustom) {
-                                pathNotifier.updateCustomQueryId(
-                                  opName,
-                                  newQueryId,
-                                );
-                              }
-                            },
-                            maxLines: null,
-                            keyboardType: TextInputType.multiline,
-                            decoration: InputDecoration(
-                              border: const OutlineInputBorder(),
-                              // (新) 使用 prefixText
-                              prefixStyle: const TextStyle(
-                                fontFamily: 'monospace',
-                                fontSize: 13,
-                              ),
-                              isDense: true,
-                              contentPadding: const EdgeInsets.symmetric(
-                                vertical: 8,
-                                horizontal: 8,
-                              ),
-                            ),
-                            style: const TextStyle(
-                              fontFamily: 'monospace',
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                    isDense: true,
+                    contentPadding: const EdgeInsets.all(12),
+                    filled: readOnly,
+                    fillColor: readOnly
+                        ? colorScheme.surfaceContainerLow
+                        : null,
+                  ),
+                  style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
                 ),
               );
-            }).toList(),
+            }),
           ],
         ),
       ),
       actions: [
-        // --- Refresh/Reset 按钮在左边 ---
+        // Action buttons: Reset/Refresh on the left (text button), OK on right (filled/tonal)
         TextButton(
           onPressed: pathState.isLoading
               ? null
               : pathState.source == QueryIdSource.apiDocument
-              ? () =>
-                    pathNotifier.loadApiData(context) // 传递 context
-              : pathNotifier.resetCustomQueryIds, // Reset 逻辑
+              ? () => pathNotifier.loadApiData(context)
+              : pathNotifier.resetCustomQueryIds,
           child: pathState.isLoading
               ? const SizedBox(
                   width: 16,
@@ -1017,8 +1159,7 @@ class _GraphQLPathDialogState extends ConsumerState<GraphQLPathDialog> {
                       : l10n.reset,
                 ),
         ),
-        // --- Refresh/Reset 按钮在左边 结束 ---
-        TextButton(
+        FilledButton.tonal(
           onPressed: () => Navigator.pop(context),
           child: Text(l10n.ok),
         ),

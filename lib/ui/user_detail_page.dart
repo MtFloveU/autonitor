@@ -86,7 +86,10 @@ class UserDetailPage extends ConsumerStatefulWidget {
 class _UserDetailPageState extends ConsumerState<UserDetailPage>
     with TickerProviderStateMixin {
   final List<Widget Function(BuildContext)> _builders = [];
-  int _visibleCount = 3;
+  // 0: Banner+Avatar (Hero) - Static
+  // 1: Spacing - Static
+  // 2: UserInfo - Animated Start
+  int _visibleCount = 2;
   final List<AnimationController?> _fadeControllers = [];
 
   @override
@@ -100,7 +103,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
   void _ensureControllersList() {
     _fadeControllers.clear();
     for (var i = 0; i < _builders.length; i++) {
-      if (i >= 3) {
+      if (i >= 2) {
         _fadeControllers.add(
           AnimationController(vsync: this, duration: _fadeDurationFor(i)),
         );
@@ -124,22 +127,28 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
 
   void _prepareBuilders() {
     _builders.clear();
-    // 1. Banner + Avatar + Buttons (Merged Section)
+    // 0. Banner + Avatar + Buttons (Merged Section)
     _builders.add(_buildBannerAvatarSection);
 
-    // 2. User Info
+    // 1. Spacing
     _builders.add((c) => const SizedBox(height: 5));
+
+    // 2. User Info (现在加入动画序列)
     _builders.add(_buildUserInfoColumn);
+
+    // 3. Spacing
     _builders.add((c) => const SizedBox(height: 12));
 
-    // 3. Metadata (Location, Link, Joined)
+    // 4. Metadata (Location, Link, Joined)
     _builders.add(_buildMetadataRow);
 
-    // 6. Flexible Grid (Statistics Table)
+    // 5. Spacing
     _builders.add((c) => const SizedBox(height: 5));
+
+    // 6. Flexible Grid (Statistics Table)
     _builders.add(_buildFlexibleStatGrid);
 
-    // 7. Extra Info
+    // 7+ Extra Info
     _builders.add(_buildPinnedTweetSection);
     _builders.add(_buildIdentityTile);
     _builders.add(_buildSnapshotInfo);
@@ -155,6 +164,8 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
 
       final route = ModalRoute.of(context);
       final animation = route?.animation;
+
+      // 等待路由动画完全结束
       if (animation != null && animation.status != AnimationStatus.completed) {
         final completer = Completer<void>();
         late final AnimationStatusListener listener;
@@ -173,10 +184,10 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
       if (!mounted) return;
 
       setState(() {
-        _visibleCount = _visibleCount < 3 ? 3 : _visibleCount;
+        _visibleCount = _visibleCount < 2 ? 2 : _visibleCount;
       });
 
-      for (var i = 3; i < _builders.length; i++) {
+      for (var i = 2; i < _builders.length; i++) {
         if (!mounted) return;
         setState(() {
           _visibleCount = i + 1;
@@ -220,6 +231,9 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
 
   @override
   Widget build(BuildContext context) {
+    // 关键修改：
+    // 1. 移除了 body 的 Center 和 ConstrainedBox，让 ListView 占满宽度，这样滚动条就在最右侧。
+    // 2. 将自适应宽度的逻辑（Center + ConstrainedBox）下沉到 ListView 的每个 child 中。
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.user.name ?? 'Unknown'),
@@ -259,8 +273,24 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
         children: List.generate(_visibleCount.clamp(0, _builders.length), (
           index,
         ) {
-          if (index < 3) {
-            return _builders[index](context);
+          Widget child = _builders[index](context);
+
+          // 在这里进行大屏适配：内容居中，最大宽度限制为 800
+          // Banner 区域 (index 0) 特殊处理：背景可以全宽，但内容区域限制？
+          // 通常 Header 也希望内容对齐。
+          Widget content = Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: SizedBox(
+                // 关键：使用 SizedBox(width: double.infinity) 让内容在约束内尽可能宽
+                width: double.infinity,
+                child: child,
+              ),
+            ),
+          );
+
+          if (index < 2) {
+            return content;
           }
           final controller = _fadeControllers.length > index
               ? _fadeControllers[index]
@@ -275,18 +305,18 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
                     end: Offset.zero,
                   ).chain(CurveTween(curve: Curves.easeOut)),
                 ),
-                child: _builders[index](context),
+                child: content,
               ),
             );
           } else {
-            return _builders[index](context);
+            return content;
           }
         }),
       ),
     );
   }
 
-  // --- Header Section with Fixed Layout ---
+  // --- Header Section ---
 
   Widget _buildBannerAvatarSection(BuildContext context) {
     final String highQualityAvatarUrl = (widget.user.avatarUrl ?? '')
@@ -332,8 +362,6 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
         const double avatarRadius = 45.0;
         const double avatarDiameter = avatarRadius * 2;
 
-        // Avatar top position calculation to match original overlap
-        // Original: bottom: -40. Height 90. Top = BannerHeight - (90 - 40) = BannerHeight - 50.
         final double avatarTop = bannerHeight - 50.0;
 
         return Stack(
@@ -368,10 +396,8 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
                     ),
                   ),
                 ),
-                // Button area
                 Container(
                   padding: const EdgeInsets.only(top: 8.0, right: 16.0),
-                  // Ensure minimum height to cover avatar overhang (40px) plus margin
                   constraints: const BoxConstraints(minHeight: 45.0),
                   child: _buildButtonsRow(context),
                 ),
@@ -426,7 +452,6 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
   }
 
   Widget _buildNetworkBanner(BuildContext context) {
-    // Fallback widget
     return Container(color: Colors.grey.shade300);
   }
 
@@ -454,8 +479,8 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
                 );
               },
               style: FilledButton.styleFrom(
-                backgroundColor: Colors.pink.shade100,
-                foregroundColor: Colors.pink.shade800,
+                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                foregroundColor: Theme.of(context).colorScheme.primary,
                 padding: EdgeInsets.zero,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -472,8 +497,9 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
           child: FilledButton.tonalIcon(
             onPressed: () => _openExternalProfile(context, l10n),
             style: FilledButton.styleFrom(
-              backgroundColor: Colors.pink.shade100,
-              foregroundColor: Colors.pink.shade800,
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              foregroundColor: Theme.of(context).colorScheme.primary,
+
               padding: const EdgeInsets.symmetric(horizontal: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -521,17 +547,13 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
     final l10n = AppLocalizations.of(context)!;
     final entities = <_TextEntity>[];
 
-    // 1. Find explicit links from bioLinks
-    // Since 'bio' has already been processed to contain expanded_urls,
-    // we search for them directly.
     if (widget.user.bioLinks.isNotEmpty) {
-      // Sort links by length descending to prevent partial matches of shorter links inside longer ones
       final uniqueLinks =
           widget.user.bioLinks
               .map((e) => e['expanded_url'])
               .where((e) => e != null)
               .cast<String>()
-              .toSet() // Deduplicate
+              .toSet()
               .toList()
             ..sort((a, b) => b.length.compareTo(a.length));
 
@@ -548,7 +570,6 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
       }
     }
 
-    // 2. Find mentions using Regex (Still safe for handles)
     final mentionRegex = RegExp(r'@[a-zA-Z0-9_]+');
     for (final match in mentionRegex.allMatches(bio)) {
       entities.add(
@@ -557,22 +578,19 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
           match.end,
           match.group(0)!,
           'mention',
-          match.group(0)!.substring(1), // remove @
+          match.group(0)!.substring(1),
         ),
       );
     }
 
-    // 3. Sort entities by start position
     entities.sort((a, b) => a.start.compareTo(b.start));
 
-    // 4. Build spans avoiding overlaps
     final List<TextSpan> spans = [];
     int currentPos = 0;
 
     for (final entity in entities) {
-      if (entity.start < currentPos) continue; // Skip overlapping entities
+      if (entity.start < currentPos) continue;
 
-      // Add plain text before entity
       if (entity.start > currentPos) {
         spans.add(
           TextSpan(
@@ -582,12 +600,13 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
         );
       }
 
-      // Add styled entity
       if (entity.type == 'link') {
         spans.add(
           TextSpan(
             text: entity.text,
-            style: theme.textTheme.bodyLarge?.copyWith(color: Colors.blue),
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.colorScheme.primary,
+            ),
             recognizer: TapGestureRecognizer()
               ..onTap = () => _launchURL(context, entity.data),
           ),
@@ -596,7 +615,9 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
         spans.add(
           TextSpan(
             text: entity.text,
-            style: theme.textTheme.bodyLarge?.copyWith(color: Colors.blue),
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.colorScheme.primary,
+            ),
             recognizer: TapGestureRecognizer()
               ..onTap = () =>
                   _openExternalProfile(context, l10n, screenName: entity.data),
@@ -607,7 +628,6 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
       currentPos = entity.end;
     }
 
-    // Add remaining text
     if (currentPos < bio.length) {
       spans.add(
         TextSpan(
@@ -678,7 +698,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
       child: Wrap(
         spacing: 16.0,
         runSpacing: 4.0,
-        crossAxisAlignment: WrapCrossAlignment.center,
+        crossAxisAlignment: WrapCrossAlignment.start,
         children: items,
       ),
     );
@@ -790,6 +810,8 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
           color: theme.dividerColor.withAlpha((0.2 * 255).round()),
         ),
       ),
+      // 修正逻辑：使用固定宽度的 Item，让 Wrap 自动处理换行。
+      // 屏幕越宽，能放下的一行 Item 越多。
       child: Wrap(
         spacing: 8.0,
         runSpacing: 16.0,
@@ -800,9 +822,9 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
   }
 
   Widget _buildGridItem(BuildContext context, _StatItemData item) {
-    final double desiredWidth =
-        (MediaQuery.of(context).size.width - 32 - 16 - 20) / 3;
-    final double itemWidth = desiredWidth < 90 ? 90 : desiredWidth;
+    // 移除基于屏幕宽度的动态计算，改为固定宽度范围
+    // 100-110 左右的宽度在大多数屏幕上都能放下 3 个，在宽屏上能放下更多
+    const double itemWidth = 100;
 
     return SizedBox(
       width: itemWidth,
@@ -868,10 +890,13 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
           padding: const EdgeInsets.fromLTRB(16, 4, 1, 0),
           child: Text(
             l10n.user_content,
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             textAlign: TextAlign.left,
           ),
         ),
+
         _buildInfoTile(
           context,
           Icons.push_pin,
@@ -890,9 +915,12 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
           padding: const EdgeInsets.fromLTRB(16, 4, 1, 0),
           child: Text(
             AppLocalizations.of(context)!.identity,
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
+
         _buildInfoTile(
           context,
           Icons.fingerprint,
@@ -1034,7 +1062,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
     }
 
     return Wrap(
-      crossAxisAlignment: WrapCrossAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.start,
       children: children,
     );
   }
@@ -1045,28 +1073,44 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
         widget.user.automatedScreenName!.isEmpty) {
       return const SizedBox.shrink();
     }
-    final children = <Widget>[
-      SvgPicture.asset(
-        'assets/icon/bot.svg',
-        width: 18,
-        height: 18,
-        colorFilter: ColorFilter.mode(
-          Theme.of(context).hintColor,
-          BlendMode.srcIn,
-        ),
-      ),
-      const SizedBox(width: 4),
-      Flexible(
-        child: Text(
-          l10n.automated_by(widget.user.automatedScreenName!),
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(),
-        ),
-      ),
-    ];
+
+    final name = widget.user.automatedScreenName!;
 
     return Padding(
       padding: const EdgeInsets.only(top: 2),
-      child: Row(children: children),
+      child: Row(
+        children: [
+          SvgPicture.asset(
+            'assets/icon/bot.svg',
+            width: 18,
+            height: 18,
+            colorFilter: ColorFilter.mode(
+              Theme.of(context).hintColor,
+              BlendMode.srcIn,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: RichText(
+              text: TextSpan(
+                style: Theme.of(context).textTheme.bodySmall,
+                children: [
+                  TextSpan(text: l10n.automated_by('')),
+                  TextSpan(
+                    text: '@$name',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () =>
+                          _openExternalProfile(context, l10n, screenName: name),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

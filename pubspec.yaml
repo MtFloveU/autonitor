@@ -10,7 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  dynamic_color: ^1.2.2
+  dynamic_color: ^1.8.1
   flutter_riverpod: ^2.6.1
   flutter_secure_storage: any
   flutter_inappwebview: ^6.0.0

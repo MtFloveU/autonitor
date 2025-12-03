@@ -247,16 +247,76 @@ class AppLocalizationsEn extends AppLocalizations {
   String get strategy_save_last_n_suffix => 'changes';
 
   @override
-  String get theme_mode => 'Theme';
+  String get theme_mode => 'Theme Mode';
 
   @override
-  String get theme_mode_system => 'Follow System';
+  String get theme => 'Theme';
+
+  @override
+  String get follow_system => 'Follow System';
 
   @override
   String get theme_mode_light => 'Light';
 
   @override
   String get theme_mode_dark => 'Dark';
+
+  @override
+  String get color_red => 'Red';
+
+  @override
+  String get color_pink => 'Pink';
+
+  @override
+  String get color_purple => 'Purple';
+
+  @override
+  String get color_deepPurple => 'Deep Purple';
+
+  @override
+  String get color_indigo => 'Indigo';
+
+  @override
+  String get color_blue => 'Blue';
+
+  @override
+  String get color_lightBlue => 'Light Blue';
+
+  @override
+  String get color_cyan => 'Cyan';
+
+  @override
+  String get color_teal => 'Teal';
+
+  @override
+  String get color_green => 'Green';
+
+  @override
+  String get color_lightGreen => 'Light Green';
+
+  @override
+  String get color_lime => 'Lime';
+
+  @override
+  String get color_yellow => 'Yellow';
+
+  @override
+  String get color_amber => 'Amber';
+
+  @override
+  String get color_orange => 'Orange';
+
+  @override
+  String get color_deepOrange => 'Deep Orange';
+
+  @override
+  String get color_brown => 'Brown';
+
+  @override
+  String get color_grey => 'Grey';
+
+  @override
+  String get color_blueGrey => 'Blue Grey';
 
   @override
   String get log => 'Log';
@@ -332,7 +392,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String automated_by(String automatedScreenName) {
-    return 'Automated by @$automatedScreenName';
+    return 'Automated by $automatedScreenName';
   }
 
   @override
@@ -352,4 +412,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get open_in_browser => 'Open in Browser';
+
+  @override
+  String get search => 'Search';
 }

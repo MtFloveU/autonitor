@@ -62,8 +62,7 @@ class TwitterApiService {
       "responsive_web_twitter_article_notes_tab_enabled": true,
       "subscriptions_feature_can_gift_premium": true,
       "creator_subscriptions_tweet_preview_api_enabled": true,
-      "responsive_web_graphql_skip_user_profile_image_extensions_enabled":
-          true,
+      "responsive_web_graphql_skip_user_profile_image_extensions_enabled": true,
       "responsive_web_graphql_timeline_navigation_enabled": true,
       "payments_enabled": true,
       "responsive_web_graphql_exclude_directive_enabled": true,
