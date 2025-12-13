@@ -32,10 +32,13 @@ class _MainScaffoldState extends State<MainScaffold> {
   void _onItemTapped(int index) {
     if (_selectedIndex == index) {
       if (index == 1) {
-        _searchPageKey.currentState?.focusSearch();
+        // 如果再次点击搜索，可以在这里处理（例如清空或聚焦）
       }
       return;
     }
+
+    // [核心修复] 切换页面时，强制收起键盘并取消所有焦点
+    FocusManager.instance.primaryFocus?.unfocus();
 
     setState(() {
       _selectedIndex = index;
@@ -63,7 +66,8 @@ class _MainScaffoldState extends State<MainScaffold> {
     final List<Widget> pages = <Widget>[
       HomePage(onNavigateToAccounts: () => _onItemTapped(2)),
       SearchPage(key: _searchPageKey),
-      const AccountsPage(),
+      // 将 useSideNav 传给 AccountsPage，使其根据侧边导航决定网格布局行为
+      AccountsPage(useSideNav: useSideNav),
       const SettingsPage(),
     ];
 
@@ -71,33 +75,47 @@ class _MainScaffoldState extends State<MainScaffold> {
       body: Row(
         children: [
           if (useSideNav)
-            NavigationRail(
-              backgroundColor: navigationBackgroundColor,
-              selectedIndex: _selectedIndex,
-              onDestinationSelected: _onItemTapped,
-              labelType: NavigationRailLabelType.all,
-              destinations: [
-                NavigationRailDestination(
-                  icon: const Icon(Icons.home_outlined),
-                  selectedIcon: const Icon(Icons.home),
-                  label: Text(l10n.home),
-                ),
-                NavigationRailDestination(
-                  icon: const Icon(Icons.search_outlined),
-                  selectedIcon: const Icon(Icons.search),
-                  label: Text(l10n.search),
-                ),
-                NavigationRailDestination(
-                  icon: const Icon(Icons.people_alt_outlined),
-                  selectedIcon: const Icon(Icons.people_alt),
-                  label: Text(l10n.accounts),
-                ),
-                NavigationRailDestination(
-                  icon: const Icon(Icons.settings_outlined),
-                  selectedIcon: const Icon(Icons.settings),
-                  label: Text(l10n.settings),
-                ),
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: IntrinsicHeight(
+                      child: NavigationRail(
+                        backgroundColor: navigationBackgroundColor,
+                        selectedIndex: _selectedIndex,
+                        onDestinationSelected: _onItemTapped,
+                        labelType: NavigationRailLabelType.all,
+                        groupAlignment: -1.0,
+                        destinations: [
+                          NavigationRailDestination(
+                            icon: const Icon(Icons.home_outlined),
+                            selectedIcon: const Icon(Icons.home),
+                            label: Text(l10n.home),
+                          ),
+                          NavigationRailDestination(
+                            icon: const Icon(Icons.search_outlined),
+                            selectedIcon: const Icon(Icons.search),
+                            label: Text(l10n.search),
+                          ),
+                          NavigationRailDestination(
+                            icon: const Icon(Icons.people_alt_outlined),
+                            selectedIcon: const Icon(Icons.people_alt),
+                            label: Text(l10n.accounts),
+                          ),
+                          NavigationRailDestination(
+                            icon: const Icon(Icons.settings_outlined),
+                            selectedIcon: const Icon(Icons.settings),
+                            label: Text(l10n.settings),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           Expanded(
             child: PageView(

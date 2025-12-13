@@ -105,7 +105,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get switch_account => '切换账号';
 
   @override
-  String get run => '运行';
+  String get run => '同步';
 
   @override
   String get choose_login_method => '选择登录方式';
@@ -414,6 +414,54 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get search => '搜索';
+
+  @override
+  String get clear_search_history => '清除搜索历史';
+
+  @override
+  String get filter => '搜索设置 & 筛选';
+
+  @override
+  String get verified_user_only => '仅显示已认证用户';
+
+  @override
+  String get recent_searches => '最近搜索';
+
+  @override
+  String get no_recent_searches => '无最近搜索';
+
+  @override
+  String get enable_restid_searching => '启用 Rest Id 搜索';
+
+  @override
+  String get enable_restid_searching_subtitle => '通过精确 Rest Id 匹配进行搜索';
+
+  @override
+  String get search_fields => '搜索字段';
+
+  @override
+  String get attributes => '属性';
+
+  @override
+  String get apply => '应用';
+
+  @override
+  String get filters_all => '不限';
+
+  @override
+  String get filters_no => '否';
+
+  @override
+  String get filters_yes => '是';
+
+  @override
+  String get account_status => '账号状态';
+
+  @override
+  String get protected => '锁推';
+
+  @override
+  String get verified => '已认证';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -517,7 +565,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get switch_account => '切換賬戶';
 
   @override
-  String get run => '運行';
+  String get run => '同步';
 
   @override
   String get choose_login_method => '選擇登入方式';
@@ -826,4 +874,52 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get search => '搜索';
+
+  @override
+  String get clear_search_history => '清除搜索歷史';
+
+  @override
+  String get filter => '搜索設定 & 篩選';
+
+  @override
+  String get verified_user_only => '只列出已驗證用戶';
+
+  @override
+  String get recent_searches => '最近搜索';
+
+  @override
+  String get no_recent_searches => '無最近搜索';
+
+  @override
+  String get enable_restid_searching => '啟用 Rest Id 搜索';
+
+  @override
+  String get enable_restid_searching_subtitle => '通過精確 Rest Id 匹配進行搜索';
+
+  @override
+  String get search_fields => '搜索字段';
+
+  @override
+  String get attributes => '屬性';
+
+  @override
+  String get apply => '套用';
+
+  @override
+  String get filters_all => '不限';
+
+  @override
+  String get filters_no => '否';
+
+  @override
+  String get filters_yes => '是';
+
+  @override
+  String get account_status => '帳戶狀態';
+
+  @override
+  String get protected => '鎖推';
+
+  @override
+  String get verified => '已驗證';
 }

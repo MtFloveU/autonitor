@@ -105,7 +105,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get switch_account => 'Switch Account';
 
   @override
-  String get run => 'Run';
+  String get run => 'Sync';
 
   @override
   String get choose_login_method => 'Choose Login Method';
@@ -415,4 +415,53 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get search => 'Search';
+
+  @override
+  String get clear_search_history => 'Clear Search History';
+
+  @override
+  String get filter => 'Search Settings & Filters';
+
+  @override
+  String get verified_user_only => 'Verified Users Only';
+
+  @override
+  String get recent_searches => 'Recent Searches';
+
+  @override
+  String get no_recent_searches => 'No recent searches';
+
+  @override
+  String get enable_restid_searching => 'Enable Rest Id Searching';
+
+  @override
+  String get enable_restid_searching_subtitle =>
+      'Search by exact Rest Id match';
+
+  @override
+  String get search_fields => 'Search Fields';
+
+  @override
+  String get attributes => 'Attributes';
+
+  @override
+  String get apply => 'Apply';
+
+  @override
+  String get filters_all => 'All';
+
+  @override
+  String get filters_no => 'No';
+
+  @override
+  String get filters_yes => 'Yes';
+
+  @override
+  String get account_status => 'Account Status';
+
+  @override
+  String get protected => 'Protected';
+
+  @override
+  String get verified => 'Verified';
 }

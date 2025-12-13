@@ -1,28 +1,12 @@
-import 'dart:io';
 import 'package:autonitor/models/twitter_user.dart';
+import 'package:autonitor/ui/components/user_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:autonitor/ui/user_detail_page.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:path/path.dart' as p;
 import '../l10n/app_localizations.dart';
 import '../providers/report_providers.dart';
 import 'package:autonitor/providers/media_provider.dart';
-
-final RegExp _avatarSizeRegex = RegExp(r'_(normal|bigger|400x400)');
-
-class _UserDisplayData {
-  final String? absoluteLocalPath;
-  final String highQualityNetworkUrl;
-  final bool fetchNetworkLayer;
-
-  _UserDisplayData({
-    required this.absoluteLocalPath,
-    required this.highQualityNetworkUrl,
-    required this.fetchNetworkLayer,
-  });
-}
 
 class UserListTile extends StatelessWidget {
   final TwitterUser user;
@@ -31,6 +15,7 @@ class UserListTile extends StatelessWidget {
   final String followingLabel;
   final bool isFollower;
   final String? customHeroTag;
+  final String? highlightQuery;
 
   const UserListTile({
     super.key,
@@ -40,26 +25,68 @@ class UserListTile extends StatelessWidget {
     required this.followingLabel,
     required this.isFollower,
     this.customHeroTag,
+    this.highlightQuery,
   });
+
+  List<TextSpan> _buildHighlightedSpans(
+    BuildContext context,
+    String text,
+    String? query,
+    TextStyle? baseStyle,
+  ) {
+    if (query == null || query.trim().isEmpty) {
+      return [TextSpan(text: text, style: baseStyle)];
+    }
+
+    final String lowerText = text.toLowerCase();
+    final String lowerQuery = query.toLowerCase();
+    final List<TextSpan> spans = [];
+    int start = 0;
+    int indexOfHighlight = lowerText.indexOf(lowerQuery);
+
+    while (indexOfHighlight != -1) {
+      if (indexOfHighlight > start) {
+        spans.add(
+          TextSpan(
+            text: text.substring(start, indexOfHighlight),
+            style: baseStyle,
+          ),
+        );
+      }
+      spans.add(
+        TextSpan(
+          text: text.substring(
+            indexOfHighlight,
+            indexOfHighlight + query.length,
+          ),
+          style: baseStyle?.copyWith(
+            color: Theme.of(context).colorScheme.primary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      );
+      start = indexOfHighlight + query.length;
+      indexOfHighlight = lowerText.indexOf(lowerQuery, start);
+    }
+
+    if (start < text.length) {
+      spans.add(TextSpan(text: text.substring(start), style: baseStyle));
+    }
+    return spans;
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final data = _calculateDisplayData(user, mediaDir);
 
-    final avatarWidget = Hero(
-      tag: customHeroTag ?? 'avatar_${user.restId}',
-      child: CircleAvatar(
-        radius: 24,
-        backgroundColor: Colors.transparent,
-        child: ClipOval(
-          child: _OptimizedUserAvatar(
-            absoluteLocalPath: data.absoluteLocalPath,
-            highQualityNetworkUrl: data.highQualityNetworkUrl,
-            fetchNetworkLayer: data.fetchNetworkLayer,
-          ),
-        ),
-      ),
+    final avatarWidget = UserAvatar(
+      avatarUrl: user.avatarUrl,
+      avatarLocalPath: user.avatarLocalPath,
+      mediaDir: mediaDir,
+      radius: 24,
+      heroTag: customHeroTag ?? 'avatar_${user.restId}',
+      isHighQuality:
+          true, // List view usually looks better with HQ or at least bigger
     );
 
     final listTile = ListTile(
@@ -111,6 +138,7 @@ class UserListTile extends StatelessWidget {
   }
 
   Widget _buildTitleRow(BuildContext context, TwitterUser user) {
+    final theme = Theme.of(context);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -122,13 +150,20 @@ class UserListTile extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Flexible(
-                    child: Text(
-                      user.name ?? 'Unknown Name',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    child: Text.rich(
+                      TextSpan(
+                        children: _buildHighlightedSpans(
+                          context,
+                          user.name ?? 'Unknown Name',
+                          highlightQuery,
+                          const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  // ... icons (verified/protected) remain same
                   if (user.isVerified)
                     Padding(
                       padding: const EdgeInsets.only(left: 4),
@@ -157,13 +192,20 @@ class UserListTile extends StatelessWidget {
                     ),
                 ],
               ),
-              Text(
-                "@${user.screenName}",
+              // [修改] ScreenName 高亮，保留 hintColor
+              Text.rich(
+                TextSpan(
+                  children: _buildHighlightedSpans(
+                    context,
+                    "@${user.screenName}",
+                    highlightQuery,
+                    theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.hintColor,
+                    ),
+                  ),
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).hintColor,
-                ),
               ),
             ],
           ),
@@ -269,95 +311,40 @@ class UserListTile extends StatelessWidget {
           ),
 
           if (user.bio?.isNotEmpty == true && user.bio != null)
-            Text(
-              user.bio!,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+            _buildBio(context, user.bio!),
         ],
       ),
     );
   }
-}
 
-_UserDisplayData _calculateDisplayData(TwitterUser user, String? mediaDir) {
-  final String? relativeLocalPath = user.avatarLocalPath;
-  final String? absoluteLocalPath =
-      (mediaDir != null &&
-          relativeLocalPath != null &&
-          relativeLocalPath.isNotEmpty)
-      ? p.join(mediaDir, relativeLocalPath)
-      : null;
+  Widget _buildBio(BuildContext context, String bio) {
+    // 判定是否匹配：搜索词不为空 且 Bio 包含搜索词 (忽略大小写)
+    final bool isMatch =
+        highlightQuery != null &&
+        highlightQuery!.trim().isNotEmpty &&
+        bio.toLowerCase().contains(highlightQuery!.toLowerCase());
 
-  final String highQualityNetworkUrl = (user.avatarUrl ?? '').replaceFirst(
-    _avatarSizeRegex,
-    '_400x400',
-  );
-
-  final bool isLocalHighQuality =
-      absoluteLocalPath != null && absoluteLocalPath.contains('_high');
-
-  return _UserDisplayData(
-    absoluteLocalPath: absoluteLocalPath,
-    highQualityNetworkUrl: highQualityNetworkUrl,
-    fetchNetworkLayer: !isLocalHighQuality && highQualityNetworkUrl.isNotEmpty,
-  );
-}
-
-class _OptimizedUserAvatar extends StatelessWidget {
-  final String? absoluteLocalPath;
-  final String highQualityNetworkUrl;
-  final bool fetchNetworkLayer;
-
-  const _OptimizedUserAvatar({
-    required this.absoluteLocalPath,
-    required this.highQualityNetworkUrl,
-    required this.fetchNetworkLayer,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    const placeholder = SizedBox(width: 48, height: 48);
-
-    if (absoluteLocalPath != null) {
-      return Image.file(
-        File(absoluteLocalPath!),
-        width: 48,
-        height: 48,
-        fit: BoxFit.cover,
-        cacheWidth: 100,
-        errorBuilder: (context, error, stackTrace) {
-          if (absoluteLocalPath == null && highQualityNetworkUrl.isNotEmpty) {
-            return CachedNetworkImage(
-              imageUrl: highQualityNetworkUrl,
-              width: 48,
-              height: 48,
-              fit: BoxFit.cover,
-              memCacheWidth: 100,
-              placeholder: (context, url) => placeholder,
-              errorWidget: (context, url, error) => placeholder,
-              fadeInDuration: const Duration(milliseconds: 200),
-            );
-          }
-          return placeholder;
-        },
+    if (isMatch) {
+      // [逻辑 A] 匹配成功：高亮 + 不折叠 (移除 maxLines)
+      return Text.rich(
+        TextSpan(
+          children: _buildHighlightedSpans(
+            context,
+            bio,
+            highlightQuery,
+            Theme.of(context).textTheme.bodyMedium,
+          ),
+        ),
       );
     }
 
-    if (absoluteLocalPath == null && highQualityNetworkUrl.isNotEmpty) {
-      return CachedNetworkImage(
-        imageUrl: highQualityNetworkUrl,
-        width: 48,
-        height: 48,
-        fit: BoxFit.cover,
-        memCacheWidth: 100,
-        placeholder: (context, url) => placeholder,
-        errorWidget: (context, url, error) => placeholder,
-      );
-    }
-
-    return placeholder;
+    // [逻辑 B] 未匹配：普通显示 + 限制 2 行 + 省略号
+    return Text(
+      bio,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      style: Theme.of(context).textTheme.bodyMedium,
+    );
   }
 }
 
@@ -454,9 +441,17 @@ class _UserListPageState extends ConsumerState<UserListPage>
 
   Widget _buildSuspendedBanner(BuildContext context) {
     if (widget.categoryKey == 'suspended') {
-      return AspectRatio(
-        aspectRatio: 1500 / 500,
-        child: Image.asset('assets/suspended_banner.png', fit: BoxFit.cover),
+      return Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: AspectRatio(
+            aspectRatio: 1500 / 500,
+            child: Image.asset(
+              'assets/suspended_banner.png',
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
       );
     }
     return const SizedBox.shrink();

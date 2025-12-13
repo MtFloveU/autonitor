@@ -294,7 +294,7 @@ abstract class AppLocalizations {
   /// No description provided for @run.
   ///
   /// In en, this message translates to:
-  /// **'Run'**
+  /// **'Sync'**
   String get run;
 
   /// No description provided for @choose_login_method.
@@ -884,6 +884,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search'**
   String get search;
+
+  /// No description provided for @clear_search_history.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Search History'**
+  String get clear_search_history;
+
+  /// No description provided for @filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Settings & Filters'**
+  String get filter;
+
+  /// No description provided for @verified_user_only.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified Users Only'**
+  String get verified_user_only;
+
+  /// No description provided for @recent_searches.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Searches'**
+  String get recent_searches;
+
+  /// No description provided for @no_recent_searches.
+  ///
+  /// In en, this message translates to:
+  /// **'No recent searches'**
+  String get no_recent_searches;
+
+  /// No description provided for @enable_restid_searching.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Rest Id Searching'**
+  String get enable_restid_searching;
+
+  /// No description provided for @enable_restid_searching_subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by exact Rest Id match'**
+  String get enable_restid_searching_subtitle;
+
+  /// No description provided for @search_fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Fields'**
+  String get search_fields;
+
+  /// No description provided for @attributes.
+  ///
+  /// In en, this message translates to:
+  /// **'Attributes'**
+  String get attributes;
+
+  /// No description provided for @apply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get apply;
+
+  /// No description provided for @filters_all.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get filters_all;
+
+  /// No description provided for @filters_no.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get filters_no;
+
+  /// No description provided for @filters_yes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get filters_yes;
+
+  /// No description provided for @account_status.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Status'**
+  String get account_status;
+
+  /// No description provided for @protected.
+  ///
+  /// In en, this message translates to:
+  /// **'Protected'**
+  String get protected;
+
+  /// No description provided for @verified.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified'**
+  String get verified;
 }
 
 class _AppLocalizationsDelegate

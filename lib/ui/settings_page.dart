@@ -1,6 +1,9 @@
 import 'package:autonitor/models/app_settings.dart';
 import 'package:autonitor/models/graphql_operation.dart';
+import 'package:autonitor/providers/auth_provider.dart';
+import 'package:autonitor/providers/search_provider.dart';
 import 'package:autonitor/providers/x_client_transaction_provider.dart';
+import 'package:autonitor/ui/search_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -46,7 +49,6 @@ class SettingsPage extends ConsumerStatefulWidget {
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
   late TextEditingController _historyLimitController;
-  String selectedMethod = "GET";
 
   @override
   void initState() {
@@ -54,340 +56,25 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     _historyLimitController = TextEditingController();
   }
 
-  @override
-  void dispose() {
-    _historyLimitController.dispose();
-    super.dispose();
+  // --- 页面跳转逻辑 ---
+  void _openGeneratePage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const GeneratorPage()),
+    );
   }
 
-  // --- 生成对话框逻辑 ---
-  void _showGenerateDialog() {
-    final TextEditingController countController = TextEditingController(
-      text: '1',
+  void _openGqlPathPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const GraphQLPathPage()),
     );
-    final TextEditingController pathController = TextEditingController(
-      text: 'https://api.x.com/graphql/Efm7xwLreAw77q2Fq7rX-Q/Followers',
-    );
-    final TextEditingController resultController = TextEditingController();
-    final ValueNotifier<bool> isGenerating = ValueNotifier<bool>(false);
-    final l10n = AppLocalizations.of(context)!;
-    bool isCanceled = false;
-    late StateSetter dialogSetState;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        return PopScope(
-          canPop: true,
-          onPopInvokedWithResult: (didPop, result) {
-            if (didPop) {
-              isCanceled = true;
-            }
-          },
-          child: StatefulBuilder(
-            builder: (context, setState) {
-              dialogSetState = setState;
-              final theme = Theme.of(context);
-
-              return AlertDialog(
-                title: Text(l10n.xclient_generator_title),
-                content: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(child: Text(l10n.num_ids_to_generate)),
-                          const SizedBox(width: 8),
-                          SizedBox(
-                            width: 80,
-                            child: TextField(
-                              controller: countController,
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly,
-                                NumberRangeInputFormatter(min: 1, max: 100),
-                              ],
-                              textAlign: TextAlign.center,
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                isDense: true,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  vertical: 10,
-                                  horizontal: 8,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: pathController,
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                labelText: 'API Path / URL',
-                                isDense: true,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                  horizontal: 12,
-                                ),
-                              ),
-                              style: const TextStyle(
-                                fontFamily: 'monospace',
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: theme.colorScheme.outlineVariant,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                value: selectedMethod,
-                                borderRadius: BorderRadius.circular(12),
-                                items: const [
-                                  DropdownMenuItem(
-                                    value: 'GET',
-                                    child: Text('GET'),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: 'POST',
-                                    child: Text('POST'),
-                                  ),
-                                ],
-                                onChanged: (value) {
-                                  setState(() {
-                                    selectedMethod = value!;
-                                  });
-                                },
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Container(
-                        width: double.maxFinite,
-                        constraints: BoxConstraints(
-                          maxHeight: MediaQuery.of(context).size.height * 0.35,
-                        ),
-                        child: TextField(
-                          controller: resultController,
-                          readOnly: true,
-                          maxLines: null,
-                          decoration: InputDecoration(
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            filled: true,
-                            fillColor: theme.colorScheme.surfaceContainerLow,
-                            contentPadding: const EdgeInsets.all(12),
-                          ),
-                          style: const TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      isCanceled = true;
-                      Navigator.pop(dialogContext);
-                    },
-                    child: Text(l10n.close),
-                  ),
-                  ValueListenableBuilder<bool>(
-                    valueListenable: isGenerating,
-                    builder: (context, generating, _) {
-                      // 主要操作使用 FilledButton 风格 (ElevatedButton 默认样式)
-                      return FilledButton.tonal(
-                        onPressed: generating
-                            ? null
-                            : () async {
-                                final input = countController.text.trim();
-                                final count = int.tryParse(input);
-                                final path = pathController.text.trim();
-                                final messenger = ScaffoldMessenger.of(
-                                  dialogContext,
-                                );
-
-                                if (count == null || count <= 0) {
-                                  messenger.showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        l10n.please_enter_valid_number,
-                                      ),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
-                                  return;
-                                }
-                                if (Uri.tryParse(path)?.hasScheme != true ||
-                                    Uri.tryParse(path)?.hasAuthority != true ||
-                                    !(Uri.tryParse(path)?.scheme == 'http' ||
-                                        Uri.tryParse(path)?.scheme ==
-                                            'https')) {
-                                  messenger.showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        l10n.path_must_start_with_slash,
-                                      ),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
-                                  return;
-                                }
-
-                                isGenerating.value = true;
-                                isCanceled = false;
-
-                                dialogSetState(() {
-                                  resultController.text =
-                                      l10n.fetching_resources;
-                                });
-
-                                try {
-                                  final XClientTransactionService service =
-                                      await ref.read(xctServiceProvider.future);
-
-                                  if (isCanceled) throw Exception("Canceled");
-
-                                  dialogSetState(() {
-                                    resultController.text =
-                                        "Generating $count IDs (local)...";
-                                  });
-                                  await Future.delayed(
-                                    const Duration(milliseconds: 50),
-                                  );
-
-                                  List<String> generatedIds = [];
-
-                                  for (int i = 0; i < count; i++) {
-                                    if (isCanceled) {
-                                      generatedIds.add("\n--- CANCELED ---");
-                                      break;
-                                    }
-
-                                    final id = service.generateTransactionId(
-                                      method: selectedMethod,
-                                      url: path,
-                                    );
-
-                                    generatedIds.add("${i + 1}. $id");
-
-                                    dialogSetState(() {
-                                      resultController.text = generatedIds.join(
-                                        '\n\n',
-                                      );
-                                    });
-
-                                    if (count > 10 && i % 10 == 0) {
-                                      await Future.delayed(
-                                        const Duration(milliseconds: 1),
-                                      );
-                                    }
-                                  }
-                                } catch (e) {
-                                  final String errorMsg =
-                                      (e is Exception && isCanceled)
-                                      ? l10n.generation_canceled
-                                      : "ID Generation Failed: $e";
-
-                                  if (mounted && !isCanceled) {
-                                    messenger.showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          errorMsg,
-                                          style: TextStyle(
-                                            color: theme.colorScheme.onError,
-                                          ),
-                                        ),
-                                        backgroundColor:
-                                            theme.colorScheme.error,
-                                        behavior: SnackBarBehavior.floating,
-                                      ),
-                                    );
-                                  }
-
-                                  if (context.mounted) {
-                                    dialogSetState(() {
-                                      resultController.text +=
-                                          "\n\n--- ${errorMsg.replaceAll("\n", " ")} ---";
-                                    });
-                                  }
-                                } finally {
-                                  if (!isCanceled) {
-                                    isGenerating.value = false;
-                                  }
-                                  if (context.mounted) {
-                                    dialogSetState(() {});
-                                  }
-                                }
-                              },
-                        child: generating
-                            ? Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(l10n.generating),
-                                ],
-                              )
-                            : Text(l10n.generate),
-                      );
-                    },
-                  ),
-                ],
-              );
-            },
-          ),
-        );
-      },
-    ).then((_) {
-      countController.dispose();
-      pathController.dispose();
-      resultController.dispose();
-      isGenerating.dispose();
-    });
   }
 
-  // --- GraphQL Path 配置入口 ---
-  void _showGqlPathDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) {
-        return UncontrolledProviderScope(
-          container: ProviderScope.containerOf(context),
-          child: const GraphQLPathDialog(),
-        );
-      },
+  void _openLogPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const LogViewerPage()),
     );
   }
 
@@ -399,6 +86,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
+      appBar: AppBar(title: Text(l10n.settings)),
       body: settingsValue.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stackTrace) => Center(
@@ -415,257 +103,196 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             _historyLimitController.text = settingsValue;
           }
 
-          return CustomScrollView(
-            slivers: [
-              /// ✅【关键：大标题滚动缩小 AppBar】
-              SliverAppBar(
-                expandedHeight: kToolbarHeight,
-                pinned: true,
-                toolbarHeight: kToolbarHeight,
-                automaticallyImplyLeading: false,
+          return ListView(
+            children: [
+              _buildSectionHeader(context, l10n.general),
 
-                flexibleSpace: FlexibleSpaceBar(
-                  title: Padding(
-                    // ✅ 只能靠手动 Padding
-                    padding: const EdgeInsets.only(left: 16),
-                    child: Text(l10n.settings),
-                  ),
-                  collapseMode: CollapseMode.pin,
-                ),
+              _SettingsDropdownTile<String>(
+                title: l10n.language,
+                icon: Icons.language,
+                currentValue: settings.locale?.toLanguageTag() ?? 'Auto',
+                options: {
+                  'Auto': l10n.follow_system,
+                  'en': 'English',
+                  'zh-CN': '中文（简体）',
+                  'zh-TW': '中文（繁體）',
+                },
+                onChanged: (newValue) {
+                  if (newValue == null) return;
+                  Locale? locale;
+                  if (newValue == 'en') {
+                    locale = const Locale('en');
+                  } else if (newValue == 'zh-CN') {
+                    locale = const Locale('zh', 'CN');
+                  } else if (newValue == 'zh-TW') {
+                    locale = const Locale('zh', 'TW');
+                  }
+                  ref.read(settingsProvider.notifier).updateLocale(locale);
+                },
               ),
 
-              /// ✅ 你的原 ListView 改成 SliverList
-              SliverList(
-                delegate: SliverChildListDelegate([
-                  _buildSectionHeader(context, l10n.general),
-
-                  // ✅ 下面你原来的所有 ListTile、SwitchListTile
-                  // ✅ 一行都不用改，全部原封不动粘进来
-                  _SettingsDropdownTile<String>(
-                    title: l10n.language,
-                    icon: Icons.language,
-                    currentValue: settings.locale?.toLanguageTag() ?? 'Auto',
-                    options: {
-                      'Auto': l10n.follow_system,
-                      'en': 'English',
-                      'zh-CN': '中文（简体）',
-                      'zh-TW': '中文（繁體）',
-                    },
-                    onChanged: (newValue) {
-                      if (newValue == null) return;
-                      Locale? locale;
-                      if (newValue == 'en') {
-                        locale = const Locale('en');
-                      } else if (newValue == 'zh-CN') {
-                        locale = const Locale('zh', 'CN');
-                      } else if (newValue == 'zh-TW') {
-                        locale = const Locale('zh', 'TW');
-                      }
-                      ref.read(settingsProvider.notifier).updateLocale(locale);
-                    },
-                  ),
-
-                  // 2. Theme Mode
-                  _SettingsDropdownTile<ThemeColor>(
-                    title: l10n.theme,
-                    icon: Icons.format_color_fill_outlined,
-                    currentValue: settings.theme,
-                    options: {
-                      ThemeColor.defaultThemeColor: l10n.follow_system,
-                      ThemeColor.red: l10n.color_red,
-                      ThemeColor.pink: l10n.color_pink,
-                      ThemeColor.purple: l10n.color_purple,
-                      ThemeColor.deepPurple: l10n.color_deepPurple,
-                      ThemeColor.indigo: l10n.color_indigo,
-                      ThemeColor.blue: l10n.color_blue,
-                      ThemeColor.lightBlue: l10n.color_lightBlue,
-                      ThemeColor.cyan: l10n.color_cyan,
-                      ThemeColor.teal: l10n.color_teal,
-                      ThemeColor.green: l10n.color_green,
-                      ThemeColor.lightGreen: l10n.color_lightGreen,
-                      ThemeColor.lime: l10n.color_lime,
-                      ThemeColor.yellow: l10n.color_yellow,
-                      ThemeColor.amber: l10n.color_amber,
-                      ThemeColor.orange: l10n.color_orange,
-                      ThemeColor.deepOrange: l10n.color_deepOrange,
-                      ThemeColor.brown: l10n.color_brown,
-                      ThemeColor.grey: l10n.color_grey,
-                      ThemeColor.blueGrey: l10n.color_blueGrey,
-                    },
-                    onChanged: (newValue) {
-                      if (newValue != null) {
-                        ref
-                            .read(settingsProvider.notifier)
-                            .updateThemeColor(newValue);
-                      }
-                    },
-                  ),
-                  _SettingsDropdownTile<ThemeMode>(
-                    title: l10n.theme_mode,
-                    icon: Icons.brightness_6_outlined,
-                    currentValue: settings.themeMode,
-                    options: {
-                      ThemeMode.system: l10n.follow_system,
-                      ThemeMode.light: l10n.theme_mode_light,
-                      ThemeMode.dark: l10n.theme_mode_dark,
-                    },
-                    onChanged: (newValue) {
-                      if (newValue != null) {
-                        ref
-                            .read(settingsProvider.notifier)
-                            .updateThemeMode(newValue);
-                      }
-                    },
-                  ),
-
-                  _buildSectionHeader(context, l10n.api_request_settings),
-
-                  ListTile(
-                    leading: Icon(
-                      Icons.api_outlined,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    title: Text(l10n.graphql_path_config),
-                    onTap: _showGqlPathDialog,
-                  ),
-                  ListTile(
-                    leading: Icon(
-                      Icons.build_circle_outlined,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    title: Text(l10n.xclient_generator_title),
-                    onTap: _showGenerateDialog,
-                  ),
-
-                  _buildSectionHeader(context, l10n.storage_settings),
-
-                  SwitchListTile(
-                    secondary: Icon(
-                      Icons.person_outline_outlined,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    title: Text(l10n.save_avatar_history),
-                    value: settings.saveAvatarHistory,
-                    onChanged: (v) => ref
+              // 2. Theme Mode
+              _SettingsDropdownTile<ThemeColor>(
+                title: l10n.theme,
+                icon: Icons.format_color_fill_outlined,
+                currentValue: settings.theme,
+                options: {
+                  ThemeColor.defaultThemeColor: l10n.follow_system,
+                  ThemeColor.red: l10n.color_red,
+                  ThemeColor.pink: l10n.color_pink,
+                  ThemeColor.purple: l10n.color_purple,
+                  ThemeColor.deepPurple: l10n.color_deepPurple,
+                  ThemeColor.indigo: l10n.color_indigo,
+                  ThemeColor.blue: l10n.color_blue,
+                  ThemeColor.lightBlue: l10n.color_lightBlue,
+                  ThemeColor.cyan: l10n.color_cyan,
+                  ThemeColor.teal: l10n.color_teal,
+                  ThemeColor.green: l10n.color_green,
+                  ThemeColor.lightGreen: l10n.color_lightGreen,
+                  ThemeColor.lime: l10n.color_lime,
+                  ThemeColor.yellow: l10n.color_yellow,
+                  ThemeColor.amber: l10n.color_amber,
+                  ThemeColor.orange: l10n.color_orange,
+                  ThemeColor.deepOrange: l10n.color_deepOrange,
+                  ThemeColor.brown: l10n.color_brown,
+                  ThemeColor.grey: l10n.color_grey,
+                  ThemeColor.blueGrey: l10n.color_blueGrey,
+                },
+                onChanged: (newValue) {
+                  if (newValue != null) {
+                    ref
                         .read(settingsProvider.notifier)
-                        .updateSaveAvatarHistory(v),
-                  ),
+                        .updateThemeColor(newValue);
+                  }
+                },
+              ),
+              _SettingsDropdownTile<ThemeMode>(
+                title: l10n.theme_mode,
+                icon: Icons.brightness_6_outlined,
+                currentValue: settings.themeMode,
+                options: {
+                  ThemeMode.system: l10n.follow_system,
+                  ThemeMode.light: l10n.theme_mode_light,
+                  ThemeMode.dark: l10n.theme_mode_dark,
+                },
+                onChanged: (newValue) {
+                  if (newValue != null) {
+                    ref
+                        .read(settingsProvider.notifier)
+                        .updateThemeMode(newValue);
+                  }
+                },
+              ),
 
-                  if (settings.saveAvatarHistory)
-                    _SettingsDropdownTile<AvatarQuality>(
-                      title: l10n.avatar_quality,
-                      icon: Icons.high_quality,
-                      currentValue: settings.avatarQuality,
-                      options: {
-                        AvatarQuality.high: l10n.quality_high,
-                        AvatarQuality.low: l10n.quality_low,
-                      },
-                      onChanged: (v) {
-                        if (v != null) {
-                          ref
-                              .read(settingsProvider.notifier)
-                              .updateAvatarQuality(v);
-                        }
-                      },
-                    ),
-                  SwitchListTile(
-                    secondary: Icon(
-                      Icons.image_outlined,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    title: Text(l10n.save_banner_history),
-                    value: settings.saveBannerHistory,
-                    onChanged: (bool newValue) {
+              _buildSectionHeader(context, l10n.api_request_settings),
+
+              ListTile(
+                leading: Icon(
+                  Icons.api_outlined,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                title: Text(l10n.graphql_path_config),
+                onTap: _openGqlPathPage,
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.build_circle_outlined,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                title: Text(l10n.xclient_generator_title),
+                onTap: _openGeneratePage,
+              ),
+
+              _buildSectionHeader(context, l10n.storage_settings),
+
+              SwitchListTile(
+                secondary: Icon(
+                  Icons.person_outline_outlined,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                title: Text(l10n.save_avatar_history),
+                value: settings.saveAvatarHistory,
+                onChanged: (v) => ref
+                    .read(settingsProvider.notifier)
+                    .updateSaveAvatarHistory(v),
+              ),
+
+              if (settings.saveAvatarHistory)
+                _SettingsDropdownTile<AvatarQuality>(
+                  title: l10n.avatar_quality,
+                  icon: Icons.high_quality,
+                  currentValue: settings.avatarQuality,
+                  options: {
+                    AvatarQuality.high: l10n.quality_high,
+                    AvatarQuality.low: l10n.quality_low,
+                  },
+                  onChanged: (v) {
+                    if (v != null) {
                       ref
                           .read(settingsProvider.notifier)
-                          .updateSaveBannerHistory(newValue);
-                    },
-                  ),
+                          .updateAvatarQuality(v);
+                    }
+                  },
+                ),
+              SwitchListTile(
+                secondary: Icon(
+                  Icons.image_outlined,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                title: Text(l10n.save_banner_history),
+                value: settings.saveBannerHistory,
+                onChanged: (bool newValue) {
+                  ref
+                      .read(settingsProvider.notifier)
+                      .updateSaveBannerHistory(newValue);
+                },
+              ),
 
-                  _HistoryStrategyTile(
-                    l10n: l10n,
-                    settings: settings,
-                    controller: _historyLimitController,
-                  ),
+              _HistoryStrategyTile(
+                l10n: l10n,
+                settings: settings,
+                controller: _historyLimitController,
+              ),
+              _buildSectionHeader(context, l10n.search),
+              ListTile(
+                leading: Icon(
+                  Icons.search_outlined,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                title: Text(l10n.filter),
+                onTap: () {
+                  final activeAccount = ref.read(activeAccountProvider);
+                  if (activeAccount == null) return;
 
-                  _buildSectionHeader(context, l10n.log),
+                  // 这里需要自己创建 SearchParam
+                  final initialParam = SearchParam(
+                    ownerId: activeAccount.id,
+                    query: '',
+                  );
 
-                  ListTile(
-                    leading: Icon(
-                      Icons.view_list_outlined,
-                      color: colorScheme.onSurfaceVariant,
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          SearchFiltersPage(initialParam: initialParam),
                     ),
-                    title: Text(l10n.view_log),
-                    onTap: () {
-                      final logs = ref.read(logHistoryProvider);
-                      final logText = logs.join('\n');
-                      showDialog(
-                        context: context,
-                        builder: (dialogContext) => AlertDialog(
-                          title: Text(l10n.view_log),
-                          content: Container(
-                            width: double.maxFinite,
-                            constraints: BoxConstraints(
-                              maxHeight:
-                                  MediaQuery.of(context).size.height * 0.7,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colorScheme.surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: SingleChildScrollView(
-                              reverse: true,
-                              padding: const EdgeInsets.all(12),
-                              child: SelectableText(
-                                logText,
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontFamily: 'monospace',
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ),
-                          ),
-                          actions: [
-                            TextButton(
-                              child: Text(l10n.copy),
-                              onPressed: () {
-                                Clipboard.setData(ClipboardData(text: logText));
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      l10n.copied_to_clipboard,
-                                      style: TextStyle(
-                                        color: colorScheme.onPrimaryContainer,
-                                      ),
-                                    ),
-                                    behavior: SnackBarBehavior.floating,
-                                    backgroundColor:
-                                        colorScheme.primaryContainer,
-                                  ),
-                                );
-                                Navigator.pop(dialogContext);
-                              },
-                            ),
-                            TextButton(
-                              child: Text(l10n.clear),
-                              onPressed: () {
-                                ref
-                                    .read(logHistoryNotifierProvider.notifier)
-                                    .clearLog();
-                                Navigator.pop(dialogContext);
-                              },
-                            ),
-                            TextButton(
-                              child: Text(l10n.close),
-                              onPressed: () => Navigator.pop(dialogContext),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ]),
+                  ).then((result) {
+                    if (result != null && result is SearchParam) {
+                      // 处理返回的筛选结果
+                      // 例如传给上层 Provider 或 setState
+                    }
+                  });
+                },
+              ),
+              _buildSectionHeader(context, l10n.log),
+
+              ListTile(
+                leading: Icon(
+                  Icons.view_list_outlined,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                title: Text(l10n.view_log),
+                onTap: _openLogPage,
               ),
             ],
           );
@@ -759,7 +386,6 @@ class _SettingsDropdownTileState<T> extends State<_SettingsDropdownTile<T>> {
               isDense: true,
               value: widget.currentValue,
               focusColor: Colors.transparent, // 禁用焦点色
-              // ------------------ 已修改：移除自定义动画 ------------------
               items: List.generate(entries.length, (index) {
                 final entry = entries[index];
                 return DropdownMenuItem<T>(
@@ -774,7 +400,6 @@ class _SettingsDropdownTileState<T> extends State<_SettingsDropdownTile<T>> {
               onChanged: widget.onChanged,
               selectedItemBuilder: (context) {
                 return widget.options.entries.map((entry) {
-                  // ------------------ 已修改：移除副标题切换动画 ------------------
                   return Text(
                     entry.value,
                     key: ValueKey<String>(entry.value),
@@ -878,7 +503,6 @@ class _HistoryStrategyTileState extends ConsumerState<_HistoryStrategyTile> {
                   isDense: true,
                   value: widget.settings.historyStrategy,
                   focusColor: Colors.transparent, // 禁用焦点色
-                  // ------------------ 已修改：移除自定义动画 ------------------
                   items: List.generate(entries.length, (index) {
                     final entry = entries[index];
                     return DropdownMenuItem<HistoryStrategy>(
@@ -899,7 +523,6 @@ class _HistoryStrategyTileState extends ConsumerState<_HistoryStrategyTile> {
                   },
                   selectedItemBuilder: (context) {
                     return options.entries.map((entry) {
-                      // ------------------ 已修改：移除副标题切换动画 ------------------
                       return Text(
                         entry.value,
                         key: ValueKey<String>(entry.value),
@@ -990,14 +613,336 @@ class _HistoryStrategyTileState extends ConsumerState<_HistoryStrategyTile> {
   }
 }
 
-class GraphQLPathDialog extends ConsumerStatefulWidget {
-  const GraphQLPathDialog({super.key});
+// ---------------------------------------------------------------------------
+// 新增页面：GeneratorPage (原 _showGenerateDialog)
+// ---------------------------------------------------------------------------
+class GeneratorPage extends ConsumerStatefulWidget {
+  const GeneratorPage({super.key});
 
   @override
-  ConsumerState<GraphQLPathDialog> createState() => _GraphQLPathDialogState();
+  ConsumerState<GeneratorPage> createState() => _GeneratorPageState();
 }
 
-class _GraphQLPathDialogState extends ConsumerState<GraphQLPathDialog> {
+class _GeneratorPageState extends ConsumerState<GeneratorPage> {
+  late TextEditingController countController;
+  late TextEditingController pathController;
+  late TextEditingController resultController;
+  late ValueNotifier<bool> isGenerating;
+  String selectedMethod = "GET";
+  bool isCanceled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    countController = TextEditingController(text: '1');
+    pathController = TextEditingController(
+      text: 'https://api.x.com/graphql/Efm7xwLreAw77q2Fq7rX-Q/Followers',
+    );
+    resultController = TextEditingController();
+    isGenerating = ValueNotifier<bool>(false);
+  }
+
+  @override
+  void dispose() {
+    countController.dispose();
+    pathController.dispose();
+    resultController.dispose();
+    isGenerating.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) {
+          isCanceled = true;
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(title: Text(l10n.xclient_generator_title)),
+        body: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(child: Text(l10n.num_ids_to_generate)),
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          width: 80,
+                          child: TextField(
+                            controller: countController,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              NumberRangeInputFormatter(min: 1, max: 100),
+                            ],
+                            textAlign: TextAlign.center,
+                            decoration: InputDecoration(
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 10,
+                                horizontal: 8,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: pathController,
+                            decoration: InputDecoration(
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              labelText: 'API Path / URL',
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                                horizontal: 12,
+                              ),
+                            ),
+                            style: const TextStyle(
+                              fontFamily: 'monospace',
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: theme.colorScheme.outlineVariant,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: selectedMethod,
+                              borderRadius: BorderRadius.circular(12),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: 'GET',
+                                  child: Text('GET'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'POST',
+                                  child: Text('POST'),
+                                ),
+                              ],
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedMethod = value!;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      width: double.maxFinite,
+                      constraints: BoxConstraints(
+                        maxHeight: MediaQuery.of(context).size.height * 0.35,
+                      ),
+                      child: TextField(
+                        controller: resultController,
+                        readOnly: true,
+                        maxLines: null,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: theme.colorScheme.surfaceContainerLow,
+                          contentPadding: const EdgeInsets.all(12),
+                        ),
+                        style: const TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  const SizedBox(width: 8),
+                  ValueListenableBuilder<bool>(
+                    valueListenable: isGenerating,
+                    builder: (context, generating, _) {
+                      return FilledButton.tonal(
+                        onPressed: generating ? null : _startGeneration,
+                        child: generating
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(l10n.generating),
+                                ],
+                              )
+                            : Text(l10n.generate),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _startGeneration() async {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final input = countController.text.trim();
+    final count = int.tryParse(input);
+    final path = pathController.text.trim();
+    final messenger = ScaffoldMessenger.of(context);
+
+    if (count == null || count <= 0) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(l10n.please_enter_valid_number),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    if (Uri.tryParse(path)?.hasScheme != true ||
+        Uri.tryParse(path)?.hasAuthority != true ||
+        !(Uri.tryParse(path)?.scheme == 'http' ||
+            Uri.tryParse(path)?.scheme == 'https')) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(l10n.path_must_start_with_slash),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    isGenerating.value = true;
+    isCanceled = false;
+
+    setState(() {
+      resultController.text = l10n.fetching_resources;
+    });
+
+    try {
+      final XClientTransactionService service = await ref.read(
+        xctServiceProvider.future,
+      );
+
+      if (isCanceled) throw Exception("Canceled");
+
+      setState(() {
+        resultController.text = "Generating $count IDs (local)...";
+      });
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      List<String> generatedIds = [];
+
+      for (int i = 0; i < count; i++) {
+        if (isCanceled) {
+          generatedIds.add("\n--- CANCELED ---");
+          break;
+        }
+
+        final id = service.generateTransactionId(
+          method: selectedMethod,
+          url: path,
+        );
+
+        generatedIds.add("${i + 1}. $id");
+
+        setState(() {
+          resultController.text = generatedIds.join('\n\n');
+        });
+
+        if (count > 10 && i % 10 == 0) {
+          await Future.delayed(const Duration(milliseconds: 1));
+        }
+      }
+    } catch (e) {
+      final String errorMsg = (e is Exception && isCanceled)
+          ? l10n.generation_canceled
+          : "ID Generation Failed: $e";
+
+      if (mounted && !isCanceled) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              errorMsg,
+              style: TextStyle(color: theme.colorScheme.onError),
+            ),
+            backgroundColor: theme.colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+
+      if (mounted) {
+        setState(() {
+          resultController.text +=
+              "\n\n--- ${errorMsg.replaceAll("\n", " ")} ---";
+        });
+      }
+    } finally {
+      if (!isCanceled) {
+        isGenerating.value = false;
+      }
+      if (mounted) {
+        setState(() {});
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 新增页面：GraphQLPathPage (原 GraphQLPathDialog)
+// ---------------------------------------------------------------------------
+class GraphQLPathPage extends ConsumerStatefulWidget {
+  const GraphQLPathPage({super.key});
+
+  @override
+  ConsumerState<GraphQLPathPage> createState() => _GraphQLPathPageState();
+}
+
+class _GraphQLPathPageState extends ConsumerState<GraphQLPathPage> {
   late final Map<String, TextEditingController> _pathControllers;
 
   @override
@@ -1037,133 +982,240 @@ class _GraphQLPathDialogState extends ConsumerState<GraphQLPathDialog> {
       }
     }
 
-    return AlertDialog(
-      title: Text(l10n.graphql_path_config),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.graphql_path_config)),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            l10n.xclient_generator_source,
+                            style: theme.textTheme.labelLarge,
+                          ),
+                        ),
+                        DropdownButtonHideUnderline(
+                          child: DropdownButton<QueryIdSource>(
+                            value: pathState.source,
+                            borderRadius: BorderRadius.circular(12),
+                            items: QueryIdSource.values.map((e) {
+                              return DropdownMenuItem(
+                                value: e,
+                                child: Text(
+                                  e == QueryIdSource.apiDocument
+                                      ? 'TIAD'
+                                      : 'Custom',
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: pathState.isLoading
+                                ? null
+                                : (value) {
+                                    if (value != null) {
+                                      pathNotifier.setSource(value);
+                                    }
+                                  },
+                          ),
+                        ),
+                        if (!isCustom)
+                          IconButton(
+                            icon: const Icon(Icons.link_outlined),
+                            tooltip: 'View Source',
+                            onPressed: () {
+                              launchUrl(
+                                Uri.parse(
+                                  'https://github.com/fa0311/TwitterInternalAPIDocument/tree/develop',
+                                ),
+                              );
+                            },
+                          ),
+                      ],
+                    ),
+                  ),
+                  if (pathState.error != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        'Error: ${pathState.error}',
+                        style: TextStyle(color: colorScheme.error),
+                      ),
+                    ),
+                  const SizedBox(height: 16),
+                  ...pathNotifier.targetOperations.map((opName) {
+                    final isCustom = pathState.source == QueryIdSource.custom;
+                    final controller = _pathControllers[opName]!;
+                    final bool readOnly = !isCustom || pathState.isLoading;
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: TextField(
+                        controller: controller,
+                        readOnly: readOnly,
+                        onChanged: (newQueryId) {
+                          if (isCustom) {
+                            pathNotifier.updateCustomQueryId(
+                              opName,
+                              newQueryId,
+                            );
+                          }
+                        },
+                        maxLines: null,
+                        keyboardType: TextInputType.multiline,
+                        decoration: InputDecoration(
+                          labelText: opName,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          isDense: true,
+                          contentPadding: const EdgeInsets.all(12),
+                          filled: readOnly,
+                          fillColor: readOnly
+                              ? colorScheme.surfaceContainerLow
+                              : null,
+                        ),
+                        style: const TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 13,
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: pathState.isLoading
+                      ? null
+                      : pathState.source == QueryIdSource.apiDocument
+                      ? () => pathNotifier.loadApiData(context)
+                      : pathNotifier.resetCustomQueryIds,
+                  child: pathState.isLoading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(
+                          pathState.source == QueryIdSource.apiDocument
+                              ? l10n.refresh
+                              : l10n.reset,
+                        ),
+                ),
+                const SizedBox(width: 8),
+                FilledButton.tonal(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(l10n.ok),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 新增页面：LogViewerPage
+// ---------------------------------------------------------------------------
+class LogViewerPage extends ConsumerWidget {
+  const LogViewerPage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final logs = ref.watch(logHistoryProvider);
+    final logText = logs.join('\n');
+
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.view_log)),
+      body: Column(
+        children: [
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.all(16),
+              width: double.maxFinite,
+              // constraints: BoxConstraints(
+              //   maxHeight: MediaQuery.of(context).size.height * 0.7,
+              // ), // 页面模式下不需要限制高度
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      l10n.xclient_generator_source,
-                      style: theme.textTheme.labelLarge,
-                    ),
+              child: SingleChildScrollView(
+                reverse: true,
+                padding: const EdgeInsets.all(12),
+                child: SelectableText(
+                  logText,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontFamily: 'monospace',
+                    color: colorScheme.onSurfaceVariant,
                   ),
-                  DropdownButtonHideUnderline(
-                    child: DropdownButton<QueryIdSource>(
-                      value: pathState.source,
-                      borderRadius: BorderRadius.circular(12),
-                      items: QueryIdSource.values.map((e) {
-                        return DropdownMenuItem(
-                          value: e,
-                          child: Text(
-                            e == QueryIdSource.apiDocument ? 'TIAD' : 'Custom',
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: pathState.isLoading
-                          ? null
-                          : (value) {
-                              if (value != null) {
-                                pathNotifier.setSource(value);
-                              }
-                            },
-                    ),
-                  ),
-                  if (!isCustom)
-                    IconButton(
-                      icon: const Icon(Icons.link_outlined),
-                      tooltip: 'View Source',
-                      onPressed: () {
-                        launchUrl(
-                          Uri.parse(
-                            'https://github.com/fa0311/TwitterInternalAPIDocument/tree/develop',
-                          ),
-                        );
-                      },
-                    ),
-                ],
+                ),
               ),
             ),
-            if (pathState.error != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text(
-                  'Error: ${pathState.error}',
-                  style: TextStyle(color: colorScheme.error),
-                ),
-              ),
-            const SizedBox(height: 16),
-            ...pathNotifier.targetOperations.map((opName) {
-              final isCustom = pathState.source == QueryIdSource.custom;
-              final controller = _pathControllers[opName]!;
-              final bool readOnly = !isCustom || pathState.isLoading;
-
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: TextField(
-                  controller: controller,
-                  readOnly: readOnly,
-                  onChanged: (newQueryId) {
-                    if (isCustom) {
-                      pathNotifier.updateCustomQueryId(opName, newQueryId);
-                    }
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  child: Text(l10n.copy),
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: logText));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          l10n.copied_to_clipboard,
+                          style: TextStyle(
+                            color: colorScheme.onPrimaryContainer,
+                          ),
+                        ),
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: colorScheme.primaryContainer,
+                      ),
+                    );
+                    Navigator.pop(context);
                   },
-                  maxLines: null,
-                  keyboardType: TextInputType.multiline,
-                  decoration: InputDecoration(
-                    labelText: opName,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    isDense: true,
-                    contentPadding: const EdgeInsets.all(12),
-                    filled: readOnly,
-                    fillColor: readOnly
-                        ? colorScheme.surfaceContainerLow
-                        : null,
-                  ),
-                  style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
                 ),
-              );
-            }),
-          ],
-        ),
+                TextButton(
+                  child: Text(l10n.clear),
+                  onPressed: () {
+                    ref.read(logHistoryNotifierProvider.notifier).clearLog();
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
-      actions: [
-        // Action buttons: Reset/Refresh on the left (text button), OK on right (filled/tonal)
-        TextButton(
-          onPressed: pathState.isLoading
-              ? null
-              : pathState.source == QueryIdSource.apiDocument
-              ? () => pathNotifier.loadApiData(context)
-              : pathNotifier.resetCustomQueryIds,
-          child: pathState.isLoading
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(
-                  pathState.source == QueryIdSource.apiDocument
-                      ? l10n.refresh
-                      : l10n.reset,
-                ),
-        ),
-        FilledButton.tonal(
-          onPressed: () => Navigator.pop(context),
-          child: Text(l10n.ok),
-        ),
-      ],
     );
   }
 }

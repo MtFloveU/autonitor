@@ -1,5 +1,4 @@
-import 'dart:io';
-import 'package:path/path.dart' as p;
+import 'package:autonitor/ui/components/user_avatar.dart';
 import '../providers/media_provider.dart';
 import 'package:autonitor/services/log_service.dart';
 import 'package:autonitor/ui/user_detail_page.dart';
@@ -10,11 +9,8 @@ import 'package:autonitor/models/cache_data.dart';
 import 'package:autonitor/providers/auth_provider.dart';
 import 'package:autonitor/ui/user_list_page.dart';
 import '../l10n/app_localizations.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/report_providers.dart';
 import '../providers/analysis_provider.dart';
-
-// Providers (cacheProvider, userListProvider) 现在在 auth_provider.dart 中定义
 
 class HomePage extends ConsumerStatefulWidget {
   final VoidCallback onNavigateToAccounts;
@@ -49,6 +45,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     final l10n = AppLocalizations.of(context)!;
     final allAccounts = ref.read(accountsProvider);
     final activeAccount = ref.read(activeAccountProvider);
+    final mediaDir = ref.watch(appSupportDirProvider).value;
     showModalBottomSheet(
       context: context,
       builder: (context) {
@@ -63,16 +60,6 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
             ),
             ...allAccounts.map((account) {
-              _calculateDisplayDataForHome(
-                TwitterUser(
-                  avatarUrl: account.avatarUrl,
-                  avatarLocalPath: account.avatarLocalPath,
-                  restId: account.id,
-                  screenName: account.screenName,
-                  name: account.screenName,
-                ),
-              );
-
               return ListTile(
                 leading: SizedBox(
                   width: 48,
@@ -80,55 +67,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      Container(alignment: Alignment.center),
-                      // Calculate absolutePath for the account avatar
-                      Builder(
-                        builder: (context) {
-                          final mediaDir = ref
-                              .watch(appSupportDirProvider)
-                              .value;
-                          final relativePath = account.avatarLocalPath;
-                          final String? absolutePath =
-                              (mediaDir != null &&
-                                  relativePath != null &&
-                                  relativePath.isNotEmpty)
-                              ? p.join(mediaDir, relativePath)
-                              : null;
-                          if (account.avatarUrl != null &&
-                              account.avatarUrl!.isNotEmpty &&
-                              account.avatarLocalPath == null) {
-                            return ClipOval(
-                              child: CachedNetworkImage(
-                                imageUrl: account.avatarUrl!,
-                                fit: BoxFit.cover,
-                                width: 48,
-                                height: 48,
-                                fadeInDuration: const Duration(
-                                  milliseconds: 300,
-                                ),
-                                fadeOutDuration: const Duration(
-                                  milliseconds: 100,
-                                ),
-                                errorWidget: (context, url, error) =>
-                                    const SizedBox(),
-                              ),
-                            );
-                          }
-                          if (account.avatarUrl != null &&
-                              account.avatarUrl!.isNotEmpty &&
-                              account.avatarLocalPath != null &&
-                              absolutePath != null) {
-                            return ClipOval(
-                              child: Image.file(
-                                File(absolutePath),
-                                fit: BoxFit.cover,
-                                width: 48,
-                                height: 48,
-                              ),
-                            );
-                          }
-                          return const SizedBox();
-                        },
+                      UserAvatar(
+                        avatarUrl: account.avatarUrl,
+                        avatarLocalPath: account.avatarLocalPath,
+                        mediaDir: mediaDir,
+                        radius: 24,
+                        heroTag: 'avatar_${account.id}',
+                        isHighQuality: true,
                       ),
                       if (account.id == activeAccount?.id)
                         Positioned(
@@ -185,20 +130,6 @@ class _HomePageState extends ConsumerState<HomePage> {
           ],
         );
       },
-    );
-  }
-
-  _UserDisplayData _calculateDisplayDataForHome(TwitterUser user) {
-    final String? absoluteLocalPath = user.avatarLocalPath?.isNotEmpty == true
-        ? user.avatarLocalPath
-        : null;
-    final String highQualityNetworkUrl = (user.avatarUrl ?? '');
-    final bool fetchNetworkLayer =
-        absoluteLocalPath == null && highQualityNetworkUrl.isNotEmpty;
-    return _UserDisplayData(
-      absoluteLocalPath: absoluteLocalPath,
-      highQualityNetworkUrl: highQualityNetworkUrl,
-      fetchNetworkLayer: fetchNetworkLayer,
     );
   }
 
@@ -296,12 +227,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     final l10n = AppLocalizations.of(context)!;
     final activeAccount = ref.watch(activeAccountProvider);
 
-    final String? relativePath = activeAccount?.avatarLocalPath;
-    final String? absolutePath =
-        (mediaDir != null && relativePath != null && relativePath.isNotEmpty)
-        ? p.join(mediaDir, relativePath)
-        : null;
-
     return ListView(
       padding: const EdgeInsets.all(16.0),
       children: <Widget>[
@@ -346,48 +271,15 @@ class _HomePageState extends ConsumerState<HomePage> {
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
                   child: Row(
                     children: [
-                      Hero(
-                        tag: 'avatar_${activeAccount?.id}',
-                        child: CircleAvatar(
-                          radius: 24,
-                          backgroundColor: Colors.transparent,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              if (activeAccount?.avatarUrl != null &&
-                                  activeAccount!.avatarUrl!.isNotEmpty &&
-                                  activeAccount.avatarLocalPath == null)
-                                ClipOval(
-                                  child: CachedNetworkImage(
-                                    imageUrl: activeAccount.avatarUrl!,
-                                    fit: BoxFit.cover,
-                                    width: 48,
-                                    height: 48,
-                                    fadeInDuration: const Duration(
-                                      milliseconds: 300,
-                                    ),
-                                    fadeOutDuration: const Duration(
-                                      milliseconds: 100,
-                                    ),
-                                    errorWidget: (context, url, error) =>
-                                        const SizedBox(),
-                                  ),
-                                ),
-                              if (activeAccount?.avatarUrl != null &&
-                                  activeAccount!.avatarUrl!.isNotEmpty &&
-                                  activeAccount.avatarLocalPath != null)
-                                ClipOval(
-                                  child: Image.file(
-                                    File(absolutePath!),
-                                    fit: BoxFit.cover,
-                                    width: 48,
-                                    height: 48,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
+                      UserAvatar(
+                        avatarUrl: activeAccount?.avatarUrl,
+                        avatarLocalPath: activeAccount?.avatarLocalPath,
+                        mediaDir: mediaDir,
+                        radius: 24,
+                        heroTag: 'avatar_${activeAccount?.id}',
+                        isHighQuality: true,
                       ),
+
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -762,19 +654,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                 );
               },
               label: Text(l10n.run),
-              icon: const Icon(Icons.play_arrow),
+              icon: const Icon(Icons.sync_outlined),
             ),
     );
   }
-}
-
-class _UserDisplayData {
-  final String? absoluteLocalPath;
-  final String highQualityNetworkUrl;
-  final bool fetchNetworkLayer;
-  _UserDisplayData({
-    required this.absoluteLocalPath,
-    required this.highQualityNetworkUrl,
-    required this.fetchNetworkLayer,
-  });
 }
