@@ -520,49 +520,87 @@ class _UserListPageState extends ConsumerState<UserListPage> {
                                 );
                               }
 
-                              return Column(
-                                children: [
-                                  Expanded(
-                                    child: ListView.builder(
-                                      controller: _scrollController,
-                                      itemCount: pagedState.users.length,
-                                      itemBuilder: (context, index) {
-                                        return Center(
-                                          child: ConstrainedBox(
-                                            constraints: const BoxConstraints(
-                                              maxWidth: 800,
-                                            ),
-                                            child: Card(
-                                              elevation: 0,
-                                              margin: EdgeInsets.zero,
-                                              color: Colors.transparent,
-                                              child: _buildListItem(
-                                                context,
-                                                pagedState.users[index],
-                                                mediaDir,
-                                                l10n,
+                              void goToPage(int page) {
+                                // 越界检查
+                                if (page < 1 || page > pagedState.totalPages)
+                                  return;
+
+                                // 执行翻页
+                                ref
+                                    .read(userListProvider(param).notifier)
+                                    .setPage(page);
+                                _scrollController.jumpTo(0);
+                              }
+
+                              // === 2. 使用 Focus 拦截按键实现"优先"处理 ===
+                              return Focus(
+                                autofocus: true, // 确保进入页面自动获得焦点
+                                onKeyEvent: (node, event) {
+                                  // 只响应按下事件 (KeyDown)，忽略抬起事件 (KeyUp) 以免触发两次
+                                  if (event is! KeyDownEvent) {
+                                    return KeyEventResult.ignored;
+                                  }
+
+                                  // 检查按键类型
+                                  if (event.logicalKey ==
+                                      LogicalKeyboardKey.arrowLeft) {
+                                    // 如果能往前翻，就处理
+                                    if (pagedState.currentPage > 1) {
+                                      goToPage(pagedState.currentPage - 1);
+                                      return KeyEventResult
+                                          .handled; // 【关键】告知系统已处理，停止冒泡
+                                    }
+                                  } else if (event.logicalKey ==
+                                      LogicalKeyboardKey.arrowRight) {
+                                    // 如果能往后翻，就处理
+                                    if (pagedState.currentPage <
+                                        pagedState.totalPages) {
+                                      goToPage(pagedState.currentPage + 1);
+                                      return KeyEventResult
+                                          .handled; // 【关键】告知系统已处理，停止冒泡
+                                    }
+                                  }
+
+                                  // 其他按键（如上下键滚动）交还给系统处理
+                                  return KeyEventResult.ignored;
+                                },
+                                child: Column(
+                                  children: [
+                                    Expanded(
+                                      child: ListView.builder(
+                                        // 这里的 Controller 保持不变，用于支持鼠标/触摸滚动
+                                        controller: _scrollController,
+                                        itemCount: pagedState.users.length,
+                                        itemBuilder: (context, index) {
+                                          return Center(
+                                            child: ConstrainedBox(
+                                              constraints: const BoxConstraints(
+                                                maxWidth: 800,
+                                              ),
+                                              child: Card(
+                                                elevation: 0,
+                                                margin: EdgeInsets.zero,
+                                                color: Colors.transparent,
+                                                child: _buildListItem(
+                                                  context,
+                                                  pagedState.users[index],
+                                                  mediaDir,
+                                                  l10n,
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                        );
-                                      },
+                                          );
+                                        },
+                                      ),
                                     ),
-                                  ),
-                                  // 分页控制栏
-                                  _PaginationControls(
-                                    currentPage: pagedState.currentPage,
-                                    totalPages: pagedState.totalPages,
-                                    totalCount: pagedState.totalCount,
-                                    onPageChanged: (page) {
-                                      ref
-                                          .read(
-                                            userListProvider(param).notifier,
-                                          )
-                                          .setPage(page);
-                                      _scrollController.jumpTo(0);
-                                    },
-                                  ),
-                                ],
+                                    _PaginationControls(
+                                      currentPage: pagedState.currentPage,
+                                      totalPages: pagedState.totalPages,
+                                      totalCount: pagedState.totalCount,
+                                      onPageChanged: (page) => goToPage(page),
+                                    ),
+                                  ],
+                                ),
                               );
                             },
                           );
