@@ -1040,6 +1040,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Total: {total}'**
   String total(int total);
+
+  /// No description provided for @changes_since_last_update.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes since last update'**
+  String get changes_since_last_update;
+
+  /// No description provided for @compare.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare'**
+  String get compare;
+
+  /// No description provided for @no_visible_changes.
+  ///
+  /// In en, this message translates to:
+  /// **'No visible changes compared to last record.'**
+  String get no_visible_changes;
+
+  /// No description provided for @no_history_found.
+  ///
+  /// In en, this message translates to:
+  /// **'No History Found'**
+  String get no_history_found;
 }
 
 class _AppLocalizationsDelegate

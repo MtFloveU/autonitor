@@ -2,9 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:autonitor/models/history_snapshot.dart';
 import 'package:autonitor/providers/settings_provider.dart';
-import 'package:autonitor/repositories/history_repository.dart'; // <-- 1. 导入 Repository
+import 'package:autonitor/repositories/history_repository.dart';
 
-/// 1. 定义 Provider 的参数 (FamilyProvider 仍需要它)
 @immutable
 class ProfileHistoryParams {
   final String ownerId;
@@ -24,36 +23,69 @@ class ProfileHistoryParams {
   int get hashCode => ownerId.hashCode ^ userId.hashCode;
 }
 
-/// 2. 创建 History Provider (现在它非常简单)
-final profileHistoryProvider = AsyncNotifierProvider.family
-    .autoDispose<
-      ProfileHistoryNotifier,
-      List<HistorySnapshot>,
-      ProfileHistoryParams
-    >(() {
-      return ProfileHistoryNotifier();
-    });
+class ProfileHistoryPagedState {
+  final List<HistorySnapshot> snapshots;
+  final int totalCount;
+  final int currentPage;
+  final int totalPages;
+
+  const ProfileHistoryPagedState({
+    this.snapshots = const [],
+    this.totalCount = 0,
+    this.currentPage = 1,
+    this.totalPages = 1,
+  });
+}
 
 class ProfileHistoryNotifier
     extends
         AutoDisposeFamilyAsyncNotifier<
-          List<HistorySnapshot>,
+          ProfileHistoryPagedState,
           ProfileHistoryParams
         > {
+  static const int _pageSize = 20;
+
   @override
-  Future<List<HistorySnapshot>> build(ProfileHistoryParams arg) async {
-    // 3. Provider 的职责：
+  Future<ProfileHistoryPagedState> build(ProfileHistoryParams arg) async {
+    return _fetchPage(1);
+  }
 
-    // a. 监听它依赖的 Provider (设置)
-    final settings = ref.watch(settingsProvider).valueOrNull;
-    if (settings == null) {
-      return []; // 如果设置未加载，不执行
-    }
+  Future<ProfileHistoryPagedState> _fetchPage(int page) async {
+    final settings = ref.read(settingsProvider).valueOrNull;
+    if (settings == null) return const ProfileHistoryPagedState();
 
-    // b. 获取它需要的 Repository
     final repository = ref.read(historyRepositoryProvider);
 
-    // c. 调用 Repository 的方法并返回结果
-    return repository.getFilteredHistory(arg.ownerId, arg.userId, settings);
+    // 调用 Repository，它现在返回 HistoryPagedResult
+    final result = await repository.getFilteredHistory(
+      arg.ownerId,
+      arg.userId,
+      settings,
+      page: page,
+      pageSize: _pageSize,
+    );
+
+    // 计算总页数
+    final totalPages = (result.totalCount / _pageSize).ceil();
+    final safeTotalPages = totalPages < 1 ? 1 : totalPages;
+
+    return ProfileHistoryPagedState(
+      snapshots: result.snapshots,
+      totalCount: result.totalCount,
+      currentPage: page,
+      totalPages: safeTotalPages,
+    );
+  }
+
+  Future<void> setPage(int page) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => _fetchPage(page));
   }
 }
+
+final profileHistoryProvider = AsyncNotifierProvider.family
+    .autoDispose<
+      ProfileHistoryNotifier,
+      ProfileHistoryPagedState,
+      ProfileHistoryParams
+    >(ProfileHistoryNotifier.new);

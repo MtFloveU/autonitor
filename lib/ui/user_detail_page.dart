@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
 import 'package:autonitor/providers/media_provider.dart';
+import 'package:autonitor/repositories/history_repository.dart';
+import 'package:autonitor/ui/components/profile_change_card.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -91,6 +93,132 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
   // 2: UserInfo - Animated Start
   int _visibleCount = 2;
   final List<AnimationController?> _fadeControllers = [];
+  bool _isCheckingHistory = false;
+
+  Future<void> _showLatestDiff(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
+    if (_isCheckingHistory) return;
+    setState(() => _isCheckingHistory = true);
+
+    try {
+      final repository = ref.read(historyRepositoryProvider);
+      final latestEntry = await repository.getLatestHistoryEntry(
+        widget.ownerId,
+        widget.user.restId,
+      );
+
+      if (!mounted || !context.mounted) return;
+
+      if (latestEntry == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.no_history_found),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+        return;
+      }
+
+      // 准备 Diff 数据
+      // reverseDiffJson 存储的是 "旧值" (T-1)
+      // widget.user 是 "新值" (T)
+      final rawDiff = latestEntry.reverseDiffJson;
+      final currentUserMap = widget.user.toJson();
+
+      final Map<String, dynamic> diffMap = {};
+      final keyMapping = {'avatar_url': 'avatar', 'banner_url': 'banner'};
+
+      // 白名单 (和 History 页面保持一致，只展示关键信息)
+      const allowedKeys = {
+        'name',
+        'screen_name',
+        'bio',
+        'location',
+        'link',
+        'url',
+        'avatar_url',
+        'banner_url',
+      };
+
+      try {
+        final parsedDiff = jsonDecode(rawDiff) as Map<String, dynamic>;
+        parsedDiff.forEach((k, v) {
+          if (!allowedKeys.contains(k)) return;
+
+          final oldVal = v == '__KEY_TO_BE_REMOVED__' ? null : v;
+          final newVal = currentUserMap[k];
+          final mappedKey = keyMapping[k] ?? k;
+
+          // 只有值确实不同才显示
+          if (oldVal != newVal) {
+            diffMap[mappedKey] = {'old': oldVal, 'new': newVal};
+          }
+        });
+      } catch (e) {
+        logger.e("Failed to parse diff for detail page: $e");
+      }
+
+      if (diffMap.isEmpty) {
+        if (!mounted || !context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.no_visible_changes),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+        return;
+      }
+
+      // 构建用于 Card 的 JSON
+      final cardJson = jsonEncode({'diff': diffMap, 'user': currentUserMap});
+
+      // Ensure the context is still valid before showing UI
+      if (!context.mounted) return;
+
+      // 显示 Bottom Sheet (MD3 风格)
+      showModalBottomSheet(
+        context: context,
+        useSafeArea: true,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (ctx) {
+          return SafeArea(
+            child: Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom,
+              ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      AppLocalizations.of(ctx)!.changes_since_last_update,
+                      style: Theme.of(ctx).textTheme.titleLarge,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ProfileChangeCard(
+                      jsonContent: cardJson,
+                      timestamp: latestEntry.timestamp,
+                      mediaDir: ref.read(appSupportDirProvider).value,
+                      heroTag: 'diff_detail_${widget.user.restId}',
+                      avatarLocalPath: widget.user.avatarLocalPath,
+                    ),
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    } finally {
+      if (mounted) setState(() => _isCheckingHistory = false);
+    }
+  }
 
   @override
   void initState() {
@@ -242,13 +370,31 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
             icon: Icon(Icons.more_vert),
             offset: const Offset(0, 40),
             onSelected: (value) {
+              if (value == 'compare') {
+                _showLatestDiff(context);
+              }
               if (value == 'json') {
                 final l10n = AppLocalizations.of(context)!;
                 _showJsonDialog(context, l10n);
               }
             },
             itemBuilder: (context) {
+              final l10n = AppLocalizations.of(context)!;
               return [
+                PopupMenuItem(
+                  value: 'compare',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.history_edu_outlined,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(l10n.compare),
+                    ],
+                  ),
+                ),
                 PopupMenuItem(
                   value: 'json',
                   child: Row(

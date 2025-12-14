@@ -20,6 +20,7 @@ class SearchPageState extends ConsumerState<SearchPage>
     with AutomaticKeepAliveClientMixin {
   final SearchController _searchController = SearchController();
   final ScrollController _scrollController = ScrollController();
+  final FocusNode _searchFocusNode = FocusNode();
 
   // Search Parameters State
   String _currentQuery = '';
@@ -48,8 +49,16 @@ class SearchPageState extends ConsumerState<SearchPage>
     _searchController.dispose();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _searchFocusNode.dispose();
     _debounceTimer?.cancel();
     super.dispose();
+  }
+
+  void requestSearchFocus() {
+    if (!mounted) return;
+    if (!_searchFocusNode.hasFocus) {
+      _searchFocusNode.requestFocus();
+    }
   }
 
   // Ensure params exist with current owner
@@ -180,6 +189,7 @@ class SearchPageState extends ConsumerState<SearchPage>
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: SearchBar(
+                    focusNode: _searchFocusNode,
                     controller: _searchController,
                     leading: const Icon(Icons.search),
                     hintText: l10n.search,

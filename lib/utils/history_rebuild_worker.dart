@@ -6,7 +6,7 @@ import 'dart:convert';
 class HistoryRebuildWorker {
   Isolate? _isolate;
   SendPort? _sendPort;
-  ReceivePort? _receivePort; // 动态接收端口
+  ReceivePort? _receivePort;
   final Map<int, Completer<dynamic>> _completers = {};
   int _nextId = 0;
   bool _initializing = false;
@@ -14,10 +14,8 @@ class HistoryRebuildWorker {
   HistoryRebuildWorker();
 
   Future<void> initIfNeeded() async {
-    // ✅ 如果 sendPort 还活着，直接用
     if (_sendPort != null && _receivePort != null) return;
 
-    // ✅ 如果之前被 dispose 过，允许重建
     _sendPort = null;
     _receivePort?.close();
     _receivePort = null;
@@ -52,7 +50,6 @@ class HistoryRebuildWorker {
         _receivePort!.sendPort,
       );
 
-      // ✅ 不再使用 timeout，等待真实初始化完成
       await completer.future;
     } finally {
       _initializing = false;
@@ -94,12 +91,9 @@ class HistoryRebuildWorker {
   }
 }
 
-// --- Isolate 入口 ---
-@pragma('vm:entry-point')
+// --- Isolate Entry ---
 void _historyIsolateEntry(SendPort replyToMain) {
   final workerReceive = ReceivePort();
-
-  // ✅ 把 worker 的 SendPort 发回主 isolate
   replyToMain.send(workerReceive.sendPort);
 
   workerReceive.listen((message) async {
@@ -111,106 +105,216 @@ void _historyIsolateEntry(SendPort replyToMain) {
         final result = _processHistory(payload);
         replyToMain.send([id, result]);
       } catch (_) {
-        replyToMain.send([id, []]);
+        replyToMain.send([
+          id,
+          {'total': 0, 'items': []},
+        ]);
       }
     }
   });
 }
 
-// --- 纯逻辑处理函数 ---
-List<Map<String, dynamic>> _processHistory(Map<String, dynamic> context) {
+// --- 过滤配置 ---
+const Set<String> _textKeys = {
+  "name",
+  "screen_name",
+  "bio",
+  "location",
+  "link",
+  "url",
+};
+final Set<String> _relevantKeys = _textKeys.union({"avatar_url", "banner_url"});
+
+// --- 核心逻辑 ---
+Map<String, dynamic> _processHistory(Map<String, dynamic> context) {
   final String userId = context['userId'];
   final String latestRawJson = context['latestRawJson'];
-  // 强转 List
   final List<dynamic> historyEntries = context['historyEntries'];
   final List<dynamic> mediaHistory = context['mediaHistory'];
+  final int page = context['page'] as int? ?? 1;
+  final int pageSize = context['pageSize'] as int? ?? 20;
 
-  if (historyEntries.isEmpty) return [];
-
-  Map<String, dynamic> currentJsonMap;
-  try {
-    currentJsonMap = jsonDecode(latestRawJson);
-  } catch (_) {
-    return [];
+  if (historyEntries.isEmpty) {
+    return {'total': 0, 'items': []};
   }
 
-  final List<Map<String, dynamic>> results = [];
+  // 1. [第一步] 重建完整的时间线快照 (Timeline Reconstruction)
+  // 我们先生成所有的状态点，暂不考虑过滤，确立完整的时间轴
+  // Snapshots: [Current, T-1, T-2, ..., Genesis]
+  List<_SnapshotNode> timeline = [];
 
-  for (final entry in historyEntries) {
-    // entry 也是 Map<String, dynamic>，因为它是从主isolate传过来的纯数据
-    final entryMap = entry as Map<String, dynamic>;
+  Map<String, dynamic> stateCursor;
+  try {
+    stateCursor = jsonDecode(latestRawJson);
+  } catch (_) {
+    return {'total': 0, 'items': []};
+  }
+
+  // 当前最新状态不放入历史列表，但它是去重的基准
+  // timeline.add(...) // 不添加 Current
+
+  for (int i = 0; i < historyEntries.length; i++) {
+    final entryMap = historyEntries[i] as Map<String, dynamic>;
     final reverseDiffJson = entryMap['reverseDiffJson'] as String;
 
-    Map<String, dynamic> patchMap;
+    Map<String, dynamic> patchToPrev;
     try {
-      patchMap = jsonDecode(reverseDiffJson) as Map<String, dynamic>;
+      patchToPrev = jsonDecode(reverseDiffJson) as Map<String, dynamic>;
     } catch (_) {
-      continue;
+      patchToPrev = {};
     }
 
-    final patchKeys = patchMap.keys.toSet();
-    final hasRelevantChange = patchKeys.any((k) => _relevantKeys.contains(k));
+    // 回滚到上一刻状态
+    final statePrev =
+        _applyReversePatchInline(stateCursor, patchToPrev) ?? stateCursor;
 
-    // 使用本地内联的 applyReversePatch，避免引用外部文件
-    final Map<String, dynamic>? oldVersionMap = _applyReversePatchInline(
-      currentJsonMap,
-      patchMap, // 传递解码后的 map 提高效率
+    // 记录这个快照
+    timeline.add(
+      _SnapshotNode(
+        entryId: entryMap['id'] as int,
+        timestampMs: entryMap['timestampMs'] as int,
+        data: statePrev,
+      ),
     );
 
-    if (oldVersionMap == null) continue;
-    currentJsonMap = oldVersionMap; // 回溯状态
+    // 迭代
+    stateCursor = statePrev;
+  }
 
-    if (!hasRelevantChange) continue;
+  // 2. [第二步] 基于内容的去重 (Content-based Deduplication)
+  // 我们只保留那些与"上一个保留节点"在 _relevantKeys 上有差异的节点。
+  // 对于历史列表，"上一个保留节点"初始就是 Current State (也就是 latestRawJson)
 
-    final snapshotAvatarUrl = currentJsonMap['avatar_url'] as String?;
-    final snapshotBannerUrl = currentJsonMap['banner_url'] as String?;
+  Map<String, dynamic> lastKeptData = jsonDecode(latestRawJson);
+  List<_SnapshotNode> validSnapshots = [];
+
+  for (final node in timeline) {
+    if (_hasRelevantDiff(lastKeptData, node.data)) {
+      validSnapshots.add(node);
+      lastKeptData = node.data; // 更新基准
+    }
+    // 如果没有差异 (例如只变了 followers)，则丢弃该节点，基准保持不变
+    // 这样如果 Genesis 和 Current 一模一样，Genesis 也会被丢弃，完美修复了你的 Bug。
+  }
+
+  // 3. [第三步] 计算 Diff 并生成结果
+  // 对于保留下来的节点 S_i，它的 Diff 应该是 S_{i+1} (更旧的有效节点) -> S_i
+
+  List<Map<String, dynamic>> results = [];
+
+  for (int i = 0; i < validSnapshots.length; i++) {
+    final currentParams = validSnapshots[i];
+    final Map<String, dynamic> currentData = currentParams.data;
+
+    Map<String, dynamic> diffMap = {};
+
+    // 寻找更旧的有效节点来计算 Diff
+    if (i + 1 < validSnapshots.length) {
+      final olderData = validSnapshots[i + 1].data;
+      diffMap = _computeForwardDiff(olderData, currentData);
+    } else {
+      // 这是一个 Genesis 节点 (最旧的有效节点)
+      diffMap = _computeForwardDiff({}, currentData);
+    }
+
+    // 注入媒体路径 & 构造 User Map (保持原有逻辑)
     final snapshotTimestamp = DateTime.fromMillisecondsSinceEpoch(
-      entryMap['timestampMs'],
+      currentParams.timestampMs,
     );
+    final currentAvatarUrl = currentData['avatar_url'] as String?;
+    final currentBannerUrl = currentData['banner_url'] as String?;
 
     final avatarPath = _findLocalPath(
       mediaHistory,
       'avatar',
-      snapshotAvatarUrl,
+      currentAvatarUrl,
       snapshotTimestamp,
     );
     final bannerPath = _findLocalPath(
       mediaHistory,
       'banner',
-      snapshotBannerUrl,
+      currentBannerUrl,
       snapshotTimestamp,
     );
 
-    if (avatarPath != null) currentJsonMap['avatar_local_path'] = avatarPath;
-    if (bannerPath != null) currentJsonMap['banner_local_path'] = bannerPath;
+    if (avatarPath != null) currentData['avatar_local_path'] = avatarPath;
+    if (bannerPath != null) currentData['banner_local_path'] = bannerPath;
 
-    // 构造 User 对象所需的 Map
     final userMap = _constructUserMap(
       userId: userId,
-      dbScreenName: currentJsonMap['screen_name'],
-      dbName: currentJsonMap['name'],
-      dbAvatarUrl: currentJsonMap['avatar_url'],
+      dbScreenName: currentData['screen_name'],
+      dbName: currentData['name'],
+      dbAvatarUrl: currentData['avatar_url'],
       dbAvatarLocalPath: avatarPath,
       dbBannerLocalPath: bannerPath,
-      dbBio: currentJsonMap['bio'],
-      jsonMap: currentJsonMap,
+      dbBio: currentData['bio'],
+      jsonMap: currentData,
     );
 
-    // 返回纯数据
     results.add({
-      'entryId': entryMap['id'],
-      'fullJson': jsonEncode(currentJsonMap),
+      'entryId': currentParams.entryId,
+      'fullJson': jsonEncode(currentData),
       'userMap': userMap,
+      'diffJson': jsonEncode(diffMap),
     });
   }
 
-  return results;
+  // 4. [第四步] 内存分页
+  final int totalCount = results.length;
+  final int startIndex = (page - 1) * pageSize;
+
+  List<Map<String, dynamic>> pagedItems = [];
+  if (startIndex < totalCount) {
+    int endIndex = startIndex + pageSize;
+    if (endIndex > totalCount) endIndex = totalCount;
+    pagedItems = results.sublist(startIndex, endIndex);
+  }
+
+  return {'total': totalCount, 'items': pagedItems};
 }
 
-// --- 辅助函数 (全部内联，不依赖外部) ---
+// --- 内部类 ---
+class _SnapshotNode {
+  final int entryId;
+  final int timestampMs;
+  final Map<String, dynamic> data;
+  _SnapshotNode({
+    required this.entryId,
+    required this.timestampMs,
+    required this.data,
+  });
+}
 
-const Set<String> _textKeys = {"name", "screen_name", "bio", "url", "location"};
-final Set<String> _relevantKeys = _textKeys.union({"avatar_url", "banner_url"});
+// --- 辅助函数 ---
+
+// [新增] 检查两个 Map 在 relevantKeys 上是否有差异
+bool _hasRelevantDiff(Map<String, dynamic> a, Map<String, dynamic> b) {
+  for (final key in _relevantKeys) {
+    final valA = a[key];
+    final valB = b[key];
+    if ((valA == null || valA == "") && (valB == null || valB == "")) continue;
+    if (valA != valB) return true;
+  }
+  return false;
+}
+
+Map<String, dynamic> _computeForwardDiff(
+  Map<String, dynamic> oldMap,
+  Map<String, dynamic> newMap,
+) {
+  final diff = <String, dynamic>{};
+  for (final key in _relevantKeys) {
+    final oldVal = oldMap[key];
+    final newVal = newMap[key];
+    if ((oldVal == null || oldVal == "") && (newVal == null || newVal == "")) {
+      continue;
+    }
+    if (oldVal != newVal) {
+      diff[key] = {'old': oldVal, 'new': newVal};
+    }
+  }
+  return diff;
+}
 
 Map<String, dynamic> _constructUserMap({
   required String userId,
@@ -222,24 +326,18 @@ Map<String, dynamic> _constructUserMap({
   String? dbBio,
   required Map<String, dynamic> jsonMap,
 }) {
-  // 优先使用 jsonMap 中的数据
   final merged = Map<String, dynamic>.from(jsonMap);
-
-  // 确保关键字段存在（如果 jsonMap 中缺失，回退到 DB 字段）
   merged['rest_id'] ??= userId;
   merged['screen_name'] ??= dbScreenName;
   merged['name'] ??= dbName;
   merged['avatar_url'] ??= dbAvatarUrl;
   merged['bio'] ??= dbBio;
-
-  // 注入本地路径
   if (dbAvatarLocalPath != null) {
     merged['avatar_local_path'] = dbAvatarLocalPath;
   }
   if (dbBannerLocalPath != null) {
     merged['banner_local_path'] = dbBannerLocalPath;
   }
-
   return merged;
 }
 
@@ -251,15 +349,12 @@ String? _findLocalPath(
 ) {
   if (remoteUrl == null || remoteUrl.isEmpty) return null;
   final normalizedTargetUrl = _normalizeUrl(remoteUrl);
-
-  // 这里 history 是 List<Map<String, dynamic>>
   final filtered = history.where((e) {
     final m = e as Map<String, dynamic>;
     if (m['mediaType'] != mediaType) return false;
     final normalizedRemoteUrl = _normalizeUrl(m['remoteUrl']);
     return normalizedRemoteUrl == normalizedTargetUrl;
   }).toList();
-
   if (filtered.isEmpty) return null;
   return (filtered.first as Map<String, dynamic>)['localFilePath'] as String?;
 }
@@ -269,7 +364,6 @@ String _normalizeUrl(String url) {
   return url.replaceFirst(RegExp(suffixRegex), '');
 }
 
-// 内联的 Diff 应用逻辑，移除 logging，移除 diff_utils 依赖
 Map<String, dynamic>? _applyReversePatchInline(
   Map<String, dynamic> target,
   Map<String, dynamic> patch,

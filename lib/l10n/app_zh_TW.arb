@@ -148,7 +148,7 @@
   "protected": "鎖推",
   "verified": "已驗證",
   "profile_updates": "個人資料更新",
-   "name": "暱稱",
+  "name": "暱稱",
   "screen_name": "使用者名稱",
   "bio": "簡介",
   "location": "位置",
@@ -156,5 +156,9 @@
   "banner": "橫幅",
   "updated": "已更新",
   "jump_to_page": "跳轉到頁面",
-  "total": "總數: {total}"
+  "total": "總數: {total}",
+  "changes_since_last_update": "自上次以來的更改",
+  "compare": "比較",
+  "no_visible_changes": "與上次記錄相比沒有可見變更。",
+  "no_history_found": "未找到歷史紀錄"
 }

@@ -404,5 +404,13 @@
         "type": "int"
       }
     }
-  }
+  },
+  "changes_since_last_update": "Changes since last update",
+  "@changes_since_last_update": {},
+  "compare": "Compare",
+  "@compare": {},
+  "no_visible_changes": "No visible changes compared to last record.",
+  "@no_visible_changes": {},
+  "no_history_found": "No History Found",
+  "@no_history_found": {}
 }

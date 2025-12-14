@@ -522,8 +522,9 @@ class _UserListPageState extends ConsumerState<UserListPage> {
 
                               void goToPage(int page) {
                                 // 越界检查
-                                if (page < 1 || page > pagedState.totalPages)
+                                if (page < 1 || page > pagedState.totalPages) {
                                   return;
+                                }
 
                                 // 执行翻页
                                 ref

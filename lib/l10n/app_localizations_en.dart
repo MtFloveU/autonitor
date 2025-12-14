@@ -496,4 +496,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String total(int total) {
     return 'Total: $total';
   }
+
+  @override
+  String get changes_since_last_update => 'Changes since last update';
+
+  @override
+  String get compare => 'Compare';
+
+  @override
+  String get no_visible_changes =>
+      'No visible changes compared to last record.';
+
+  @override
+  String get no_history_found => 'No History Found';
 }

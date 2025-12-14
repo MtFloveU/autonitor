@@ -32,7 +32,7 @@ class _MainScaffoldState extends State<MainScaffold> {
   void _onItemTapped(int index) {
     if (_selectedIndex == index) {
       if (index == 1) {
-        // 如果再次点击搜索，可以在这里处理（例如清空或聚焦）
+        _searchPageKey.currentState?.requestSearchFocus();
       }
       return;
     }

@@ -15,24 +15,80 @@ final historyRepositoryProvider = Provider<HistoryRepository>((ref) {
   return HistoryRepository(db, worker);
 });
 
+// [新增] 结果封装类
+class HistoryPagedResult {
+  final List<HistorySnapshot> snapshots;
+  final int totalCount;
+  HistoryPagedResult({required this.snapshots, required this.totalCount});
+}
+
 class HistoryRepository {
   final AppDatabase _db;
   final HistoryRebuildWorker _worker;
 
   HistoryRepository(this._db, this._worker);
 
-  Future<List<HistorySnapshot>> getFilteredHistory(
+  Future<FollowUserHistoryEntry?> getLatestHistoryEntry(String ownerId, String userId) async {
+    if (userId == ownerId) {
+      return await (_db.select(_db.accountProfileHistory)
+            ..where((tbl) => tbl.ownerId.equals(ownerId))
+            ..orderBy([
+              (tbl) => OrderingTerm(expression: tbl.timestamp, mode: OrderingMode.desc),
+            ])
+            ..limit(1))
+          .map((e) => FollowUserHistoryEntry(
+                id: e.id,
+                ownerId: e.ownerId,
+                userId: e.ownerId,
+                reverseDiffJson: e.reverseDiffJson,
+                timestamp: e.timestamp,
+              ))
+          .getSingleOrNull();
+    } else {
+      return await (_db.select(_db.followUsersHistory)
+            ..where((tbl) => tbl.ownerId.equals(ownerId) & tbl.userId.equals(userId))
+            ..orderBy([
+              (tbl) => OrderingTerm(expression: tbl.timestamp, mode: OrderingMode.desc),
+            ])
+            ..limit(1))
+          .getSingleOrNull();
+    }
+  }
+
+  // [修改] 只查 raw count 备用，实际过滤后总数由 worker 返回
+  Future<int> getRawHistoryCount(String ownerId, String userId) async {
+    Expression<int> countExp = const FunctionCallExpression('COUNT', [
+      Constant('*'),
+    ]);
+
+    if (userId == ownerId) {
+      final query = _db.selectOnly(_db.accountProfileHistory)
+        ..addColumns([countExp])
+        ..where(_db.accountProfileHistory.ownerId.equals(ownerId));
+      return await query.map((row) => row.read(countExp)).getSingle() ?? 0;
+    } else {
+      final query = _db.selectOnly(_db.followUsersHistory)
+        ..addColumns([countExp])
+        ..where(
+          _db.followUsersHistory.ownerId.equals(ownerId) &
+              _db.followUsersHistory.userId.equals(userId),
+        );
+      return await query.map((row) => row.read(countExp)).getSingle() ?? 0;
+    }
+  }
+
+  Future<HistoryPagedResult> getFilteredHistory(
     String ownerId,
     String userId,
-    AppSettings settings,
-  ) async {
+    AppSettings settings, {
+    int page = 1,
+    int pageSize = 20,
+  }) async {
     String? latestRawJson;
-    // 统一存储提取出的历史条目数据 (ID 和 时间戳)
     List<Map<String, dynamic>> historyEntriesForIsolate = [];
 
-    // [新增] 1. 判断是否为主账号，分流查询
+    // [关键] 移除 limit/offset，获取全量数据以供 Worker 重建和过滤
     if (userId == ownerId) {
-      // --- 主账号逻辑 ---
       final account = await (_db.select(
         _db.loggedAccounts,
       )..where((tbl) => tbl.id.equals(ownerId))).getSingleOrNull();
@@ -47,7 +103,7 @@ class HistoryRepository {
                       expression: tbl.timestamp,
                       mode: OrderingMode.desc,
                     ),
-                  ]))
+                  ])) // [移除 limit]
                 .get();
 
         historyEntriesForIsolate = historyEntries.map((e) {
@@ -61,7 +117,6 @@ class HistoryRepository {
         }).toList();
       }
     } else {
-      // --- 普通用户逻辑 (保持原有逻辑框架) ---
       final currentUser =
           await (_db.select(_db.followUsers)..where(
                 (tbl) =>
@@ -82,7 +137,7 @@ class HistoryRepository {
                       expression: tbl.timestamp,
                       mode: OrderingMode.desc,
                     ),
-                  ]))
+                  ])) // [移除 limit]
                 .get();
 
         historyEntriesForIsolate = historyEntries.map((e) {
@@ -97,11 +152,10 @@ class HistoryRepository {
       }
     }
 
-    if (latestRawJson == null) {
-      return [];
+    if (latestRawJson == null || historyEntriesForIsolate.isEmpty) {
+      return HistoryPagedResult(snapshots: [], totalCount: 0);
     }
 
-    // [保持不变] 获取媒体历史
     final mediaHistory =
         await (_db.select(_db.mediaHistory)..orderBy([
               (tbl) =>
@@ -121,9 +175,11 @@ class HistoryRepository {
     final payload = <String, dynamic>{
       'settings': settings.toJson(),
       'userId': userId,
-      'latestRawJson': latestRawJson, // 使用动态获取的 json
-      'historyEntries': historyEntriesForIsolate, // 使用动态获取的列表
+      'latestRawJson': latestRawJson,
+      'historyEntries': historyEntriesForIsolate,
       'mediaHistory': mediaHistoryForIsolate,
+      'page': page, // [传递]
+      'pageSize': pageSize, // [传递]
     };
 
     dynamic rawResult;
@@ -131,46 +187,46 @@ class HistoryRepository {
       rawResult = await _worker.run(payload);
     } catch (e, s) {
       logger.e('HistoryRepository: worker.run failed', error: e, stackTrace: s);
-      return [];
+      return HistoryPagedResult(snapshots: [], totalCount: 0);
     }
 
-    if (rawResult == null || rawResult is! List) {
-      return [];
+    if (rawResult == null || rawResult is! Map) {
+      return HistoryPagedResult(snapshots: [], totalCount: 0);
     }
 
-    // [优化] 2. 建立查找表：ID -> Timestamp (毫秒)
-    // 这比原来的 entryById 更通用，也比 firstWhere 更快更安全
-    final Map<int, int> timestampMap = {
-      for (var e in historyEntriesForIsolate)
-        e['id'] as int: e['timestampMs'] as int,
+    final int totalCount = rawResult['total'] as int;
+    final List items = rawResult['items'] as List;
+
+    final Map<int, Map<String, dynamic>> originalEntryMap = {
+      for (var e in historyEntriesForIsolate) e['id'] as int: e,
     };
 
     final List<HistorySnapshot> snapshots = [];
 
-    for (final rawItem in rawResult) {
+    for (final rawItem in items) {
       try {
         if (rawItem is! Map) continue;
 
         final itemMap = rawItem as Map<String, dynamic>;
         final int entryId = itemMap['entryId'] as int;
         final String fullJson = itemMap['fullJson'] as String;
+        final String diffJson = itemMap['diffJson'] as String;
+
         final Map<String, dynamic> userMap = Map<String, dynamic>.from(
           itemMap['userMap'] as Map,
         );
 
         final user = TwitterUser.fromJson(userMap);
 
-        // [修复] 3. 通过 Map 查找时间戳，避免了 firstWhere 崩溃
-        final int? timestampMs = timestampMap[entryId];
+        final originalData = originalEntryMap[entryId];
+        if (originalData != null) {
+          final int timestampMs = originalData['timestampMs'] as int;
 
-        if (timestampMs != null) {
-          // 构造一个 Entry 对象用于 UI 显示 (UI 只需 ID 和 Timestamp)
-          // 即使是主账号，这里构造 FollowUserHistoryEntry 也是兼容的，因为 UI 并不关心底层表类型
           final entry = FollowUserHistoryEntry(
             id: entryId,
             ownerId: ownerId,
             userId: userId,
-            reverseDiffJson: '', // UI 不展示 diff 内容，留空即可
+            reverseDiffJson: diffJson, // Worker 返回的是正向 Diff
             timestamp: DateTime.fromMillisecondsSinceEpoch(timestampMs),
           );
 
@@ -187,6 +243,6 @@ class HistoryRepository {
       }
     }
 
-    return snapshots;
+    return HistoryPagedResult(snapshots: snapshots, totalCount: totalCount);
   }
 }

@@ -32,7 +32,11 @@ class SearchParam {
   const SearchParam({
     required this.ownerId,
     required this.query,
-    this.searchFields = const {},
+    this.searchFields = const {
+      SearchField.restId,
+      SearchField.screenName,
+      SearchField.name,
+    },
     this.isProtected = FilterState.all,
     this.isVerified = FilterState.all,
     this.isFollower = FilterState.all,

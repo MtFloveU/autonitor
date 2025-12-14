@@ -494,6 +494,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String total(int total) {
     return '总计: $total';
   }
+
+  @override
+  String get changes_since_last_update => '自上次以来的更改';
+
+  @override
+  String get compare => '比较';
+
+  @override
+  String get no_visible_changes => '与上次记录相比没有可见更改。';
+
+  @override
+  String get no_history_found => '未找到历史记录';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -986,4 +998,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String total(int total) {
     return '總數: $total';
   }
+
+  @override
+  String get changes_since_last_update => '自上次以來的更改';
+
+  @override
+  String get compare => '比較';
+
+  @override
+  String get no_visible_changes => '與上次記錄相比沒有可見變更。';
+
+  @override
+  String get no_history_found => '未找到歷史紀錄';
 }

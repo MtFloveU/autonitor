@@ -156,5 +156,9 @@
   "banner": "横幅",
   "updated": "已更新",
   "jump_to_page": "跳转到页面",
-  "total": "总计: {total}"
+  "total": "总计: {total}",
+  "changes_since_last_update": "自上次以来的更改",
+  "compare": "比较",
+  "no_visible_changes": "与上次记录相比没有可见更改。",
+  "no_history_found": "未找到历史记录"
 }
