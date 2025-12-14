@@ -96,122 +96,84 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
   bool _isCheckingHistory = false;
 
   Future<void> _showLatestDiff(BuildContext context) async {
-    final l10n = AppLocalizations.of(context)!;
     if (_isCheckingHistory) return;
     setState(() => _isCheckingHistory = true);
 
     try {
       final repository = ref.read(historyRepositoryProvider);
-      final latestEntry = await repository.getLatestHistoryEntry(
+      // 调用新方法
+      final result = await repository.getLatestRelevantDiff(
         widget.ownerId,
         widget.user.restId,
       );
 
-      if (!mounted || !context.mounted) return;
-
-      if (latestEntry == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.no_history_found),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-        return;
-      }
-
-      // 准备 Diff 数据
-      // reverseDiffJson 存储的是 "旧值" (T-1)
-      // widget.user 是 "新值" (T)
-      final rawDiff = latestEntry.reverseDiffJson;
-      final currentUserMap = widget.user.toJson();
-
-      final Map<String, dynamic> diffMap = {};
-      final keyMapping = {'avatar_url': 'avatar', 'banner_url': 'banner'};
-
-      // 白名单 (和 History 页面保持一致，只展示关键信息)
-      const allowedKeys = {
-        'name',
-        'screen_name',
-        'bio',
-        'location',
-        'link',
-        'url',
-        'avatar_url',
-        'banner_url',
-      };
-
-      try {
-        final parsedDiff = jsonDecode(rawDiff) as Map<String, dynamic>;
-        parsedDiff.forEach((k, v) {
-          if (!allowedKeys.contains(k)) return;
-
-          final oldVal = v == '__KEY_TO_BE_REMOVED__' ? null : v;
-          final newVal = currentUserMap[k];
-          final mappedKey = keyMapping[k] ?? k;
-
-          // 只有值确实不同才显示
-          if (oldVal != newVal) {
-            diffMap[mappedKey] = {'old': oldVal, 'new': newVal};
-          }
-        });
-      } catch (e) {
-        logger.e("Failed to parse diff for detail page: $e");
-      }
-
-      if (diffMap.isEmpty) {
-        if (!mounted || !context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.no_visible_changes),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-        return;
-      }
-
-      // 构建用于 Card 的 JSON
-      final cardJson = jsonEncode({'diff': diffMap, 'user': currentUserMap});
-
-      // Ensure the context is still valid before showing UI
+      // Ensure the passed BuildContext is still valid after the async gap.
       if (!context.mounted) return;
 
-      // 显示 Bottom Sheet (MD3 风格)
+      if (result == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.no_history_found),
+          ),
+        );
+        return;
+      }
+
+      final String rawDiff = result['diffJson'];
+      // Worker 已经返回了过滤后的 diff，但 key 是原始的 (avatar_url)
+      // 我们需要映射 key 给 UI
+      final Map<String, dynamic> uiDiffMap = {};
+      final keyMapping = {'avatar_url': 'avatar', 'banner_url': 'banner'};
+
+      try {
+        final parsed = jsonDecode(rawDiff) as Map<String, dynamic>;
+        parsed.forEach((k, v) {
+          final mappedKey = keyMapping[k] ?? k;
+          uiDiffMap[mappedKey] = v; // v 已经是 {old:..., new:...}
+        });
+      } catch (_) {}
+
+      // 使用 widget.user 的最新数据作为基准，确保图片路径是最新的
+      final currentUserMap = widget.user.toJson();
+      final cardJson = jsonEncode({'diff': uiDiffMap, 'user': currentUserMap});
+
+      final timestamp = DateTime.fromMillisecondsSinceEpoch(
+        result['timestampMs'],
+      );
+
       showModalBottomSheet(
         context: context,
         useSafeArea: true,
-        isScrollControlled: true,
         showDragHandle: true,
+        isScrollControlled: true,
         builder: (ctx) {
-          return SafeArea(
-            child: Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(ctx).viewInsets.bottom,
-              ),
-              child: SingleChildScrollView(
+          return DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: 0.4,
+            minChildSize: 0.2,
+            maxChildSize: 0.8,
+            builder: (context, scrollController) {
+              return ListView(
+                controller: scrollController,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      AppLocalizations.of(ctx)!.changes_since_last_update,
-                      style: Theme.of(ctx).textTheme.titleLarge,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    ProfileChangeCard(
-                      jsonContent: cardJson,
-                      timestamp: latestEntry.timestamp,
-                      mediaDir: ref.read(appSupportDirProvider).value,
-                      heroTag: 'diff_detail_${widget.user.restId}',
-                      avatarLocalPath: widget.user.avatarLocalPath,
-                    ),
-                    const SizedBox(height: 32),
-                  ],
-                ),
-              ),
-            ),
+                children: [
+                  Text(
+                    AppLocalizations.of(context)!.changes_since_last_update,
+                    style: Theme.of(context).textTheme.titleLarge,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ProfileChangeCard(
+                    jsonContent: cardJson,
+                    timestamp: timestamp,
+                    mediaDir: ref.read(appSupportDirProvider).value,
+                    heroTag: 'diff_detail_${widget.user.restId}',
+                    avatarLocalPath: widget.user.avatarLocalPath,
+                  ),
+                  const SizedBox(height: 32),
+                ],
+              );
+            },
           );
         },
       );
@@ -381,20 +343,21 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
             itemBuilder: (context) {
               final l10n = AppLocalizations.of(context)!;
               return [
-                PopupMenuItem(
-                  value: 'compare',
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.history_edu_outlined,
-                        size: 20,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(l10n.compare),
-                    ],
+                if (!widget.isFromHistory)
+                  PopupMenuItem(
+                    value: 'compare',
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.history_edu_outlined,
+                          size: 20,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(l10n.compare),
+                      ],
+                    ),
                   ),
-                ),
                 PopupMenuItem(
                   value: 'json',
                   child: Row(

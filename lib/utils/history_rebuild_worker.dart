@@ -94,6 +94,7 @@ class HistoryRebuildWorker {
 // --- Isolate Entry ---
 void _historyIsolateEntry(SendPort replyToMain) {
   final workerReceive = ReceivePort();
+
   replyToMain.send(workerReceive.sendPort);
 
   workerReceive.listen((message) async {
@@ -102,12 +103,21 @@ void _historyIsolateEntry(SendPort replyToMain) {
       final Map<String, dynamic> payload = message[1] as Map<String, dynamic>;
 
       try {
-        final result = _processHistory(payload);
+        final action = payload['action'] as String? ?? 'process_history';
+        dynamic result;
+
+        if (action == 'fetch_latest_diff') {
+          result = _findLatestRelevantDiff(payload);
+        } else {
+          result = _processHistory(payload);
+        }
+
         replyToMain.send([id, result]);
       } catch (_) {
+        final action = payload['action'] as String? ?? 'process_history';
         replyToMain.send([
           id,
-          {'total': 0, 'items': []},
+          action == 'fetch_latest_diff' ? null : {'total': 0, 'items': []},
         ]);
       }
     }
@@ -124,6 +134,58 @@ const Set<String> _textKeys = {
   "url",
 };
 final Set<String> _relevantKeys = _textKeys.union({"avatar_url", "banner_url"});
+
+Map<String, dynamic>? _findLatestRelevantDiff(Map<String, dynamic> context) {
+  final String latestRawJson = context['latestRawJson'];
+  final List<dynamic> historyEntries = context['historyEntries'];
+
+  if (historyEntries.isEmpty) return null;
+
+  Map<String, dynamic> stateCurrent;
+  try {
+    stateCurrent = jsonDecode(latestRawJson);
+  } catch (_) {
+    return null;
+  }
+
+  // 这里的 stateTarget 就是我们想在 Detail Page 展示的"当前"状态 (T)
+  // 我们要一直回溯，直到找到一个 statePrev (T-k)，使得 T vs T-k 有实质差异
+  final Map<String, dynamic> stateTarget = Map.from(stateCurrent);
+
+  for (int i = 0; i < historyEntries.length; i++) {
+    final entryMap = historyEntries[i] as Map<String, dynamic>;
+    final reverseDiffJson = entryMap['reverseDiffJson'] as String;
+
+    Map<String, dynamic> patchToPrev;
+    try {
+      patchToPrev = jsonDecode(reverseDiffJson) as Map<String, dynamic>;
+    } catch (_) {
+      patchToPrev = {};
+    }
+
+    // 回滚得到旧状态
+    final statePrev =
+        _applyReversePatchInline(stateCurrent, patchToPrev) ?? stateCurrent;
+
+    // 对比 Target (最新) 和 Prev (回滚后)
+    final diff = _computeForwardDiff(statePrev, stateTarget);
+
+    if (diff.isNotEmpty) {
+      // 找到了！说明从 statePrev 到 stateTarget 发生了重要变更。
+      // 我们返回这个 Diff 和 Target State
+      return {
+        'diffJson': jsonEncode(diff),
+        'fullJson': jsonEncode(stateTarget),
+        'timestampMs': entryMap['timestampMs'], // 这是产生变更的那次记录的时间
+      };
+    }
+
+    // 如果 Diff 为空 (例如只变了 followers)，继续回滚
+    stateCurrent = statePrev;
+  }
+
+  return null; // 没有找到任何有效变更（可能全是无效变更，或者没有历史）
+}
 
 // --- 核心逻辑 ---
 Map<String, dynamic> _processHistory(Map<String, dynamic> context) {

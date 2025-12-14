@@ -28,27 +28,131 @@ class HistoryRepository {
 
   HistoryRepository(this._db, this._worker);
 
-  Future<FollowUserHistoryEntry?> getLatestHistoryEntry(String ownerId, String userId) async {
+  Future<Map<String, dynamic>?> getLatestRelevantDiff(
+    String ownerId,
+    String userId,
+  ) async {
+    String? latestRawJson;
+    List<Map<String, dynamic>> historyEntriesForIsolate = [];
+
+    // 复用逻辑：全量获取，因为 Worker 需要回溯过滤
+    if (userId == ownerId) {
+      final account = await (_db.select(
+        _db.loggedAccounts,
+      )..where((tbl) => tbl.id.equals(ownerId))).getSingleOrNull();
+      latestRawJson = account?.latestRawJson;
+      if (latestRawJson != null) {
+        final historyEntries =
+            await (_db.select(_db.accountProfileHistory)
+                  ..where((tbl) => tbl.ownerId.equals(ownerId))
+                  ..orderBy([
+                    (tbl) => OrderingTerm(
+                      expression: tbl.timestamp,
+                      mode: OrderingMode.desc,
+                    ),
+                  ]))
+                .get();
+        historyEntriesForIsolate = historyEntries
+            .map(
+              (e) => {
+                'id': e.id,
+                'reverseDiffJson': e.reverseDiffJson,
+                'timestampMs': e.timestamp.millisecondsSinceEpoch,
+              },
+            )
+            .toList();
+      }
+    } else {
+      final currentUser =
+          await (_db.select(_db.followUsers)..where(
+                (tbl) =>
+                    tbl.ownerId.equals(ownerId) & tbl.userId.equals(userId),
+              ))
+              .getSingleOrNull();
+      latestRawJson = currentUser?.latestRawJson;
+      if (latestRawJson != null) {
+        final historyEntries =
+            await (_db.select(_db.followUsersHistory)
+                  ..where(
+                    (tbl) =>
+                        tbl.ownerId.equals(ownerId) & tbl.userId.equals(userId),
+                  )
+                  ..orderBy([
+                    (tbl) => OrderingTerm(
+                      expression: tbl.timestamp,
+                      mode: OrderingMode.desc,
+                    ),
+                  ]))
+                .get();
+        historyEntriesForIsolate = historyEntries
+            .map(
+              (e) => {
+                'id': e.id,
+                'reverseDiffJson': e.reverseDiffJson,
+                'timestampMs': e.timestamp.millisecondsSinceEpoch,
+              },
+            )
+            .toList();
+      }
+    }
+
+    if (latestRawJson == null || historyEntriesForIsolate.isEmpty) return null;
+
+    final payload = <String, dynamic>{
+      'action': 'fetch_latest_diff', // 告诉 Worker 执行新逻辑
+      'userId': userId,
+      'latestRawJson': latestRawJson,
+      'historyEntries': historyEntriesForIsolate,
+      // Diff 不需要 MediaHistory 来计算文本差异，除非你想在结果中包含图片路径
+      // 为了简单，这里暂不传 MediaHistory，UI 层可以用 widget.user 的图片
+      'mediaHistory': [],
+    };
+
+    try {
+      final result = await _worker.run(payload);
+      if (result is Map) {
+        return result as Map<String, dynamic>;
+      }
+    } catch (e, s) {
+      logger.e('Failed to fetch latest diff', error: e, stackTrace: s);
+    }
+    return null;
+  }
+
+  Future<FollowUserHistoryEntry?> getLatestHistoryEntry(
+    String ownerId,
+    String userId,
+  ) async {
     if (userId == ownerId) {
       return await (_db.select(_db.accountProfileHistory)
             ..where((tbl) => tbl.ownerId.equals(ownerId))
             ..orderBy([
-              (tbl) => OrderingTerm(expression: tbl.timestamp, mode: OrderingMode.desc),
+              (tbl) => OrderingTerm(
+                expression: tbl.timestamp,
+                mode: OrderingMode.desc,
+              ),
             ])
             ..limit(1))
-          .map((e) => FollowUserHistoryEntry(
-                id: e.id,
-                ownerId: e.ownerId,
-                userId: e.ownerId,
-                reverseDiffJson: e.reverseDiffJson,
-                timestamp: e.timestamp,
-              ))
+          .map(
+            (e) => FollowUserHistoryEntry(
+              id: e.id,
+              ownerId: e.ownerId,
+              userId: e.ownerId,
+              reverseDiffJson: e.reverseDiffJson,
+              timestamp: e.timestamp,
+            ),
+          )
           .getSingleOrNull();
     } else {
       return await (_db.select(_db.followUsersHistory)
-            ..where((tbl) => tbl.ownerId.equals(ownerId) & tbl.userId.equals(userId))
+            ..where(
+              (tbl) => tbl.ownerId.equals(ownerId) & tbl.userId.equals(userId),
+            )
             ..orderBy([
-              (tbl) => OrderingTerm(expression: tbl.timestamp, mode: OrderingMode.desc),
+              (tbl) => OrderingTerm(
+                expression: tbl.timestamp,
+                mode: OrderingMode.desc,
+              ),
             ])
             ..limit(1))
           .getSingleOrNull();

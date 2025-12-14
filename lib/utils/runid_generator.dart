@@ -1,6 +1,6 @@
 import 'dart:math';
 
-String generateRunId({int length = 6}) {
+String generateRunId({int length = 12}) {
   const chars =
       'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   final rand = Random.secure();
