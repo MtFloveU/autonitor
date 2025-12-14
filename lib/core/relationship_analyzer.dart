@@ -1,11 +1,14 @@
 import 'dart:convert';
 import 'package:async/async.dart';
 import 'package:async_locks/async_locks.dart';
+import 'package:autonitor/models/twitter_user.dart';
 import 'package:drift/drift.dart';
 import 'network_data_fetcher.dart';
 import '../services/database.dart';
 import '../services/twitter_api_service.dart';
 import '../repositories/account_repository.dart';
+
+const String kChangeTypeProfileUpdate = 'profile_update';
 
 typedef LogCallback = void Function(String message);
 
@@ -177,6 +180,8 @@ class RelationshipAnalyzer {
     Set<String> keptIds,
     List<FollowUsersHistoryCompanion> historyToInsert,
   ) async {
+    final List<ChangeReportsCompanion> reportCompanions = [];
+    final now = DateTime.now();
     final categorizedRemovals = await _categorizeRemovals(removedIds);
     final Set<String> potentialRestrictedIds = {};
 
@@ -186,6 +191,64 @@ class RelationshipAnalyzer {
 
       final wasFollower = oldRel?.isFollower ?? false;
       final isNowFollower = networkData.followerIds.contains(keptId);
+
+      if (oldRel != null && oldRel.latestRawJson != null) {
+        try {
+          // 必须解析 RawJson，因为 oldRel 某些字段(如 location)可能未映射到列
+          final oldUser = TwitterUser.fromJson(
+            jsonDecode(oldRel.latestRawJson!),
+          );
+          final Map<String, Map<String, String?>> diffs = {};
+
+          // Helper to check changes
+          void checkChange(String field, String? oldVal, String? newVal) {
+            // 对比时去除首尾空格，且视为 null 和 empty 为不等
+            final o = oldVal?.trim();
+            final n = newVal?.trim();
+            if (o != n) {
+              diffs[field] = {'old': o, 'new': n};
+            }
+          }
+
+          checkChange('name', oldUser.name, newUser.name);
+          checkChange('screen_name', oldUser.screenName, newUser.screenName);
+          checkChange('bio', oldUser.bio, newUser.bio);
+          checkChange('location', oldUser.location, newUser.location);
+
+          // 图片检测：简单的 URL 字符串对比
+          // Twitter 修改图片通常会生成全新的 URL
+          if (oldUser.avatarUrl != newUser.avatarUrl) {
+            diffs['avatar'] = {
+              'old': oldUser.avatarUrl,
+              'new': newUser.avatarUrl,
+            };
+          }
+          if (oldUser.bannerUrl != newUser.bannerUrl) {
+            diffs['banner'] = {
+              'old': oldUser.bannerUrl,
+              'new': newUser.bannerUrl,
+            };
+          }
+
+          if (diffs.isNotEmpty) {
+            // 构造一个包含 Diff 和 NewUser 的复合 JSON
+            // 这样 UI 既能显示新头像/名字，又能显示具体的变更内容
+            final compositeJson = {'diff': diffs, 'user': newUser.toJson()};
+
+            reportCompanions.add(
+              ChangeReportsCompanion(
+                ownerId: Value(_ownerId),
+                userId: Value(keptId),
+                changeType: Value(kChangeTypeProfileUpdate), // 'profile_update'
+                timestamp: Value(now),
+                userSnapshotJson: Value(jsonEncode(compositeJson)),
+              ),
+            );
+          }
+        } catch (e) {
+          _log("Error comparing profile changes for $keptId: $e");
+        }
+      }
 
       if (wasFollower && !isNowFollower) {
         if (newUser.followingCount == 0 && newUser.followersCount > 0) {
@@ -209,8 +272,6 @@ class RelationshipAnalyzer {
       }
     });
 
-    final List<ChangeReportsCompanion> reportCompanions = [];
-    final now = DateTime.now();
     final Map<String, String> keptStatusUpdates = {};
 
     for (final addedId in addedIds) {

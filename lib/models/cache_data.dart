@@ -18,6 +18,7 @@ class CacheData {
   final int newFollowersCount;
   final int temporarilyRestrictedCount;
   final int recoveredCount;
+  final int profileUpdatedCount;
 
   CacheData({
     required this.accountId,
@@ -34,6 +35,7 @@ class CacheData {
     required this.newFollowersCount,
     required this.temporarilyRestrictedCount,
     required this.recoveredCount,
+    required this.profileUpdatedCount,
   });
 
   factory CacheData.fromJson(Map<String, dynamic> json) {
@@ -52,6 +54,7 @@ class CacheData {
       newFollowersCount: json['newFollowersCount'] ?? 0,
       temporarilyRestrictedCount: json['temporarilyRestrictedCount'] ?? 0,
       recoveredCount: json['recoveredCount'] ?? 0,
+      profileUpdatedCount: json['profileUpdatedCount'] ?? 0,
     );
   }
 
@@ -72,6 +75,7 @@ class CacheData {
       'newFollowersCount': newFollowersCount,
       'temporarilyRestrictedCount': temporarilyRestrictedCount,
       'recoveredCount': recoveredCount,
+      'profileUpdatedCount': profileUpdatedCount,
     };
   }
 }

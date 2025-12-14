@@ -84,6 +84,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deactivated => 'Deactivated';
 
   @override
+  String get profile_updates => 'Profile Updates';
+
+  @override
   String get normal_unfollowed => 'Normal Unfollowed';
 
   @override
@@ -464,4 +467,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get verified => 'Verified';
+
+  @override
+  String get name => 'Name';
+
+  @override
+  String get screen_name => 'Screen Name';
+
+  @override
+  String get bio => 'Bio';
+
+  @override
+  String get location => 'Location';
+
+  @override
+  String get avatar => 'Avatar';
+
+  @override
+  String get banner => 'Banner';
+
+  @override
+  String get updated => 'Updated';
+
+  @override
+  String get jump_to_page => 'Jump to Page';
+
+  @override
+  String total(int total) {
+    return 'Total: $total';
+  }
 }

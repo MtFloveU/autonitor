@@ -341,87 +341,140 @@ class _SettingsDropdownTile<T> extends StatefulWidget {
       _SettingsDropdownTileState<T>();
 }
 
-class _SettingsDropdownTileState<T> extends State<_SettingsDropdownTile<T>> {
+class _SettingsDropdownTileState<T> extends State<_SettingsDropdownTile<T>>
+  with SingleTickerProviderStateMixin {
   final GlobalKey _dropdownKey = GlobalKey();
 
-  void _openDropdown() {
-    final context = _dropdownKey.currentContext;
-    if (context == null) return;
+  late final AnimationController _animController;
+  late final Animation<double> _scaleAnim;
 
-    void findGestureDetector(Element element) {
-      if (element.widget is GestureDetector) {
-        final gd = element.widget as GestureDetector;
-        if (gd.onTap != null) {
-          gd.onTap!();
-          return;
-        }
-      }
-      element.visitChildElements(findGestureDetector);
+  @override
+  void initState() {
+  super.initState();
+  _animController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 160),
+  );
+  _scaleAnim = Tween<double>(begin: 1.0, end: 1.06)
+    .chain(CurveTween(curve: Curves.easeOutBack))
+    .animate(_animController);
+  }
+
+  @override
+  void dispose() {
+  _animController.dispose();
+  super.dispose();
+  }
+
+  // 原始逻辑：触发 Dropdown 的内部 GestureDetector（保持不变）
+  void _triggerDropdown() {
+  final context = _dropdownKey.currentContext;
+  if (context == null) return;
+
+  void findGestureDetector(Element element) {
+    if (element.widget is GestureDetector) {
+    final gd = element.widget as GestureDetector;
+    if (gd.onTap != null) {
+      gd.onTap!();
+      return;
     }
+    }
+    element.visitChildElements(findGestureDetector);
+  }
 
-    context.visitChildElements(findGestureDetector);
+  context.visitChildElements(findGestureDetector);
+  }
+
+  // 对外的 open 接口：同时触发原始下拉与文本放大动画（不改变位置/行为）
+  void _openDropdown() {
+  // 先触发下拉（保持原行为和位置）
+  _triggerDropdown();
+
+  // 同步播放文字弹出/放大动画，制造菜单打开感
+  _animController
+    ..stop()
+    ..forward(from: 0.0).then((_) {
+    if (mounted) _animController.reverse();
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant _SettingsDropdownTile<T> oldWidget) {
+  super.didUpdateWidget(oldWidget);
+  // 当选择发生变化也播放一次弹出动画（像很多开源项目那样）
+  if (oldWidget.currentValue != widget.currentValue) {
+    _animController
+    ..stop()
+    ..forward(from: 0.0).then((_) {
+      if (mounted) _animController.reverse();
+    });
+  }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
+  final theme = Theme.of(context);
+  final colorScheme = theme.colorScheme;
+  final textTheme = theme.textTheme;
 
-    // 获取 entries 列表以便使用 index
-    final entries = widget.options.entries.toList();
+  // 获取 entries 列表以便使用 index
+  final entries = widget.options.entries.toList();
 
-    return ListTile(
-      leading: Icon(widget.icon, color: colorScheme.onSurfaceVariant),
-      title: Text(widget.title, style: textTheme.bodyLarge),
-      onTap: _openDropdown, // 点击整个列表项触发
-      subtitle: Align(
-        alignment: Alignment.centerLeft,
-        child: IgnorePointer(
-          // 忽略 DropdownButton 自身的点击，统一由 ListTile 处理
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<T>(
-              key: _dropdownKey,
-              isExpanded: false, // 宽度自适应内容
-              isDense: true,
-              value: widget.currentValue,
-              focusColor: Colors.transparent, // 禁用焦点色
-              items: List.generate(entries.length, (index) {
-                final entry = entries[index];
-                return DropdownMenuItem<T>(
-                  value: entry.key,
-                  child: Text(
-                    entry.value,
-                    style: textTheme.bodyMedium, // 统一文字大小
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                );
-              }),
-              onChanged: widget.onChanged,
-              selectedItemBuilder: (context) {
-                return widget.options.entries.map((entry) {
-                  return Text(
-                    entry.value,
-                    key: ValueKey<String>(entry.value),
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  );
-                }).toList();
-              },
-              icon: const SizedBox.shrink(),
-              dropdownColor: colorScheme.surfaceContainer,
-              borderRadius: BorderRadius.circular(12),
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
+  return ListTile(
+    leading: Icon(widget.icon, color: colorScheme.onSurfaceVariant),
+    title: Text(widget.title, style: textTheme.bodyLarge),
+    onTap: _openDropdown, // 点击整个列表项触发（保持原行为）
+    subtitle: Align(
+    alignment: Alignment.centerLeft,
+    child: IgnorePointer(
+      // 忽略 DropdownButton 自身的点击，统一由 ListTile 处理
+      child: DropdownButtonHideUnderline(
+      child: DropdownButton<T>(
+        key: _dropdownKey,
+        isExpanded: false, // 宽度自适应内容
+        isDense: true,
+        value: widget.currentValue,
+        focusColor: Colors.transparent, // 禁用焦点色
+        items: List.generate(entries.length, (index) {
+        final entry = entries[index];
+        return DropdownMenuItem<T>(
+          value: entry.key,
+          child: Text(
+          entry.value,
+          style: textTheme.bodyMedium, // 统一文字大小
+          overflow: TextOverflow.ellipsis,
           ),
+        );
+        }),
+        onChanged: widget.onChanged,
+        selectedItemBuilder: (context) {
+        // 包装成 ScaleTransition，使显示的文字在打开/变更时有弹出效果
+        return widget.options.entries.map((entry) {
+          return ScaleTransition(
+          scale: _scaleAnim,
+          child: Text(
+            entry.value,
+            key: ValueKey<String>(entry.value),
+            style: textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+            ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+          );
+        }).toList();
+        },
+        icon: const SizedBox.shrink(),
+        dropdownColor: colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(12),
+        style: textTheme.bodyMedium?.copyWith(
+        color: colorScheme.onSurfaceVariant,
         ),
       ),
-    );
+      ),
+    ),
+    ),
+  );
   }
 }
 

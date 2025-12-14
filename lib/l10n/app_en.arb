@@ -52,6 +52,8 @@
   "@suspended": {},
   "deactivated": "Deactivated",
   "@deactivated": {},
+  "profile_updates": "Profile Updates",
+  "@profile_updates": {},
   "normal_unfollowed": "Normal Unfollowed",
   "@normal_unfollowed": {},
   "be_followed_back": "Be Followed Back",
@@ -378,5 +380,29 @@
   "protected": "Protected",
   "@protected": {},
   "verified": "Verified",
-  "@verified": {}
+  "@verified": {},
+  "name": "Name",
+  "@name": {},
+  "screen_name": "Screen Name",
+  "@screen_name": {},
+  "bio": "Bio",
+  "@bio": {},
+  "location": "Location",
+  "@location": {},
+  "avatar": "Avatar",
+  "@avatar": {},
+  "banner": "Banner",
+  "@banner": {},
+  "updated": "Updated",
+  "@updated": {},
+  "jump_to_page": "Jump to Page",
+  "@jump_to_page": {},
+  "total": "Total: {total}",
+  "@total": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  }
 }

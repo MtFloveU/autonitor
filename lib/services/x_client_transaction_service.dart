@@ -1,6 +1,7 @@
 // lib/x_client_transaction_service.dart
 import 'dart:convert';
 import 'dart:math';
+// ignore: depend_on_referenced_packages
 import 'package:crypto/crypto.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:html/dom.dart' as html_dom show Element;
@@ -288,7 +289,7 @@ class XClientTransactionService {
     }
 
     final Cubic cubic = Cubic(curves);
-    final double v = cubic.get_value(targetTime);
+    final double v = cubic.getValue(targetTime);
 
     // color interpolation
     final List<double> color = interpolate(fromColor, toColor, v);
@@ -315,7 +316,7 @@ class XClientTransactionService {
       final String hexVal = _floatToHex(r);
       String finalHex;
       if (hexVal.startsWith('.')) {
-        finalHex = '0' + hexVal.substring(1);
+        finalHex = '0${hexVal.substring(1)}';
       } else if (hexVal.isEmpty) {
         finalHex = '0';
       } else {
@@ -424,22 +425,25 @@ class Cubic {
   final List<double> curves;
   Cubic(List<double> arr) : curves = arr.map((e) => e.toDouble()).toList();
 
-  double get_value(double time) {
+  double getValue(double time) {
     if (time <= 0.0) {
       // approximate start gradient
       if (curves.length >= 4) {
         if (curves[0] > 0.0) return (curves[1] / curves[0]) * time;
-        if (curves[1] == 0.0 && curves[2] > 0.0)
+        if (curves[1] == 0.0 && curves[2] > 0.0) {
           return (curves[3] / curves[2]) * time;
+        }
       }
       return 0.0;
     }
     if (time >= 1.0) {
       if (curves.length >= 4) {
-        if (curves[2] < 1.0)
+        if (curves[2] < 1.0) {
           return 1.0 + ((curves[3] - 1.0) / (curves[2] - 1.0)) * (time - 1.0);
-        if (curves[2] == 1.0 && curves[0] < 1.0)
+        }
+        if (curves[2] == 1.0 && curves[0] < 1.0) {
           return 1.0 + ((curves[1] - 1.0) / (curves[0] - 1.0)) * (time - 1.0);
+        }
       }
       return 1.0;
     }

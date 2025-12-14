@@ -84,6 +84,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get deactivated => '注销';
 
   @override
+  String get profile_updates => '个人资料更新';
+
+  @override
   String get normal_unfollowed => '普通取关';
 
   @override
@@ -462,6 +465,35 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get verified => '已认证';
+
+  @override
+  String get name => '昵称';
+
+  @override
+  String get screen_name => '用户名';
+
+  @override
+  String get bio => '简介';
+
+  @override
+  String get location => '位置';
+
+  @override
+  String get avatar => '头像';
+
+  @override
+  String get banner => '横幅';
+
+  @override
+  String get updated => '已更新';
+
+  @override
+  String get jump_to_page => '跳转到页面';
+
+  @override
+  String total(int total) {
+    return '总计: $total';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -542,6 +574,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get deactivated => '註銷';
+
+  @override
+  String get profile_updates => '個人資料更新';
 
   @override
   String get normal_unfollowed => '普通取跟';
@@ -922,4 +957,33 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get verified => '已驗證';
+
+  @override
+  String get name => '暱稱';
+
+  @override
+  String get screen_name => '使用者名稱';
+
+  @override
+  String get bio => '簡介';
+
+  @override
+  String get location => '位置';
+
+  @override
+  String get avatar => '頭像';
+
+  @override
+  String get banner => '橫幅';
+
+  @override
+  String get updated => '已更新';
+
+  @override
+  String get jump_to_page => '跳轉到頁面';
+
+  @override
+  String total(int total) {
+    return '總數: $total';
+  }
 }

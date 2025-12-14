@@ -51,7 +51,7 @@ class ImageHistoryService {
     final hash = remoteUrl.hashCode.toUnsigned(32);
     final ext = p.extension(remoteUrl.split('?').first);
     final fileName =
-        '${mediaType.name}_${hash}${ext.isNotEmpty ? ext : ".jpg"}';
+        '${mediaType.name}_$hash${ext.isNotEmpty ? ext : ".jpg"}';
     final absolutePath = p.join(basePath, fileName);
 
     // 3. 下载文件
@@ -277,7 +277,7 @@ class ImageHistoryService {
     final ext = p.extension(remoteUrl.split('?').first).isNotEmpty
         ? p.extension(remoteUrl.split('?').first)
         : ".jpg";
-    final fileName = '${mediaType.name}_${hash}${ext}';
+    final fileName = '${mediaType.name}_$hash$ext';
     final absolutePath = p.join(basePath, fileName);
 
     // 下载图片（覆盖旧文件）

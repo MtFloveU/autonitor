@@ -42,23 +42,18 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   void _showAccountSwitcher(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final allAccounts = ref.read(accountsProvider);
     final activeAccount = ref.read(activeAccountProvider);
     final mediaDir = ref.watch(appSupportDirProvider).value;
     showModalBottomSheet(
       context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      isScrollControlled: true,
       builder: (context) {
         return ListView(
           shrinkWrap: true,
           children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                l10n.switch_account,
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-            ),
             ...allAccounts.map((account) {
               return ListTile(
                 leading: SizedBox(
@@ -382,6 +377,14 @@ class _HomePageState extends ConsumerState<HomePage> {
             children: [
               _buildDetailListItem(
                 context,
+                'profile_update',
+                Icons.badge_outlined, // Or Icons.assignment_ind_outlined
+                l10n.profile_updates,
+                cache.profileUpdatedCount,
+                onTap: () => _navigateToUserList(context, 'profile_update'),
+              ),
+              _buildDetailListItem(
+                context,
                 'normal_unfollowed',
                 Icons.person_remove_outlined,
                 l10n.normal_unfollowed,
@@ -470,9 +473,10 @@ class _HomePageState extends ConsumerState<HomePage> {
     String label,
     int count, {
     bool showDivider = true,
+    VoidCallback? onTap,
   }) {
     return InkWell(
-      onTap: () => _navigateToUserList(context, categoryKey),
+      onTap: onTap ?? () => _navigateToUserList(context, categoryKey),
       child: Column(
         children: [
           Padding(

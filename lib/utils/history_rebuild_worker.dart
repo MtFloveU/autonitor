@@ -233,10 +233,12 @@ Map<String, dynamic> _constructUserMap({
   merged['bio'] ??= dbBio;
 
   // 注入本地路径
-  if (dbAvatarLocalPath != null)
+  if (dbAvatarLocalPath != null) {
     merged['avatar_local_path'] = dbAvatarLocalPath;
-  if (dbBannerLocalPath != null)
+  }
+  if (dbBannerLocalPath != null) {
     merged['banner_local_path'] = dbBannerLocalPath;
+  }
 
   return merged;
 }

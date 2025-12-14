@@ -79,8 +79,8 @@ class UserAvatar extends StatelessWidget {
               width: diameter,
               height: diameter,
               fit: BoxFit.cover,
-              placeholder: (_, __) => placeholder,
-              errorWidget: (_, __, ___) => placeholder,
+              placeholder: (_, _) => placeholder,
+              errorWidget: (_, _, _) => placeholder,
             );
           }
           return placeholder;
@@ -93,8 +93,8 @@ class UserAvatar extends StatelessWidget {
         height: diameter,
         fit: BoxFit.cover,
         memCacheWidth: (diameter * 2).toInt(),
-        placeholder: (_, __) => placeholder,
-        errorWidget: (_, __, ___) => placeholder,
+        placeholder: (_, _) => placeholder,
+        errorWidget: (_, _, _) => placeholder,
         fadeInDuration: const Duration(milliseconds: 200),
       );
     } else {

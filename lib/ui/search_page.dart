@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:autonitor/providers/search_provider.dart';
 import 'package:autonitor/providers/search_history_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
@@ -165,13 +164,12 @@ class SearchPageState extends ConsumerState<SearchPage>
       if (_currentParam!.statuses.isNotEmpty) activeFilterCount++;
     }
 
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.escape): () {
-          if (_searchController.text.isNotEmpty) {
-            _searchController.clear();
-          }
-        },
+    return PopScope(
+      canPop: _searchController.text.isEmpty,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          _searchController.clear();
+        }
       },
       child: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),

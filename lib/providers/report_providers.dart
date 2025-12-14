@@ -72,6 +72,7 @@ final cacheProvider = FutureProvider.autoDispose<CacheData?>((ref) async {
       newFollowersCount: categoryCounts['new_followers_following'] ?? 0,
       temporarilyRestrictedCount: categoryCounts['temporarily_restricted'] ?? 0,
       recoveredCount: categoryCounts['recovered'] ?? 0,
+      profileUpdatedCount: categoryCounts['profile_update'] ?? 0,
     );
   } catch (e, s) {
     logger.e(
@@ -83,121 +84,96 @@ final cacheProvider = FutureProvider.autoDispose<CacheData?>((ref) async {
   }
 });
 
-const int _kUserListPageSize = 50;
+// [修改] 定义每页大小
+const int _kUserListPageSize = 20;
 
+// [新增] 分页状态类
+@immutable
+class UserPagedListState {
+  final List<TwitterUser> users;
+  final int totalCount;
+  final int currentPage; // 1-based
+  final int pageSize;
+
+  const UserPagedListState({
+    this.users = const [],
+    this.totalCount = 0,
+    this.currentPage = 1,
+    this.pageSize = _kUserListPageSize,
+  });
+
+  int get totalPages => (totalCount / pageSize).ceil();
+
+  bool get hasPrevious => currentPage > 1;
+  bool get hasNext => currentPage < totalPages;
+
+  UserPagedListState copyWith({
+    List<TwitterUser>? users,
+    int? totalCount,
+    int? currentPage,
+    int? pageSize,
+  }) {
+    return UserPagedListState(
+      users: users ?? this.users,
+      totalCount: totalCount ?? this.totalCount,
+      currentPage: currentPage ?? this.currentPage,
+      pageSize: pageSize ?? this.pageSize,
+    );
+  }
+}
+
+// [修改] 使用 StateNotifier 来管理 UserPagedListState
 class UserListNotifier
-    extends AutoDisposeFamilyAsyncNotifier<List<TwitterUser>, UserListParam> {
-  final List<TwitterUser> _users = [];
-  final Set<String> _seenIds = <String>{};
-  bool _hasMore = true;
-  bool _isFetching = false;
-  int _duplicateStreak = 0;
+    extends AutoDisposeFamilyAsyncNotifier<UserPagedListState, UserListParam> {
   late UserListParam _param;
 
   @override
-  Future<List<TwitterUser>> build(UserListParam arg) async {
+  Future<UserPagedListState> build(UserListParam arg) async {
     _param = arg;
-    _users.clear();
-    _seenIds.clear();
-    _hasMore = true;
-    _isFetching = false;
-    _duplicateStreak = 0;
-
-    final repository = ref.read(analysisReportRepositoryProvider);
-
-    try {
-      final newUsers = await repository.getUsersForCategory(
-        arg.ownerId,
-        arg.categoryKey,
-        limit: _kUserListPageSize,
-        offset: 0,
-      );
-
-      for (var u in newUsers) {
-        final id = u.restId;
-        if (id.isNotEmpty && !_seenIds.contains(id)) {
-          _seenIds.add(id);
-          _users.add(u);
-        }
-      }
-
-      // only stop when server returns empty result (avoid premature stop due to filtering)
-      _hasMore = newUsers.isNotEmpty;
-
-      return List<TwitterUser>.from(_users);
-    } catch (e, s) {
-      logger.e("UserListNotifier.build error", error: e, stackTrace: s);
-      rethrow;
-    }
+    return _fetchPage(1); // 初始化加载第一页
   }
 
-  Future<void> fetchMore() async {
-    if (_isFetching || !_hasMore) return;
-    _isFetching = true;
-
+  Future<UserPagedListState> _fetchPage(int page) async {
     final repository = ref.read(analysisReportRepositoryProvider);
+    final offset = (page - 1) * _kUserListPageSize;
 
-    try {
-      final offset = _users.length;
-      logger.i("UserListNotifier: fetchMore() offset=$offset");
-
-      final newUsers = await repository.getUsersForCategory(
+    // 并行获取总数和当页数据
+    final results = await Future.wait([
+      repository.getUserCountForCategory(_param.ownerId, _param.categoryKey),
+      repository.getUsersForCategory(
         _param.ownerId,
         _param.categoryKey,
         limit: _kUserListPageSize,
         offset: offset,
-      );
+      ),
+    ]);
 
-      if (newUsers.isEmpty) {
-        _duplicateStreak += 1;
-        logger.w(
-          "UserListNotifier: fetchMore() returned empty, duplicateStreak=$_duplicateStreak",
-        );
-      } else {
-        final uniqueNew = <TwitterUser>[];
-        for (var u in newUsers) {
-          final id = u.restId;
-          if (id.isNotEmpty && !_seenIds.contains(id)) {
-            _seenIds.add(id);
-            uniqueNew.add(u);
-          }
-        }
+    final totalCount = results[0] as int;
+    final users = results[1] as List<TwitterUser>;
 
-        if (uniqueNew.isNotEmpty) {
-          _users.addAll(uniqueNew);
-          _duplicateStreak = 0;
-        } else {
-          _duplicateStreak += 1;
-          logger.w(
-            "UserListNotifier: fetchMore() returned only duplicates, duplicateStreak=$_duplicateStreak",
-          );
-        }
-      }
-
-      // stop when we got several empty/duplicate rounds in a row OR server returned empty
-      if (_duplicateStreak >= 3) {
-        _hasMore = false;
-        logger.w(
-          "UserListNotifier: duplicate streak reached, stopping pagination",
-        );
-      } else {
-        // continue unless server returned empty and duplicateStreak triggered stop
-        _hasMore = newUsers.isNotEmpty;
-      }
-
-      state = AsyncData(List<TwitterUser>.from(_users));
-    } catch (e, s) {
-      logger.e("UserListNotifier: fetchMore failed", error: e, stackTrace: s);
-      state = AsyncValue<List<TwitterUser>>.error(e, s).copyWithPrevious(state);
-    } finally {
-      _isFetching = false;
-    }
+    return UserPagedListState(
+      users: users,
+      totalCount: totalCount,
+      currentPage: page,
+      pageSize: _kUserListPageSize,
+    );
   }
 
-  bool hasMore() => _hasMore;
+  Future<void> setPage(int page) async {
+    if (page < 1) return;
+    // 如果当前已经是这一页，且不需强制刷新，可直接返回 (这里选择重新加载以防数据变动)
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => _fetchPage(page));
+  }
+
+  Future<void> refresh() async {
+    final currentPage = state.value?.currentPage ?? 1;
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => _fetchPage(currentPage));
+  }
 }
 
 final userListProvider = AsyncNotifierProvider.family
-    .autoDispose<UserListNotifier, List<TwitterUser>, UserListParam>(
+    .autoDispose<UserListNotifier, UserPagedListState, UserListParam>(
       () => UserListNotifier(),
     );

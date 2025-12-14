@@ -146,5 +146,15 @@
   "filters_no": "否",
   "account_status": "帳戶狀態",
   "protected": "鎖推",
-  "verified": "已驗證"
+  "verified": "已驗證",
+  "profile_updates": "個人資料更新",
+   "name": "暱稱",
+  "screen_name": "使用者名稱",
+  "bio": "簡介",
+  "location": "位置",
+  "avatar": "頭像",
+  "banner": "橫幅",
+  "updated": "已更新",
+  "jump_to_page": "跳轉到頁面",
+  "total": "總數: {total}"
 }

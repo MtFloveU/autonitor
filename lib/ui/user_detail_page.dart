@@ -389,7 +389,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
                           ? Image(
                               image: bannerProvider,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
+                              errorBuilder: (_, _, _) =>
                                   _buildNetworkBanner(context),
                             )
                           : _buildNetworkBanner(context),
@@ -434,7 +434,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
                               ? Image(
                                   image: avatarProvider,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) =>
+                                  errorBuilder: (_, _, _) =>
                                       const SizedBox.shrink(),
                                 )
                               : const SizedBox.shrink(),
@@ -1091,22 +1091,36 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
           ),
           const SizedBox(width: 4),
           Flexible(
-            child: RichText(
-              text: TextSpan(
-                style: Theme.of(context).textTheme.bodySmall,
-                children: [
-                  TextSpan(text: l10n.automated_by('')),
-                  TextSpan(
-                    text: '@$name',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    recognizer: TapGestureRecognizer()
-                      ..onTap = () =>
-                          _openExternalProfile(context, l10n, screenName: name),
+            child: Builder(
+              builder: (context) {
+                final theme = Theme.of(context);
+                const marker = '__NAME__';
+
+                final text = l10n.automated_by(marker);
+                final parts = text.split(marker);
+
+                return RichText(
+                  text: TextSpan(
+                    style: theme.textTheme.bodySmall,
+                    children: [
+                      if (parts.isNotEmpty) TextSpan(text: parts.first),
+                      TextSpan(
+                        text: '@$name',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                        ),
+                        recognizer: TapGestureRecognizer()
+                          ..onTap = () => _openExternalProfile(
+                            context,
+                            l10n,
+                            screenName: name,
+                          ),
+                      ),
+                      if (parts.length > 1) TextSpan(text: parts.last),
+                    ],
                   ),
-                ],
-              ),
+                );
+              },
             ),
           ),
         ],

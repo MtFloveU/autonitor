@@ -85,7 +85,7 @@ class MyApp extends ConsumerWidget {
         final userThemeColorEnum = settingsValue.when(
           data: (s) => s.theme,
           loading: () => ThemeColor.defaultThemeColor,
-          error: (_, __) => ThemeColor.defaultThemeColor,
+          error: (_, _) => ThemeColor.defaultThemeColor,
         );
 
         // 2. 将枚举转换为实际的 Color 对象

@@ -146,5 +146,15 @@
   "filters_no": "否",
   "account_status": "账号状态",
   "protected": "锁推",
-  "verified": "已认证"
+  "verified": "已认证",
+  "profile_updates": "个人资料更新",
+  "name": "昵称",
+  "screen_name": "用户名",
+  "bio": "简介",
+  "location": "位置",
+  "avatar": "头像",
+  "banner": "横幅",
+  "updated": "已更新",
+  "jump_to_page": "跳转到页面",
+  "total": "总计: {total}"
 }

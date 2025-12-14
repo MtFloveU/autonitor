@@ -249,6 +249,12 @@ abstract class AppLocalizations {
   /// **'Deactivated'**
   String get deactivated;
 
+  /// No description provided for @profile_updates.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile Updates'**
+  String get profile_updates;
+
   /// No description provided for @normal_unfollowed.
   ///
   /// In en, this message translates to:
@@ -980,6 +986,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Verified'**
   String get verified;
+
+  /// No description provided for @name.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get name;
+
+  /// No description provided for @screen_name.
+  ///
+  /// In en, this message translates to:
+  /// **'Screen Name'**
+  String get screen_name;
+
+  /// No description provided for @bio.
+  ///
+  /// In en, this message translates to:
+  /// **'Bio'**
+  String get bio;
+
+  /// No description provided for @location.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get location;
+
+  /// No description provided for @avatar.
+  ///
+  /// In en, this message translates to:
+  /// **'Avatar'**
+  String get avatar;
+
+  /// No description provided for @banner.
+  ///
+  /// In en, this message translates to:
+  /// **'Banner'**
+  String get banner;
+
+  /// No description provided for @updated.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated'**
+  String get updated;
+
+  /// No description provided for @jump_to_page.
+  ///
+  /// In en, this message translates to:
+  /// **'Jump to Page'**
+  String get jump_to_page;
+
+  /// No description provided for @total.
+  ///
+  /// In en, this message translates to:
+  /// **'Total: {total}'**
+  String total(int total);
 }
 
 class _AppLocalizationsDelegate

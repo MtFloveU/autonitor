@@ -136,10 +136,10 @@ class AppDatabase extends _$AppDatabase {
       if (from < 3) {
         // [Performance Fix] Create indices for sorting columns
         // This makes ORDER BY + LIMIT/OFFSET extremely fast
-        await m.issueCustomQuery(
+        await customStatement(
           'CREATE INDEX IF NOT EXISTS idx_follower_sort ON follow_users (owner_id, is_follower, follower_sort)',
         );
-        await m.issueCustomQuery(
+        await customStatement(
           'CREATE INDEX IF NOT EXISTS idx_following_sort ON follow_users (owner_id, is_following, following_sort)',
         );
       }
