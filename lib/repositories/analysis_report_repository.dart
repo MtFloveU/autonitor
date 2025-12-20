@@ -261,6 +261,7 @@ class AnalysisReportRepository {
                   userId: user.userId,
                   jsonString: user.latestRawJson,
                   dbAvatarLocalPath: user.avatarLocalPath,
+                  dbBannerLocalPath: user.bannerLocalPath,
                 ),
               );
             } else {

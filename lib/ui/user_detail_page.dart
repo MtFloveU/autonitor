@@ -1000,7 +1000,8 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
           child: Text(
             l10n.user_content,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.bold,
             ),
             textAlign: TextAlign.left,
           ),
@@ -1025,7 +1026,8 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
           child: Text(
             AppLocalizations.of(context)!.identity,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.bold,
             ),
           ),
         ),

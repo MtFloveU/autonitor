@@ -69,8 +69,6 @@ class UserAvatar extends StatelessWidget {
         width: diameter,
         height: diameter,
         fit: BoxFit.cover,
-        // Small cache optimization for local files in lists
-        cacheWidth: (diameter * 2).toInt(),
         errorBuilder: (context, error, stackTrace) {
           // Fallback to network if local file is corrupted
           if (effectiveUrl.isNotEmpty) {
@@ -92,7 +90,6 @@ class UserAvatar extends StatelessWidget {
         width: diameter,
         height: diameter,
         fit: BoxFit.cover,
-        memCacheWidth: (diameter * 2).toInt(),
         placeholder: (_, _) => placeholder,
         errorWidget: (_, _, _) => placeholder,
         fadeInDuration: const Duration(milliseconds: 200),

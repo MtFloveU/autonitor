@@ -479,139 +479,149 @@ class _UserListPageState extends ConsumerState<UserListPage> {
 
     return Scaffold(
       appBar: AppBar(title: Text(getLocalizedTitle(l10n))),
-      body: Column(
-        children: [
-          _buildSuspendedBanner(context),
+      body: !_routeAnimationCompleted
+          ? const Center(child: CircularProgressIndicator())
+          : Builder(
+              builder: (context) {
+                // 2. 只有动画完成后，才开始 watch 数据
+                final pagedListAsync = ref.watch(userListProvider(param));
+                final mediaDirAsync = ref.watch(appSupportDirProvider);
 
-          Expanded(
-            // [恢复] 如果动画未完成，显示 Loading，暂不触发 Provider 监听（也就不会开始查询）
-            child: !_routeAnimationCompleted
-                ? const Center(child: CircularProgressIndicator())
-                : Builder(
-                    builder: (context) {
-                      // 2. 只有动画完成后，才开始 watch 数据
-                      // 这样可以避免转场动画卡顿
-                      final pagedListAsync = ref.watch(userListProvider(param));
-                      final mediaDirAsync = ref.watch(appSupportDirProvider);
+                return mediaDirAsync.when(
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (err, stack) =>
+                      Center(child: Text('Media Error: $err')),
+                  data: (mediaDir) {
+                    return pagedListAsync.when(
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
+                      error: (err, stack) => Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Text(
+                            '${l10n.failed_to_load_user_list}: $err',
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                      data: (pagedState) {
+                        if (pagedState.users.isEmpty) {
+                          return Center(
+                            child: Text(l10n.no_users_in_this_category),
+                          );
+                        }
 
-                      return mediaDirAsync.when(
-                        loading: () =>
-                            const Center(child: CircularProgressIndicator()),
-                        error: (err, stack) =>
-                            Center(child: Text('Media Error: $err')),
-                        data: (mediaDir) {
-                          return pagedListAsync.when(
-                            loading: () => const Center(
-                              child: CircularProgressIndicator(),
-                            ),
-                            error: (err, stack) => Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Text(
-                                  '${l10n.failed_to_load_user_list}: $err',
-                                  textAlign: TextAlign.center,
+                        void goToPage(int page) {
+                          if (page < 1 || page > pagedState.totalPages) {
+                            return;
+                          }
+                          ref
+                              .read(userListProvider(param).notifier)
+                              .setPage(page);
+                          _scrollController.jumpTo(0);
+                        }
+
+                        // [新增] 检查是否需要显示 Banner
+                        final bool showBanner =
+                            widget.categoryKey == 'suspended';
+
+                        return Focus(
+                          autofocus: true,
+                          onKeyEvent: (node, event) {
+                            if (event is! KeyDownEvent) {
+                              return KeyEventResult.ignored;
+                            }
+                            if (event.logicalKey ==
+                                LogicalKeyboardKey.arrowLeft) {
+                              if (pagedState.currentPage > 1) {
+                                goToPage(pagedState.currentPage - 1);
+                                return KeyEventResult.handled;
+                              }
+                            } else if (event.logicalKey ==
+                                LogicalKeyboardKey.arrowRight) {
+                              if (pagedState.currentPage <
+                                  pagedState.totalPages) {
+                                goToPage(pagedState.currentPage + 1);
+                                return KeyEventResult.handled;
+                              }
+                            }
+                            return KeyEventResult.ignored;
+                          },
+                          child: Column(
+                            children: [
+                              Expanded(
+                                child: ListView.builder(
+                                  controller: _scrollController,
+                                  // [修改] 如果有 Banner，列表总数 + 1
+                                  itemCount:
+                                      pagedState.users.length +
+                                      (showBanner ? 1 : 0),
+                                  itemBuilder: (context, index) {
+                                    // [新增] 处理 Banner 的显示逻辑
+                                    if (showBanner) {
+                                      if (index == 0) {
+                                        return _buildSuspendedBanner(context);
+                                      }
+                                      // 如果是 Banner 模式，用户数据的索引需要减 1
+                                      final user = pagedState.users[index - 1];
+                                      return Center(
+                                        child: ConstrainedBox(
+                                          constraints: const BoxConstraints(
+                                            maxWidth: 800,
+                                          ),
+                                          child: Card(
+                                            elevation: 0,
+                                            margin: EdgeInsets.zero,
+                                            color: Colors.transparent,
+                                            child: _buildListItem(
+                                              context,
+                                              user,
+                                              mediaDir,
+                                              l10n,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    }
+
+                                    // [原有逻辑] 正常渲染
+                                    return Center(
+                                      child: ConstrainedBox(
+                                        constraints: const BoxConstraints(
+                                          maxWidth: 800,
+                                        ),
+                                        child: Card(
+                                          elevation: 0,
+                                          margin: EdgeInsets.zero,
+                                          color: Colors.transparent,
+                                          child: _buildListItem(
+                                            context,
+                                            pagedState.users[index],
+                                            mediaDir,
+                                            l10n,
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 ),
                               ),
-                            ),
-                            data: (pagedState) {
-                              if (pagedState.users.isEmpty) {
-                                return Center(
-                                  child: Text(l10n.no_users_in_this_category),
-                                );
-                              }
-
-                              void goToPage(int page) {
-                                // 越界检查
-                                if (page < 1 || page > pagedState.totalPages) {
-                                  return;
-                                }
-
-                                // 执行翻页
-                                ref
-                                    .read(userListProvider(param).notifier)
-                                    .setPage(page);
-                                _scrollController.jumpTo(0);
-                              }
-
-                              // === 2. 使用 Focus 拦截按键实现"优先"处理 ===
-                              return Focus(
-                                autofocus: true, // 确保进入页面自动获得焦点
-                                onKeyEvent: (node, event) {
-                                  // 只响应按下事件 (KeyDown)，忽略抬起事件 (KeyUp) 以免触发两次
-                                  if (event is! KeyDownEvent) {
-                                    return KeyEventResult.ignored;
-                                  }
-
-                                  // 检查按键类型
-                                  if (event.logicalKey ==
-                                      LogicalKeyboardKey.arrowLeft) {
-                                    // 如果能往前翻，就处理
-                                    if (pagedState.currentPage > 1) {
-                                      goToPage(pagedState.currentPage - 1);
-                                      return KeyEventResult
-                                          .handled; // 【关键】告知系统已处理，停止冒泡
-                                    }
-                                  } else if (event.logicalKey ==
-                                      LogicalKeyboardKey.arrowRight) {
-                                    // 如果能往后翻，就处理
-                                    if (pagedState.currentPage <
-                                        pagedState.totalPages) {
-                                      goToPage(pagedState.currentPage + 1);
-                                      return KeyEventResult
-                                          .handled; // 【关键】告知系统已处理，停止冒泡
-                                    }
-                                  }
-
-                                  // 其他按键（如上下键滚动）交还给系统处理
-                                  return KeyEventResult.ignored;
-                                },
-                                child: Column(
-                                  children: [
-                                    Expanded(
-                                      child: ListView.builder(
-                                        // 这里的 Controller 保持不变，用于支持鼠标/触摸滚动
-                                        controller: _scrollController,
-                                        itemCount: pagedState.users.length,
-                                        itemBuilder: (context, index) {
-                                          return Center(
-                                            child: ConstrainedBox(
-                                              constraints: const BoxConstraints(
-                                                maxWidth: 800,
-                                              ),
-                                              child: Card(
-                                                elevation: 0,
-                                                margin: EdgeInsets.zero,
-                                                color: Colors.transparent,
-                                                child: _buildListItem(
-                                                  context,
-                                                  pagedState.users[index],
-                                                  mediaDir,
-                                                  l10n,
-                                                ),
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                    _PaginationControls(
-                                      currentPage: pagedState.currentPage,
-                                      totalPages: pagedState.totalPages,
-                                      totalCount: pagedState.totalCount,
-                                      onPageChanged: (page) => goToPage(page),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
+                              _PaginationControls(
+                                currentPage: pagedState.currentPage,
+                                totalPages: pagedState.totalPages,
+                                totalCount: pagedState.totalCount,
+                                onPageChanged: (page) => goToPage(page),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
     );
   }
 
