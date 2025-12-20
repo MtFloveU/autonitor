@@ -1059,50 +1059,63 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
   }
 
   Widget _buildNameHeader(BuildContext context) {
-    return SelectableText.rich(
-      TextSpan(
-        style: Theme.of(
-          context,
-        ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-        children: [
-          TextSpan(text: widget.user.name),
-          if (widget.user.isVerified)
-            WidgetSpan(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                child: SvgPicture.asset(
-                  'assets/icon/verified.svg',
-                  width: 23,
-                  height: 23,
-                  colorFilter: const ColorFilter.mode(
-                    Color(0xFF1DA1F2),
-                    BlendMode.srcIn,
+    final textStyle = Theme.of(
+      context,
+    ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold);
+
+    return Stack(
+      children: [
+        SelectableText(
+          widget.user.name ?? "Unknown",
+          style: textStyle?.copyWith(color: Colors.transparent),
+          maxLines: null,
+        ),
+        IgnorePointer(
+          child: RichText(
+            softWrap: true,
+            text: TextSpan(
+              style: textStyle,
+              children: [
+                TextSpan(text: widget.user.name),
+
+                if (widget.user.isVerified)
+                  WidgetSpan(
+                    alignment: PlaceholderAlignment.middle,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                      child: SvgPicture.asset(
+                        'assets/icon/verified.svg',
+                        width: 23,
+                        height: 23,
+                        colorFilter: const ColorFilter.mode(
+                          Color(0xFF1DA1F2),
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              alignment: PlaceholderAlignment.middle,
-            ),
-          if (widget.user.isProtected)
-            WidgetSpan(
-              child: Padding(
-                padding: EdgeInsets.only(
-                  left: widget.user.isVerified ? 0.0 : 4.0,
-                  right: 4.0,
-                ),
-                child: SvgPicture.asset(
-                  'assets/icon/protected.svg',
-                  width: 20,
-                  height: 20,
-                  colorFilter: ColorFilter.mode(
-                    Theme.of(context).colorScheme.onSurface,
-                    BlendMode.srcIn,
+
+                if (widget.user.isProtected)
+                  WidgetSpan(
+                    alignment: PlaceholderAlignment.middle,
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 4.0),
+                      child: SvgPicture.asset(
+                        'assets/icon/protected.svg',
+                        width: 20,
+                        height: 20,
+                        colorFilter: ColorFilter.mode(
+                          Theme.of(context).colorScheme.onSurface,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              alignment: PlaceholderAlignment.middle,
+              ],
             ),
-        ],
-      ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1184,6 +1197,14 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
     }
 
     final name = widget.user.automatedScreenName!;
+    final theme = Theme.of(context);
+
+    const marker = '__NAME__';
+    final text = l10n.automated_by(marker);
+    final parts = text.split(marker);
+
+    final prefix = parts.isNotEmpty ? parts.first : '';
+    final suffix = parts.length > 1 ? parts.last : '';
 
     return Padding(
       padding: const EdgeInsets.only(top: 2),
@@ -1193,43 +1214,35 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
             'assets/icon/bot.svg',
             width: 18,
             height: 18,
-            colorFilter: ColorFilter.mode(
-              Theme.of(context).hintColor,
-              BlendMode.srcIn,
-            ),
+            colorFilter: ColorFilter.mode(theme.hintColor, BlendMode.srcIn),
           ),
           const SizedBox(width: 4),
           Flexible(
-            child: Builder(
-              builder: (context) {
-                final theme = Theme.of(context);
-                const marker = '__NAME__';
-
-                final text = l10n.automated_by(marker);
-                final parts = text.split(marker);
-
-                return RichText(
-                  text: TextSpan(
-                    style: theme.textTheme.bodySmall,
-                    children: [
-                      if (parts.isNotEmpty) TextSpan(text: parts.first),
-                      TextSpan(
-                        text: '@$name',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.primary,
-                        ),
-                        recognizer: TapGestureRecognizer()
-                          ..onTap = () => _openExternalProfile(
-                            context,
-                            l10n,
-                            screenName: name,
-                          ),
-                      ),
-                      if (parts.length > 1) TextSpan(text: parts.last),
-                    ],
+            child: Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 0,
+              runSpacing: 0,
+              children: [
+                Text(prefix, style: theme.textTheme.bodySmall),
+                Text(
+                  '@',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.primary,
                   ),
-                );
-              },
+                ),
+                SelectableText.rich(
+                  TextSpan(
+                    text: name,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.primary,
+                    ),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () =>
+                          _openExternalProfile(context, l10n, screenName: name),
+                  ),
+                ),
+                Text(suffix, style: theme.textTheme.bodySmall),
+              ],
             ),
           ),
         ],
@@ -1277,20 +1290,18 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
 
   Widget _buildLinkItem(BuildContext context, String url) {
     return Row(
-      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         const Icon(Icons.link, color: Colors.grey, size: 16),
         const SizedBox(width: 4),
+
         Flexible(
-          child: InkWell(
-            onTap: () => _launchURL(context, url),
-            child: Text(
-              url,
-              style: const TextStyle(
-                color: Colors.blue,
-                decoration: TextDecoration.underline,
-                decorationColor: Colors.blue,
-              ),
+          child: SelectableText.rich(
+            TextSpan(
+              text: url,
+              style: TextStyle(color: Theme.of(context).colorScheme.primary),
+              recognizer: TapGestureRecognizer()
+                ..onTap = () => _launchURL(context, url),
             ),
           ),
         ),

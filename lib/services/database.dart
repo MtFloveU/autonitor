@@ -5,7 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
 part 'database.g.dart';
-
+//数据库表定义
 @DataClassName('LoggedAccount')
 class LoggedAccounts extends Table {
   TextColumn get id => text()();
@@ -109,6 +109,16 @@ class MediaHistory extends Table {
       boolean().named('is_high_quality').withDefault(const Constant(false))();
 }
 
+@DataClassName('SyncLogsEntry')
+class SyncLogs extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get runId => text().named('run_id')();
+  DateTimeColumn get timestamp => dateTime().named('timestamp')();
+  IntColumn get status => integer().named('status')();
+  TextColumn get ownerId =>
+      text().named('owner_id').withDefault(const Constant(''))();
+}
+
 @DriftDatabase(
   tables: [
     LoggedAccounts,
@@ -117,11 +127,13 @@ class MediaHistory extends Table {
     FollowUsersHistory,
     ChangeReports,
     MediaHistory,
+    SyncLogs,
   ],
 )
+// 主class
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
-
+// 数据库迁移
   @override
   // [Upgraded] Upgrade to version 3 to include indices
   int get schemaVersion => 3;
@@ -145,7 +157,7 @@ class AppDatabase extends _$AppDatabase {
       }
     },
   );
-
+// 快捷方法
   Future<List<FollowUser>> getNetworkRelationships(String ownerId) async {
     return (select(
       followUsers,
