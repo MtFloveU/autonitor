@@ -223,6 +223,10 @@ class ProfileChangeCard extends StatelessWidget {
         label = l10n.bio;
         icon = Icons.description_outlined;
         break;
+      case 'link':
+        label = l10n.link;
+        icon = Icons.link_outlined;
+        break;
       case 'location':
         label = l10n.location;
         icon = Icons.location_on_outlined;

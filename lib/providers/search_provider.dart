@@ -10,7 +10,7 @@ final searchRepositoryProvider = Provider<SearchRepository>((ref) {
   return SearchRepository(db);
 });
 
-enum SearchField { restId, screenName, name, bio }
+enum SearchField { restId, screenName, name, bio, location, link }
 
 enum FilterState { all, yes, no }
 

@@ -387,6 +387,8 @@
   "@screen_name": {},
   "bio": "Bio",
   "@bio": {},
+  "link": "Link",
+  "@link": {},
   "location": "Location",
   "@location": {},
   "avatar": "Avatar",

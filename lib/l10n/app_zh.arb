@@ -151,6 +151,7 @@
   "name": "昵称",
   "screen_name": "用户名",
   "bio": "简介",
+  "link": "链接",
   "location": "位置",
   "avatar": "头像",
   "banner": "横幅",

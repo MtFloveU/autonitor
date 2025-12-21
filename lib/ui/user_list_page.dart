@@ -326,6 +326,8 @@ class UserListTile extends StatelessWidget {
   }
 
   Widget _buildBio(BuildContext context, String bio) {
+    bio = bio.replaceAll(RegExp(r'\s+'), ' ').trim();
+
     final bool isMatch =
         highlightQuery != null &&
         highlightQuery!.trim().isNotEmpty &&

@@ -214,6 +214,7 @@ class RelationshipAnalyzer {
           checkChange('screen_name', oldUser.screenName, newUser.screenName);
           checkChange('bio', oldUser.bio, newUser.bio);
           checkChange('location', oldUser.location, newUser.location);
+          checkChange('link', oldUser.link, newUser.link);
 
           // 图片检测：简单的 URL 字符串对比
           // Twitter 修改图片通常会生成全新的 URL

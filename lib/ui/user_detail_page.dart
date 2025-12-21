@@ -1292,6 +1292,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
 
   Widget _buildLinkItem(BuildContext context, String url) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         const Icon(Icons.link, color: Colors.grey, size: 16),

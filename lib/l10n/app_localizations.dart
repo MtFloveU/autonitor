@@ -1005,6 +1005,12 @@ abstract class AppLocalizations {
   /// **'Bio'**
   String get bio;
 
+  /// No description provided for @link.
+  ///
+  /// In en, this message translates to:
+  /// **'Link'**
+  String get link;
+
   /// No description provided for @location.
   ///
   /// In en, this message translates to:

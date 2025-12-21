@@ -51,6 +51,18 @@ class SearchRepository {
               t.bio.lower().contains(cleanQuery.toLowerCase()),
             );
           }
+          if (effectiveFields.contains(SearchField.location)) {
+            final clean = cleanQuery.toLowerCase();
+            fieldExpressions.add(
+              t.latestRawJson.lower().like('%"location":"%$clean%"%'),
+            );
+          }
+          if (effectiveFields.contains(SearchField.link)) {
+            final clean = cleanQuery.toLowerCase();
+            fieldExpressions.add(
+              t.latestRawJson.lower().like('%"link":"%$clean%"%'),
+            );
+          }
 
           // 将所有字段条件用 OR 连接
           if (fieldExpressions.isNotEmpty) {

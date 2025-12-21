@@ -476,6 +476,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get bio => '简介';
 
   @override
+  String get link => '链接';
+
+  @override
   String get location => '位置';
 
   @override
@@ -978,6 +981,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get bio => '簡介';
+
+  @override
+  String get link => '鏈接';
 
   @override
   String get location => '位置';

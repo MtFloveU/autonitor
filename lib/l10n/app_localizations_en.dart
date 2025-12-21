@@ -478,6 +478,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bio => 'Bio';
 
   @override
+  String get link => 'Link';
+
+  @override
   String get location => 'Location';
 
   @override
