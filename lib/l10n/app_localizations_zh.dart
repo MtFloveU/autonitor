@@ -15,6 +15,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get app_title => 'Autonitor';
 
   @override
+  String get app_description => '一个优于付费替代品的自由开源 Twitter 关注者分析应用。';
+
+  @override
   String get settings => '设置';
 
   @override
@@ -156,6 +159,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get login_first => '需要登录';
+
+  @override
+  String get no_accounts_added => '未添加账号';
 
   @override
   String get login_first_description => '请至少添加一个账号以继续';
@@ -509,6 +515,36 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get no_history_found => '未找到历史记录';
+
+  @override
+  String get about => '关于';
+
+  @override
+  String get version => '版本';
+
+  @override
+  String get author_on_twitter => '作者的 Twitter';
+
+  @override
+  String get source_code => '源代码';
+
+  @override
+  String get view_on_github => '在 GitHub 上查看';
+
+  @override
+  String get report_an_issue => '报告问题';
+
+  @override
+  String get feedback_and_suggestions => '反馈与建议';
+
+  @override
+  String get license => '许可证';
+
+  @override
+  String get open_source_licenses => '开源许可证';
+
+  @override
+  String get others => '其它';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -520,6 +556,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get app_title => 'Autonitor';
+
+  @override
+  String get app_description => '一個優於付費替代品的自由開源 Twitter 跟隨者分析App。';
 
   @override
   String get settings => '設定';
@@ -663,6 +702,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get login_first => '需要登入';
+
+  @override
+  String get no_accounts_added => '未添加賬戶';
 
   @override
   String get login_first_description => '請至少添加一個帳戶以繼續';
@@ -1016,4 +1058,34 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get no_history_found => '未找到歷史紀錄';
+
+  @override
+  String get about => '關於';
+
+  @override
+  String get version => '版本';
+
+  @override
+  String get author_on_twitter => '作者的 Twitter';
+
+  @override
+  String get source_code => '原始碼';
+
+  @override
+  String get view_on_github => '在 GitHub 上查看';
+
+  @override
+  String get report_an_issue => '回報問題';
+
+  @override
+  String get feedback_and_suggestions => '回饋與建議';
+
+  @override
+  String get license => '授權條款';
+
+  @override
+  String get open_source_licenses => '開源授權條款';
+
+  @override
+  String get others => '其它';
 }

@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:autonitor/providers/media_provider.dart';
 import 'package:autonitor/ui/auth/webview_login_page.dart';
 import 'package:autonitor/ui/components/user_avatar.dart';
@@ -22,19 +21,16 @@ class AccountsPage extends ConsumerStatefulWidget {
 class _AccountsPageState extends ConsumerState<AccountsPage> {
   bool _isRefreshing = false;
 
-  // ---------------------------------------------------------------------------
-  // 逻辑方法 (保持不变)
-  // ---------------------------------------------------------------------------
-
   Future<void> _navigateAndAddAccount(BuildContext context) async {
     final source = await _showLoginOptions(context);
-    if (source == null) return;
+
+    // Fix: Guard against using context across async gap
+    if (source == null || !context.mounted) return;
 
     String? cookie;
 
     if (source == 'browser') {
       final result = await Navigator.push<String>(
-        // ignore: use_build_context_synchronously
         context,
         MaterialPageRoute(builder: (_) => const WebViewLoginPage()),
       );
@@ -43,9 +39,12 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
 
       cookie = result;
     } else if (source == 'manual') {
-      final result = await _showManualInputDialog(context);
+      String? result;
+      if (mounted) {
+        result = await _showManualInputDialog(context);
+      }
 
-      if (!context.mounted) return;
+      if (!mounted || result == null) return;
 
       cookie = result;
     }
@@ -169,8 +168,6 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
-    // Capture navigator and scaffold messenger synchronously to avoid using
-    // BuildContext across async gaps.
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
 
@@ -230,8 +227,6 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
     if (_isRefreshing) return;
 
     final theme = Theme.of(context);
-    // Capture Navigator and ScaffoldMessenger synchronously to avoid using
-    // BuildContext across async gaps.
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
 
@@ -320,10 +315,6 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // UI 构建
-  // ---------------------------------------------------------------------------
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -331,7 +322,6 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
     final mediaDir = ref.watch(appSupportDirProvider).value;
     final theme = Theme.of(context);
 
-    // 使用从 MainScaffold 传入的 useSideNav，如果没有（兼容）则回退到 MediaQuery 判定
     final bool useSideNav =
         widget.useSideNav || MediaQuery.of(context).size.width >= 640;
 
@@ -339,11 +329,12 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
       appBar: AppBar(
         title: Text(l10n.accounts),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh All Profiles',
-            onPressed: _isRefreshing ? null : _refreshAllAccounts,
-          ),
+          if (accounts.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Refresh All Profiles',
+              onPressed: _isRefreshing ? null : _refreshAllAccounts,
+            ),
           const SizedBox(width: 8),
         ],
       ),
@@ -359,7 +350,7 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    "No accounts added",
+                    l10n.no_accounts_added,
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -369,13 +360,11 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
             )
           : LayoutBuilder(
               builder: (context, constraints) {
-                // 根据 useSideNav 决定使用单列还是多列（宽屏至少两列），并动态计算列数以适配更宽屏幕
                 final width = constraints.maxWidth;
                 int crossAxisCount;
                 if (!useSideNav) {
                   crossAxisCount = 1;
                 } else {
-                  // 宽屏时按每列约 320px 计算列数，至少 2，最多 4
                   crossAxisCount = (width ~/ 320).clamp(2, 4);
                 }
 
@@ -383,9 +372,9 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: crossAxisCount,
-                    mainAxisExtent: 165,
-                    mainAxisSpacing: 8,
-                    crossAxisSpacing: 8,
+                    mainAxisExtent: 160,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
                   ),
                   itemCount: accounts.length,
                   itemBuilder: (context, index) {
@@ -452,7 +441,7 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                       color: theme.colorScheme.onPrimaryContainer,
                     ),
                   ),
-                  backgroundColor: theme.colorScheme.primaryContainer, // ✅ 主题色
+                  backgroundColor: theme.colorScheme.primaryContainer,
                   behavior: SnackBarBehavior.floating,
                 ),
               );
@@ -488,110 +477,96 @@ class _AccountCard extends StatelessWidget {
 
     return Card(
       elevation: 0,
-      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: theme.colorScheme.surfaceContainer,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+        ),
+      ),
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          children: [
-            // 信息区：自动伸缩，占据所有剩余空间
-            Expanded(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 将头像顶部对齐，防止头像与文字垂直位置错位
-                  Align(
-                    alignment: Alignment.topCenter,
-                    child: UserAvatar(
+      child: InkWell(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    UserAvatar(
                       avatarUrl: account.avatarUrl,
                       avatarLocalPath: account.avatarLocalPath,
                       mediaDir: mediaDir,
-                      radius: 24,
+                      radius: 28,
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      // 从顶部开始排列，保证头像最上方与名字最上方对齐
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        Text(
-                          account.name ?? 'Unknown',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            account.name ?? 'Unknown',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.2,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          "@${account.screenName ?? account.id}",
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                          Text(
+                            "@${account.screenName ?? account.id}",
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          "ID: ${account.id}",
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.outline,
-                            fontFamily: 'monospace',
+                          const Spacer(),
+                          Text(
+                            "ID: ${account.id}",
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.outline,
+                              fontFamily: 'monospace',
+                              letterSpacing: 0,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 8),
-            const Divider(height: 1),
-            const SizedBox(height: 6),
-
-            // 操作区：水平可滚动，避免换行导致的高度溢出
-            SizedBox(
-              width: double.infinity,
-              child: Align(
-                alignment: Alignment.centerRight, // ✅ 右对齐
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Tooltip(
-                      // ✅ View Cookie 文字作为 hint 提示
-                      message: l10n.view_cookie,
-                      child: IconButton(
-                        visualDensity: VisualDensity.compact,
-                        iconSize: 18,
-                        color: theme.colorScheme.primary,
-                        icon: const Icon(Icons.cookie_outlined),
-                        onPressed: onViewCookie,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Tooltip(
-                      // ✅ Delete 文字作为 hint 提示
-                      message: l10n.delete,
-                      child: IconButton(
-                        visualDensity: VisualDensity.compact,
-                        color: theme.colorScheme.error,
-                        iconSize: 18,
-                        icon: const Icon(Icons.delete_outline),
-                        onPressed: onDelete,
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  IconButton.filledTonal(
+                    onPressed: onViewCookie,
+                    tooltip: l10n.view_cookie,
+                    iconSize: 20,
+                    icon: const Icon(Icons.cookie_outlined),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.filledTonal(
+                    onPressed: onDelete,
+                    tooltip: l10n.delete,
+                    iconSize: 20,
+                    style: IconButton.styleFrom(
+                      foregroundColor: theme.colorScheme.error,
+                      backgroundColor: theme.colorScheme.errorContainer
+                          .withValues(alpha: 0.3),
+                    ),
+                    icon: const Icon(Icons.delete_outline),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

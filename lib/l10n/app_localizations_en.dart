@@ -15,6 +15,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get app_title => 'Autonitor';
 
   @override
+  String get app_description =>
+      'A FOSS Twitter follower analysis app that outperforms paid alternatives.';
+
+  @override
   String get settings => 'Settings';
 
   @override
@@ -156,6 +160,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get login_first => 'Log in Needed';
+
+  @override
+  String get no_accounts_added => 'No accounts added';
 
   @override
   String get login_first_description => 'Add at least one account to continue';
@@ -512,4 +519,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get no_history_found => 'No History Found';
+
+  @override
+  String get about => 'About';
+
+  @override
+  String get version => 'Version';
+
+  @override
+  String get author_on_twitter => 'Author on Twitter';
+
+  @override
+  String get source_code => 'Source Code';
+
+  @override
+  String get view_on_github => 'View on GitHub';
+
+  @override
+  String get report_an_issue => 'Report an Issue';
+
+  @override
+  String get feedback_and_suggestions => 'Feedback and Suggestions';
+
+  @override
+  String get license => 'License';
+
+  @override
+  String get open_source_licenses => 'Open Source Licenses';
+
+  @override
+  String get others => 'Others';
 }

@@ -2,6 +2,7 @@
   "@@locale": "zh",
   "language": "语言",
   "app_title": "Autonitor",
+  "app_description": "一个优于付费替代品的自由开源 Twitter 关注者分析应用。",
   "settings": "设置",
   "home": "首页",
   "data": "数据",
@@ -161,5 +162,16 @@
   "changes_since_last_update": "自上次以来的更改",
   "compare": "比较",
   "no_visible_changes": "与上次记录相比没有可见更改。",
-  "no_history_found": "未找到历史记录"
+  "no_history_found": "未找到历史记录",
+  "no_accounts_added": "未添加账号",
+  "about": "关于",
+  "version": "版本",
+  "author_on_twitter": "作者的 Twitter",
+  "source_code": "源代码",
+  "view_on_github": "在 GitHub 上查看",
+  "report_an_issue": "报告问题",
+  "feedback_and_suggestions": "反馈与建议",
+  "license": "许可证",
+  "open_source_licenses": "开源许可证",
+  "others": "其它"
 }

@@ -2,6 +2,7 @@
   "@@locale": "zh_TW",
   "language": "語言",
   "app_title": "Autonitor",
+  "app_description": "一個優於付費替代品的自由開源 Twitter 跟隨者分析App。",
   "settings": "設定",
   "home": "首頁",
   "data": "數據",
@@ -161,5 +162,16 @@
   "changes_since_last_update": "自上次以來的更改",
   "compare": "比較",
   "no_visible_changes": "與上次記錄相比沒有可見變更。",
-  "no_history_found": "未找到歷史紀錄"
+  "no_history_found": "未找到歷史紀錄",
+  "no_accounts_added": "未添加賬戶",
+  "about": "關於",
+  "version": "版本",
+  "source_code": "原始碼",
+  "view_on_github": "在 GitHub 上查看",
+  "report_an_issue": "回報問題",
+  "feedback_and_suggestions": "回饋與建議",
+  "license": "授權條款",
+  "open_source_licenses": "開源授權條款",
+  "author_on_twitter": "作者的 Twitter",
+  "others": "其它"
 }

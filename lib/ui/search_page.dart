@@ -390,17 +390,23 @@ class SearchPageState extends ConsumerState<SearchPage>
                     onTap: () async {
                       if (_activatingHeroId != null) return;
 
-                      if (_searchController.text.trim().isNotEmpty) {
+                      final searchTerm = _searchController.text.trim();
+                      if (searchTerm.isNotEmpty) {
                         ref
                             .read(searchHistoryProvider.notifier)
-                            .addSearchTerm(_searchController.text.trim());
+                            .addSearchTerm(searchTerm);
                       }
+
+                      // 在第一个 await 之前使用 context 是安全的
                       FocusScope.of(context).unfocus();
 
                       setState(() => _activatingHeroId = user.restId);
+
+                      // 异步间隙 1
                       await Future.delayed(const Duration(milliseconds: 16));
 
-                      if (!mounted) return;
+                      // 修复点：使用 context.mounted 守卫后续对 context 的使用
+                      if (!context.mounted) return;
 
                       await Navigator.push(
                         context,
@@ -413,8 +419,10 @@ class SearchPageState extends ConsumerState<SearchPage>
                         ),
                       );
 
+                      // 异步间隙 2 (从详情页返回后)
                       if (mounted) {
                         await Future.delayed(const Duration(milliseconds: 350));
+                        // 再次检查 mounted 确保 State 依然存在
                         if (mounted && _activatingHeroId == user.restId) {
                           setState(() => _activatingHeroId = null);
                         }

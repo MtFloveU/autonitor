@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'home_page.dart';
 import 'search_page.dart';
 import 'accounts_page.dart';
-import 'settings_page.dart';
+import 'settings/settings_page.dart';
 import '../l10n/app_localizations.dart';
 
 class MainScaffold extends StatefulWidget {

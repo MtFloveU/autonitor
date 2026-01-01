@@ -111,6 +111,12 @@ abstract class AppLocalizations {
   /// **'Autonitor'**
   String get app_title;
 
+  /// Description of the app
+  ///
+  /// In en, this message translates to:
+  /// **'A FOSS Twitter follower analysis app that outperforms paid alternatives.'**
+  String get app_description;
+
   /// No description provided for @settings.
   ///
   /// In en, this message translates to:
@@ -392,6 +398,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Log in Needed'**
   String get login_first;
+
+  /// No description provided for @no_accounts_added.
+  ///
+  /// In en, this message translates to:
+  /// **'No accounts added'**
+  String get no_accounts_added;
 
   /// No description provided for @login_first_description.
   ///
@@ -1070,6 +1082,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No History Found'**
   String get no_history_found;
+
+  /// No description provided for @about.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get about;
+
+  /// No description provided for @version.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get version;
+
+  /// No description provided for @author_on_twitter.
+  ///
+  /// In en, this message translates to:
+  /// **'Author on Twitter'**
+  String get author_on_twitter;
+
+  /// No description provided for @source_code.
+  ///
+  /// In en, this message translates to:
+  /// **'Source Code'**
+  String get source_code;
+
+  /// No description provided for @view_on_github.
+  ///
+  /// In en, this message translates to:
+  /// **'View on GitHub'**
+  String get view_on_github;
+
+  /// No description provided for @report_an_issue.
+  ///
+  /// In en, this message translates to:
+  /// **'Report an Issue'**
+  String get report_an_issue;
+
+  /// No description provided for @feedback_and_suggestions.
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback and Suggestions'**
+  String get feedback_and_suggestions;
+
+  /// No description provided for @license.
+  ///
+  /// In en, this message translates to:
+  /// **'License'**
+  String get license;
+
+  /// No description provided for @open_source_licenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Source Licenses'**
+  String get open_source_licenses;
+
+  /// No description provided for @others.
+  ///
+  /// In en, this message translates to:
+  /// **'Others'**
+  String get others;
 }
 
 class _AppLocalizationsDelegate

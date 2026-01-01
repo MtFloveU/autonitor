@@ -1065,59 +1065,45 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
       context,
     ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold);
 
-    return Stack(
-      children: [
-        SelectableText(
-          widget.user.name ?? "Unknown",
-          style: textStyle?.copyWith(color: Colors.transparent),
-          maxLines: null,
-        ),
-        IgnorePointer(
-          child: RichText(
-            softWrap: true,
-            text: TextSpan(
-              style: textStyle,
-              children: [
-                TextSpan(text: widget.user.name),
-
-                if (widget.user.isVerified)
-                  WidgetSpan(
-                    alignment: PlaceholderAlignment.middle,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                      child: SvgPicture.asset(
-                        'assets/icon/verified.svg',
-                        width: 23,
-                        height: 23,
-                        colorFilter: const ColorFilter.mode(
-                          Color(0xFF1DA1F2),
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                    ),
+    return SelectableText.rich(
+      TextSpan(
+        style: textStyle,
+        children: [
+          TextSpan(text: widget.user.name ?? "Unknown"),
+          if (widget.user.isVerified)
+            WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                child: SvgPicture.asset(
+                  'assets/icon/verified.svg',
+                  width: 23,
+                  height: 23,
+                  colorFilter: const ColorFilter.mode(
+                    Color(0xFF1DA1F2),
+                    BlendMode.srcIn,
                   ),
-
-                if (widget.user.isProtected)
-                  WidgetSpan(
-                    alignment: PlaceholderAlignment.middle,
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 4.0),
-                      child: SvgPicture.asset(
-                        'assets/icon/protected.svg',
-                        width: 20,
-                        height: 20,
-                        colorFilter: ColorFilter.mode(
-                          Theme.of(context).colorScheme.onSurface,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
+                ),
+              ),
             ),
-          ),
-        ),
-      ],
+          if (widget.user.isProtected)
+            WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 4.0),
+                child: SvgPicture.asset(
+                  'assets/icon/protected.svg',
+                  width: 20,
+                  height: 20,
+                  colorFilter: ColorFilter.mode(
+                    Theme.of(context).colorScheme.onSurface,
+                    BlendMode.srcIn,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
