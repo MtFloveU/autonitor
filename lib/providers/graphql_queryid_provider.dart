@@ -196,6 +196,11 @@ class GqlQueryIdNotifier extends StateNotifier<GqlQueryIdState> {
           ),
           backgroundColor: theme.colorScheme.error,
           duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(12),
         ),
       );
 

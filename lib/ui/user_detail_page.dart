@@ -114,6 +114,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(AppLocalizations.of(context)!.no_history_found),
+            behavior: SnackBarBehavior.floating,
           ),
         );
         return;
@@ -1377,6 +1378,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
               Navigator.pop(dialogContext);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
+                  behavior: SnackBarBehavior.floating,
                   content: Text(
                     l10n.copied_to_clipboard,
                     style: TextStyle(

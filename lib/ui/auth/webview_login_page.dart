@@ -55,9 +55,12 @@ class _WebViewLoginPageState extends State<WebViewLoginPage> {
       if (gotCookies.isEmpty) {
         if (!mounted) return;
         final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.no_cookie_found)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.no_cookie_found),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
         return;
       }
 
@@ -68,9 +71,12 @@ class _WebViewLoginPageState extends State<WebViewLoginPage> {
       if (!hasAuthToken) {
         if (!mounted) return;
         final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.no_auth_token_found)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.no_auth_token_found),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
         return;
       }
 
@@ -122,9 +128,9 @@ class _WebViewLoginPageState extends State<WebViewLoginPage> {
       } // 关闭加载圈
       if (mounted) {
         // 其他未预料到的错误仍会在这里显示
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("$e")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("$e"), behavior: SnackBarBehavior.floating),
+        );
       }
     }
   }

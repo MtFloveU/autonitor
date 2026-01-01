@@ -212,6 +212,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
             content: Text(AppLocalizations.of(context)!.image_saved),
             backgroundColor: Theme.of(context).colorScheme.primary,
             duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -222,6 +223,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
             content: Text('${AppLocalizations.of(context)!.save_error}$e'),
             backgroundColor: Theme.of(context).colorScheme.error,
             duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
