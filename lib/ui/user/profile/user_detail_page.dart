@@ -32,7 +32,7 @@ class UserDetailPage extends ConsumerStatefulWidget {
   final String ownerId;
   final bool isFromHistory;
   final String? snapshotJson;
-  final int? snapshotId;
+  final String? snapshotId;
   final DateTime? snapshotTimestamp;
   final String? heroTag;
 

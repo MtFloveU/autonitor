@@ -60,11 +60,11 @@ extension _UserDetailPageMiscWidgets on _UserDetailPageState {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
       child: Text(
-        "Snapshot ID: ${widget.snapshotId}\nTimestamp: ${widget.snapshotTimestamp!.toLocal()}",
+        "RUN ID: ${widget.snapshotId}\n${DateFormat.yMd().add_Hms().format(DateTime.fromMillisecondsSinceEpoch(widget.snapshotTimestamp!.millisecondsSinceEpoch))} ",
         textAlign: TextAlign.center,
-        style: Theme.of(
-          context,
-        ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.outline,
+        ),
       ),
     );
   }

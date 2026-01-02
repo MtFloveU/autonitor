@@ -42,8 +42,9 @@ class LogViewerPage extends ConsumerWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                TextButton(
-                  child: Text(l10n.copy),
+                TextButton.icon(
+                  icon: const Icon(Icons.copy),
+                  label: Text(l10n.copy),
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: logText));
                     ScaffoldMessenger.of(context).showSnackBar(

@@ -1,4 +1,5 @@
 import 'package:autonitor/ui/components/user_avatar.dart';
+import 'package:intl/intl.dart';
 import '../providers/media_provider.dart';
 import 'package:autonitor/services/log_service.dart';
 import 'package:autonitor/ui/user/profile/user_detail_page.dart';
@@ -28,12 +29,9 @@ class _HomePageState extends ConsumerState<HomePage> {
     if (isoString.isEmpty) return l10n.last_updated_at("N/A");
     try {
       final dateTime = DateTime.parse(isoString).toLocal();
-      final formattedDate =
-          "${dateTime.year.toString().padLeft(4, '0')}-"
-          "${dateTime.month.toString().padLeft(2, '0')}-"
-          "${dateTime.day.toString().padLeft(2, '0')} "
-          "${dateTime.hour.toString().padLeft(2, '0')}:"
-          "${dateTime.minute.toString().padLeft(2, '0')}";
+      final formattedDate = DateFormat.yMd().add_Hms().format(
+        DateTime.fromMillisecondsSinceEpoch(dateTime.millisecondsSinceEpoch),
+      );
       return l10n.last_updated_at(formattedDate);
     } catch (e, s) {
       logger.e("Error parsing lastUpdateTime: $e", error: e, stackTrace: s);
@@ -223,7 +221,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     final activeAccount = ref.watch(activeAccountProvider);
 
     return ListView(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 88.0),
       children: <Widget>[
         Card(
           clipBehavior: Clip.antiAlias,
@@ -458,15 +456,61 @@ class _HomePageState extends ConsumerState<HomePage> {
             ],
           ),
         ),
-        const SizedBox(height: 80),
+        const SizedBox(height: 20),
         Padding(
           padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),
           child: Center(
-            child: Text(
-              '${_getFormattedLastUpdate(context, l10n, cache.lastUpdateTime)} ${cache.lastRunId}',
-              style: Theme.of(
+            child: Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              color: Theme.of(
                 context,
-              ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
+              ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  // TODO:在此处添加点击逻辑
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
+                  ),
+                  // 使用 ConstrainedBox 限制最大宽度，防止卡片在超大屏上过宽
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width * 0.85,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min, // 紧凑布局
+                      children: [
+                        // 使用 Flexible 防止文本过长导致溢出
+                        Flexible(
+                          child: Text(
+                            '${_getFormattedLastUpdate(context, l10n, cache.lastUpdateTime)} ${cache.lastRunId}',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+
+                        Icon(
+                          Icons.chevron_right,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ),

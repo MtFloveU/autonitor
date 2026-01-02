@@ -4,6 +4,7 @@ import 'package:autonitor/ui/user/user_list_page.dart';
 import 'package:diff_match_patch/diff_match_patch.dart' as diff_utils;
 import 'package:flutter/material.dart';
 import 'package:autonitor/models/twitter_user.dart';
+import 'package:intl/intl.dart';
 
 class ProfileChangeCard extends StatelessWidget {
   final String jsonContent;
@@ -178,7 +179,7 @@ class ProfileChangeCard extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Text(
-                          _formatTimestamp(timestamp),
+                          _formatTimestamp(),
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: theme.colorScheme.outline,
                             fontSize: 11,
@@ -196,9 +197,9 @@ class ProfileChangeCard extends StatelessWidget {
     );
   }
 
-  String _formatTimestamp(DateTime dt) =>
-      "${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} "
-      "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
+  String _formatTimestamp() => DateFormat.yMd().add_Hms().format(
+    DateTime.fromMillisecondsSinceEpoch(timestamp.millisecondsSinceEpoch),
+  );
 
   Widget _buildDiffRow(BuildContext context, String field, dynamic changeData) {
     final l10n = AppLocalizations.of(context)!;

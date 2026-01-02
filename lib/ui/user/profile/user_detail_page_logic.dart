@@ -222,8 +222,9 @@ extension _UserDetailPageLogic on _UserDetailPageState {
           ),
         ),
         actions: <Widget>[
-          TextButton(
-            child: Text(l10n.copy),
+          TextButton.icon(
+            icon: const Icon(Icons.copy),
+            label: Text(l10n.copy),
             onPressed: () {
               Clipboard.setData(ClipboardData(text: formattedJson));
               Navigator.pop(dialogContext);

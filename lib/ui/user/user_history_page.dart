@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:autonitor/providers/media_provider.dart';
 import 'package:autonitor/providers/history_provider.dart';
 import 'package:autonitor/ui/user/profile/user_detail_page.dart';
+import 'package:intl/intl.dart';
 import '../../models/twitter_user.dart';
 import '../../l10n/app_localizations.dart';
 import 'user_list_page.dart';
@@ -253,7 +254,7 @@ class _HistoryItem extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
           child: Text(
-            "RUN ID: ${snapshot.entry.runId ?? 'N/A'}  (${snapshot.entry.timestamp.toLocal().toString().substring(0, 16)})",
+            "RUN ID: ${snapshot.entry.runId ?? 'N/A'}  (${DateFormat.yMd().add_Hms().format(DateTime.fromMillisecondsSinceEpoch(snapshot.entry.timestamp.millisecondsSinceEpoch))})",
             style: TextStyle(
               color: Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.bold,
@@ -344,7 +345,7 @@ class _HistoryItem extends StatelessWidget {
             ownerId: ownerId,
             isFromHistory: true,
             snapshotJson: snapshot.fullJson,
-            snapshotId: snapshot.entry.id,
+            snapshotId: snapshot.entry.runId,
             snapshotTimestamp: snapshot.entry.timestamp,
             heroTag: isExpanded ? '${uniqueHeroTag}_expanded' : uniqueHeroTag,
           ),
