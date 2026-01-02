@@ -126,11 +126,16 @@ void _historyIsolateEntry(SendPort replyToMain) {
   });
 }
 
-// 具体回溯逻辑实现
+// --- Core Logic ---
+
 List<Map<String, dynamic>> _extractFieldHistory(Map<String, dynamic> context) {
   final String latestRawJson = context['latestRawJson'];
   final List<dynamic> historyEntries = context['historyEntries'];
   final String targetKey = context['targetKey'];
+  // [修复] 使用 Repository 注入的业务时间作为当前锚点
+  final int currentTs =
+      context['currentStateTimestampMs'] ??
+      DateTime.now().millisecondsSinceEpoch;
 
   List<Map<String, dynamic>> series = [];
   Map<String, dynamic> stateCursor;
@@ -140,14 +145,12 @@ List<Map<String, dynamic>> _extractFieldHistory(Map<String, dynamic> context) {
     return [];
   }
 
-  // 记录当前最新状态点
   series.add({
-    'timestamp': DateTime.now().millisecondsSinceEpoch,
+    'timestamp': currentTs,
     'value':
         (double.tryParse(stateCursor[targetKey]?.toString() ?? '0') ?? 0.0),
   });
 
-  // 逆向迭代历史，恢复每一个时间点的状态
   for (var entry in historyEntries) {
     final Map<String, dynamic> entryMap = entry as Map<String, dynamic>;
     final reverseDiffJson = entryMap['reverseDiffJson'] as String;
@@ -159,7 +162,6 @@ List<Map<String, dynamic>> _extractFieldHistory(Map<String, dynamic> context) {
       patch = {};
     }
 
-    // 应用逆向补丁回到前一个状态
     stateCursor = _applyReversePatchInline(stateCursor, patch) ?? stateCursor;
 
     series.add({
@@ -169,74 +171,9 @@ List<Map<String, dynamic>> _extractFieldHistory(Map<String, dynamic> context) {
     });
   }
 
-  // 返回按时间正序排列的数据（从旧到新）
   return series.reversed.toList();
 }
 
-// --- 过滤配置 ---
-const Set<String> _textKeys = {
-  "name",
-  "screen_name",
-  "bio",
-  "location",
-  "link",
-  "url",
-};
-final Set<String> _relevantKeys = _textKeys.union({"avatar_url", "banner_url"});
-
-Map<String, dynamic>? _findLatestRelevantDiff(Map<String, dynamic> context) {
-  final String latestRawJson = context['latestRawJson'];
-  final List<dynamic> historyEntries = context['historyEntries'];
-
-  if (historyEntries.isEmpty) return null;
-
-  Map<String, dynamic> stateCurrent;
-  try {
-    stateCurrent = jsonDecode(latestRawJson);
-  } catch (_) {
-    return null;
-  }
-
-  // 这里的 stateTarget 就是我们想在 Detail Page 展示的"当前"状态 (T)
-  // 我们要一直回溯，直到找到一个 statePrev (T-k)，使得 T vs T-k 有实质差异
-  final Map<String, dynamic> stateTarget = Map.from(stateCurrent);
-
-  for (int i = 0; i < historyEntries.length; i++) {
-    final entryMap = historyEntries[i] as Map<String, dynamic>;
-    final reverseDiffJson = entryMap['reverseDiffJson'] as String;
-
-    Map<String, dynamic> patchToPrev;
-    try {
-      patchToPrev = jsonDecode(reverseDiffJson) as Map<String, dynamic>;
-    } catch (_) {
-      patchToPrev = {};
-    }
-
-    // 回滚得到旧状态
-    final statePrev =
-        _applyReversePatchInline(stateCurrent, patchToPrev) ?? stateCurrent;
-
-    // 对比 Target (最新) 和 Prev (回滚后)
-    final diff = _computeForwardDiff(statePrev, stateTarget);
-
-    if (diff.isNotEmpty) {
-      // 找到了！说明从 statePrev 到 stateTarget 发生了重要变更。
-      // 我们返回这个 Diff 和 Target State
-      return {
-        'diffJson': jsonEncode(diff),
-        'fullJson': jsonEncode(stateTarget),
-        'timestampMs': entryMap['timestampMs'], // 这是产生变更的那次记录的时间
-      };
-    }
-
-    // 如果 Diff 为空 (例如只变了 followers)，继续回滚
-    stateCurrent = statePrev;
-  }
-
-  return null; // 没有找到任何有效变更（可能全是无效变更，或者没有历史）
-}
-
-// --- 核心逻辑 ---
 Map<String, dynamic> _processHistory(Map<String, dynamic> context) {
   final String userId = context['userId'];
   final String latestRawJson = context['latestRawJson'];
@@ -244,25 +181,20 @@ Map<String, dynamic> _processHistory(Map<String, dynamic> context) {
   final List<dynamic> mediaHistory = context['mediaHistory'];
   final int page = context['page'] as int? ?? 1;
   final int pageSize = context['pageSize'] as int? ?? 20;
+  final String? filterField = context['filterField'];
 
   if (historyEntries.isEmpty) {
     return {'total': 0, 'items': []};
   }
 
-  // 1. [第一步] 重建完整的时间线快照 (Timeline Reconstruction)
-  // 我们先生成所有的状态点，暂不考虑过滤，确立完整的时间轴
-  // Snapshots: [Current, T-1, T-2, ..., Genesis]
+  // 1. 重建完整时间线节点
   List<_SnapshotNode> timeline = [];
-
   Map<String, dynamic> stateCursor;
   try {
     stateCursor = jsonDecode(latestRawJson);
   } catch (_) {
     return {'total': 0, 'items': []};
   }
-
-  // 当前最新状态不放入历史列表，但它是去重的基准
-  // timeline.add(...) // 不添加 Current
 
   for (int i = 0; i < historyEntries.length; i++) {
     final entryMap = historyEntries[i] as Map<String, dynamic>;
@@ -275,42 +207,35 @@ Map<String, dynamic> _processHistory(Map<String, dynamic> context) {
       patchToPrev = {};
     }
 
-    // 回滚到上一刻状态
+    // 回溯状态
     final statePrev =
         _applyReversePatchInline(stateCursor, patchToPrev) ?? stateCursor;
 
-    // 记录这个快照
     timeline.add(
       _SnapshotNode(
         entryId: entryMap['id'] as int,
+        // [修复] 捕获 runId
+        runId: entryMap['runId'] as String?,
         timestampMs: entryMap['timestampMs'] as int,
         data: statePrev,
       ),
     );
 
-    // 迭代
     stateCursor = statePrev;
   }
 
-  // 2. [第二步] 基于内容的去重 (Content-based Deduplication)
-  // 我们只保留那些与"上一个保留节点"在 _relevantKeys 上有差异的节点。
-  // 对于历史列表，"上一个保留节点"初始就是 Current State (也就是 latestRawJson)
-
+  // 2. 基于内容的去重/过滤
   Map<String, dynamic> lastKeptData = jsonDecode(latestRawJson);
   List<_SnapshotNode> validSnapshots = [];
 
   for (final node in timeline) {
-    if (_hasRelevantDiff(lastKeptData, node.data)) {
+    if (_hasRelevantDiff(lastKeptData, node.data, filterField: filterField)) {
       validSnapshots.add(node);
-      lastKeptData = node.data; // 更新基准
+      lastKeptData = node.data;
     }
-    // 如果没有差异 (例如只变了 followers)，则丢弃该节点，基准保持不变
-    // 这样如果 Genesis 和 Current 一模一样，Genesis 也会被丢弃，完美修复了你的 Bug。
   }
 
-  // 3. [第三步] 计算 Diff 并生成结果
-  // 对于保留下来的节点 S_i，它的 Diff 应该是 S_{i+1} (更旧的有效节点) -> S_i
-
+  // 3. 生成结果
   List<Map<String, dynamic>> results = [];
 
   for (int i = 0; i < validSnapshots.length; i++) {
@@ -319,16 +244,13 @@ Map<String, dynamic> _processHistory(Map<String, dynamic> context) {
 
     Map<String, dynamic> diffMap = {};
 
-    // 寻找更旧的有效节点来计算 Diff
     if (i + 1 < validSnapshots.length) {
       final olderData = validSnapshots[i + 1].data;
       diffMap = _computeForwardDiff(olderData, currentData);
     } else {
-      // 这是一个 Genesis 节点 (最旧的有效节点)
       diffMap = _computeForwardDiff({}, currentData);
     }
 
-    // 注入媒体路径 & 构造 User Map (保持原有逻辑)
     final snapshotTimestamp = DateTime.fromMillisecondsSinceEpoch(
       currentParams.timestampMs,
     );
@@ -364,13 +286,15 @@ Map<String, dynamic> _processHistory(Map<String, dynamic> context) {
 
     results.add({
       'entryId': currentParams.entryId,
+      // [修复] 返回 runId
+      'runId': currentParams.runId,
+      'timestampMs': currentParams.timestampMs,
       'fullJson': jsonEncode(currentData),
       'userMap': userMap,
       'diffJson': jsonEncode(diffMap),
     });
   }
 
-  // 4. [第四步] 内存分页
   final int totalCount = results.length;
   final int startIndex = (page - 1) * pageSize;
 
@@ -384,22 +308,49 @@ Map<String, dynamic> _processHistory(Map<String, dynamic> context) {
   return {'total': totalCount, 'items': pagedItems};
 }
 
-// --- 内部类 ---
+// --- Data Structures ---
+
 class _SnapshotNode {
   final int entryId;
+  // [修复] 增加 runId 字段
+  final String? runId;
   final int timestampMs;
   final Map<String, dynamic> data;
   _SnapshotNode({
     required this.entryId,
+    this.runId,
     required this.timestampMs,
     required this.data,
   });
 }
 
-// --- 辅助函数 ---
+// --- Helpers ---
 
-// [新增] 检查两个 Map 在 relevantKeys 上是否有差异
-bool _hasRelevantDiff(Map<String, dynamic> a, Map<String, dynamic> b) {
+const Set<String> _textKeys = {
+  "name",
+  "screen_name",
+  "bio",
+  "location",
+  "link",
+  "url",
+};
+final Set<String> _relevantKeys = _textKeys.union({"avatar_url", "banner_url"});
+
+bool _hasRelevantDiff(
+  Map<String, dynamic> a,
+  Map<String, dynamic> b, {
+  String? filterField,
+}) {
+  // [修复] 精准过滤逻辑
+  if (filterField != null) {
+    final valA = a[filterField];
+    final valB = b[filterField];
+    if ((valA == null || valA == "") && (valB == null || valB == "")) {
+      return false;
+    }
+    return valA != valB;
+  }
+
   for (final key in _relevantKeys) {
     final valA = a[key];
     final valB = b[key];
@@ -425,6 +376,51 @@ Map<String, dynamic> _computeForwardDiff(
     }
   }
   return diff;
+}
+
+Map<String, dynamic>? _findLatestRelevantDiff(Map<String, dynamic> context) {
+  final String latestRawJson = context['latestRawJson'];
+  final List<dynamic> historyEntries = context['historyEntries'];
+
+  if (historyEntries.isEmpty) return null;
+
+  Map<String, dynamic> stateCurrent;
+  try {
+    stateCurrent = jsonDecode(latestRawJson);
+  } catch (_) {
+    return null;
+  }
+
+  final Map<String, dynamic> stateTarget = Map.from(stateCurrent);
+
+  for (int i = 0; i < historyEntries.length; i++) {
+    final entryMap = historyEntries[i] as Map<String, dynamic>;
+    final reverseDiffJson = entryMap['reverseDiffJson'] as String;
+
+    Map<String, dynamic> patchToPrev;
+    try {
+      patchToPrev = jsonDecode(reverseDiffJson) as Map<String, dynamic>;
+    } catch (_) {
+      patchToPrev = {};
+    }
+
+    final statePrev =
+        _applyReversePatchInline(stateCurrent, patchToPrev) ?? stateCurrent;
+
+    final diff = _computeForwardDiff(statePrev, stateTarget);
+
+    if (diff.isNotEmpty) {
+      return {
+        'diffJson': jsonEncode(diff),
+        'fullJson': jsonEncode(stateTarget),
+        'timestampMs': entryMap['timestampMs'],
+      };
+    }
+
+    stateCurrent = statePrev;
+  }
+
+  return null;
 }
 
 Map<String, dynamic> _constructUserMap({

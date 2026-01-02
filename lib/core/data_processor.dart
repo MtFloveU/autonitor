@@ -1,3 +1,5 @@
+import 'package:autonitor/providers/runid_provider.dart';
+
 import 'database_updater.dart';
 import 'media_processor.dart';
 import 'network_data_fetcher.dart';
@@ -78,7 +80,7 @@ class DataProcessor {
       log: _log,
     );
 
-    _databaseUpdater = DatabaseUpdater(database: _database, log: _log);
+    _databaseUpdater = DatabaseUpdater(database: _database);
   }
 
   Future<void> _refreshOwnerProfile() async {
@@ -118,14 +120,22 @@ class DataProcessor {
 
   Future<void> runFullProcess() async {
     _log("Starting analysis process for account ID: $_ownerId...");
+
+    // [New Logic] 1. Generate and Verify RunID
+    final runIdService = _ref.read(runIdProvider);
+
+    // 生成 ID (Provider 内部已包含防重逻辑)
+    final currentRunId = await runIdService.generateUniqueRunId();
+    _log("Generated unique RunID: $currentRunId");
+
     try {
-      // 1. Refresh Owner Profile
+      // 2. Refresh Owner Profile
       await _refreshOwnerProfile();
 
-      // 2. Initialize Dependencies
+      // 3. Initialize Dependencies
       await _initDependencies();
 
-      // 3. Get Old Data from Database
+      // 4. Get Old Data from Database
       _log("Fetching old relationships from database...");
       final oldRelationsList = await _database.getNetworkRelationships(
         _ownerId,
@@ -135,13 +145,13 @@ class DataProcessor {
       };
       _log("Found ${oldRelationsMap.length} existing relationships.");
 
-      // 4. Fetch New Network Data (Delegated)
+      // 5. Fetch New Network Data (Delegated)
       final networkData = await _networkFetcher.fetchAllNetworkData();
       _log(
         "Finished fetching. Total unique users: ${networkData.uniqueUsers.length}",
       );
 
-      // 5. Analyze Changes (Delegated)
+      // 6. Analyze Changes (Delegated)
       final analysisResult = await _relationshipAnalyzer.analyze(
         oldRelationsMap: oldRelationsMap,
         networkData: networkData,
@@ -153,14 +163,14 @@ class DataProcessor {
       );
       _log("Generated ${analysisResult.reports.length} change reports.");
 
-      // 6. Process Media (Delegated)
+      // 7. Process Media (Delegated)
       final mediaResult = await _mediaProcessor.processMedia(
         newUsers: networkData.uniqueUsers,
         oldRelations: oldRelationsMap,
       );
       _log("Finished downloading ${mediaResult.newDownloadCount} images.");
 
-      // 7. Save to Database (Delegated)
+      // 8. Save to Database (Delegated)
       _log("Writing changes to database...");
       await _databaseUpdater.saveChanges(
         ownerId: _ownerId,
@@ -168,12 +178,15 @@ class DataProcessor {
         analysisResult: analysisResult,
         mediaResult: mediaResult,
         oldRelationsMap: oldRelationsMap,
+        currentRunId: currentRunId, // [Pass] Inject current RunID
       );
 
+      // 9. Record Sync Log
       _log("Recording sync log...");
       await _databaseUpdater.insertSyncLog(
+        runId: currentRunId, // [Pass] Use the pre-generated ID
         ownerId: _ownerId,
-        status: 1,
+        status: 1, // 1 for Success
         timestamp: DateTime.now(),
       );
 

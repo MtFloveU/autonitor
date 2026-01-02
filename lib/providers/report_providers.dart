@@ -91,6 +91,7 @@ final cacheProvider = FutureProvider.autoDispose<CacheData?>((ref) async {
       temporarilyRestrictedCount: categoryCounts['temporarily_restricted'] ?? 0,
       recoveredCount: categoryCounts['recovered'] ?? 0,
       profileUpdatedCount: categoryCounts['profile_update'] ?? 0,
+      lastRunId: latestLog?.runId ?? '',
     );
   } catch (e, s) {
     logger.e(

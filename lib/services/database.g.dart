@@ -1578,6 +1578,15 @@ class $FollowUsersTable extends FollowUsers
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _runIdMeta = const VerificationMeta('runId');
+  @override
+  late final GeneratedColumn<String> runId = GeneratedColumn<String>(
+    'run_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _isFollowerMeta = const VerificationMeta(
     'isFollower',
   );
@@ -1642,6 +1651,7 @@ class $FollowUsersTable extends FollowUsers
     bio,
     avatarLocalPath,
     bannerLocalPath,
+    runId,
     isFollower,
     isFollowing,
     followerSort,
@@ -1732,6 +1742,12 @@ class $FollowUsersTable extends FollowUsers
         ),
       );
     }
+    if (data.containsKey('run_id')) {
+      context.handle(
+        _runIdMeta,
+        runId.isAcceptableOrUnknown(data['run_id']!, _runIdMeta),
+      );
+    }
     if (data.containsKey('is_follower')) {
       context.handle(
         _isFollowerMeta,
@@ -1814,6 +1830,10 @@ class $FollowUsersTable extends FollowUsers
         DriftSqlType.string,
         data['${effectivePrefix}banner_local_path'],
       ),
+      runId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}run_id'],
+      ),
       isFollower: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}is_follower'],
@@ -1850,6 +1870,7 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
   final String? bio;
   final String? avatarLocalPath;
   final String? bannerLocalPath;
+  final String? runId;
   final bool isFollower;
   final bool isFollowing;
   final int? followerSort;
@@ -1865,6 +1886,7 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
     this.bio,
     this.avatarLocalPath,
     this.bannerLocalPath,
+    this.runId,
     required this.isFollower,
     required this.isFollowing,
     this.followerSort,
@@ -1898,6 +1920,9 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
     }
     if (!nullToAbsent || bannerLocalPath != null) {
       map['banner_local_path'] = Variable<String>(bannerLocalPath);
+    }
+    if (!nullToAbsent || runId != null) {
+      map['run_id'] = Variable<String>(runId);
     }
     map['is_follower'] = Variable<bool>(isFollower);
     map['is_following'] = Variable<bool>(isFollowing);
@@ -1934,6 +1959,9 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
       bannerLocalPath: bannerLocalPath == null && nullToAbsent
           ? const Value.absent()
           : Value(bannerLocalPath),
+      runId: runId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(runId),
       isFollower: Value(isFollower),
       isFollowing: Value(isFollowing),
       followerSort: followerSort == null && nullToAbsent
@@ -1961,6 +1989,7 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
       bio: serializer.fromJson<String?>(json['bio']),
       avatarLocalPath: serializer.fromJson<String?>(json['avatarLocalPath']),
       bannerLocalPath: serializer.fromJson<String?>(json['bannerLocalPath']),
+      runId: serializer.fromJson<String?>(json['runId']),
       isFollower: serializer.fromJson<bool>(json['isFollower']),
       isFollowing: serializer.fromJson<bool>(json['isFollowing']),
       followerSort: serializer.fromJson<int?>(json['followerSort']),
@@ -1981,6 +2010,7 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
       'bio': serializer.toJson<String?>(bio),
       'avatarLocalPath': serializer.toJson<String?>(avatarLocalPath),
       'bannerLocalPath': serializer.toJson<String?>(bannerLocalPath),
+      'runId': serializer.toJson<String?>(runId),
       'isFollower': serializer.toJson<bool>(isFollower),
       'isFollowing': serializer.toJson<bool>(isFollowing),
       'followerSort': serializer.toJson<int?>(followerSort),
@@ -1999,6 +2029,7 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
     Value<String?> bio = const Value.absent(),
     Value<String?> avatarLocalPath = const Value.absent(),
     Value<String?> bannerLocalPath = const Value.absent(),
+    Value<String?> runId = const Value.absent(),
     bool? isFollower,
     bool? isFollowing,
     Value<int?> followerSort = const Value.absent(),
@@ -2020,6 +2051,7 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
     bannerLocalPath: bannerLocalPath.present
         ? bannerLocalPath.value
         : this.bannerLocalPath,
+    runId: runId.present ? runId.value : this.runId,
     isFollower: isFollower ?? this.isFollower,
     isFollowing: isFollowing ?? this.isFollowing,
     followerSort: followerSort.present ? followerSort.value : this.followerSort,
@@ -2047,6 +2079,7 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
       bannerLocalPath: data.bannerLocalPath.present
           ? data.bannerLocalPath.value
           : this.bannerLocalPath,
+      runId: data.runId.present ? data.runId.value : this.runId,
       isFollower: data.isFollower.present
           ? data.isFollower.value
           : this.isFollower,
@@ -2075,6 +2108,7 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
           ..write('bio: $bio, ')
           ..write('avatarLocalPath: $avatarLocalPath, ')
           ..write('bannerLocalPath: $bannerLocalPath, ')
+          ..write('runId: $runId, ')
           ..write('isFollower: $isFollower, ')
           ..write('isFollowing: $isFollowing, ')
           ..write('followerSort: $followerSort, ')
@@ -2095,6 +2129,7 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
     bio,
     avatarLocalPath,
     bannerLocalPath,
+    runId,
     isFollower,
     isFollowing,
     followerSort,
@@ -2114,6 +2149,7 @@ class FollowUser extends DataClass implements Insertable<FollowUser> {
           other.bio == this.bio &&
           other.avatarLocalPath == this.avatarLocalPath &&
           other.bannerLocalPath == this.bannerLocalPath &&
+          other.runId == this.runId &&
           other.isFollower == this.isFollower &&
           other.isFollowing == this.isFollowing &&
           other.followerSort == this.followerSort &&
@@ -2131,6 +2167,7 @@ class FollowUsersCompanion extends UpdateCompanion<FollowUser> {
   final Value<String?> bio;
   final Value<String?> avatarLocalPath;
   final Value<String?> bannerLocalPath;
+  final Value<String?> runId;
   final Value<bool> isFollower;
   final Value<bool> isFollowing;
   final Value<int?> followerSort;
@@ -2147,6 +2184,7 @@ class FollowUsersCompanion extends UpdateCompanion<FollowUser> {
     this.bio = const Value.absent(),
     this.avatarLocalPath = const Value.absent(),
     this.bannerLocalPath = const Value.absent(),
+    this.runId = const Value.absent(),
     this.isFollower = const Value.absent(),
     this.isFollowing = const Value.absent(),
     this.followerSort = const Value.absent(),
@@ -2164,6 +2202,7 @@ class FollowUsersCompanion extends UpdateCompanion<FollowUser> {
     this.bio = const Value.absent(),
     this.avatarLocalPath = const Value.absent(),
     this.bannerLocalPath = const Value.absent(),
+    this.runId = const Value.absent(),
     this.isFollower = const Value.absent(),
     this.isFollowing = const Value.absent(),
     this.followerSort = const Value.absent(),
@@ -2182,6 +2221,7 @@ class FollowUsersCompanion extends UpdateCompanion<FollowUser> {
     Expression<String>? bio,
     Expression<String>? avatarLocalPath,
     Expression<String>? bannerLocalPath,
+    Expression<String>? runId,
     Expression<bool>? isFollower,
     Expression<bool>? isFollowing,
     Expression<int>? followerSort,
@@ -2199,6 +2239,7 @@ class FollowUsersCompanion extends UpdateCompanion<FollowUser> {
       if (bio != null) 'bio': bio,
       if (avatarLocalPath != null) 'avatar_local_path': avatarLocalPath,
       if (bannerLocalPath != null) 'banner_local_path': bannerLocalPath,
+      if (runId != null) 'run_id': runId,
       if (isFollower != null) 'is_follower': isFollower,
       if (isFollowing != null) 'is_following': isFollowing,
       if (followerSort != null) 'follower_sort': followerSort,
@@ -2218,6 +2259,7 @@ class FollowUsersCompanion extends UpdateCompanion<FollowUser> {
     Value<String?>? bio,
     Value<String?>? avatarLocalPath,
     Value<String?>? bannerLocalPath,
+    Value<String?>? runId,
     Value<bool>? isFollower,
     Value<bool>? isFollowing,
     Value<int?>? followerSort,
@@ -2235,6 +2277,7 @@ class FollowUsersCompanion extends UpdateCompanion<FollowUser> {
       bio: bio ?? this.bio,
       avatarLocalPath: avatarLocalPath ?? this.avatarLocalPath,
       bannerLocalPath: bannerLocalPath ?? this.bannerLocalPath,
+      runId: runId ?? this.runId,
       isFollower: isFollower ?? this.isFollower,
       isFollowing: isFollowing ?? this.isFollowing,
       followerSort: followerSort ?? this.followerSort,
@@ -2276,6 +2319,9 @@ class FollowUsersCompanion extends UpdateCompanion<FollowUser> {
     if (bannerLocalPath.present) {
       map['banner_local_path'] = Variable<String>(bannerLocalPath.value);
     }
+    if (runId.present) {
+      map['run_id'] = Variable<String>(runId.value);
+    }
     if (isFollower.present) {
       map['is_follower'] = Variable<bool>(isFollower.value);
     }
@@ -2307,6 +2353,7 @@ class FollowUsersCompanion extends UpdateCompanion<FollowUser> {
           ..write('bio: $bio, ')
           ..write('avatarLocalPath: $avatarLocalPath, ')
           ..write('bannerLocalPath: $bannerLocalPath, ')
+          ..write('runId: $runId, ')
           ..write('isFollower: $isFollower, ')
           ..write('isFollowing: $isFollowing, ')
           ..write('followerSort: $followerSort, ')
@@ -2367,6 +2414,15 @@ class $FollowUsersHistoryTable extends FollowUsersHistory
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _runIdMeta = const VerificationMeta('runId');
+  @override
+  late final GeneratedColumn<String> runId = GeneratedColumn<String>(
+    'run_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _timestampMeta = const VerificationMeta(
     'timestamp',
   );
@@ -2384,6 +2440,7 @@ class $FollowUsersHistoryTable extends FollowUsersHistory
     ownerId,
     userId,
     reverseDiffJson,
+    runId,
     timestamp,
   ];
   @override
@@ -2428,6 +2485,12 @@ class $FollowUsersHistoryTable extends FollowUsersHistory
     } else if (isInserting) {
       context.missing(_reverseDiffJsonMeta);
     }
+    if (data.containsKey('run_id')) {
+      context.handle(
+        _runIdMeta,
+        runId.isAcceptableOrUnknown(data['run_id']!, _runIdMeta),
+      );
+    }
     if (data.containsKey('timestamp')) {
       context.handle(
         _timestampMeta,
@@ -2461,6 +2524,10 @@ class $FollowUsersHistoryTable extends FollowUsersHistory
         DriftSqlType.string,
         data['${effectivePrefix}reverse_diff_json'],
       )!,
+      runId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}run_id'],
+      ),
       timestamp: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}timestamp'],
@@ -2480,12 +2547,14 @@ class FollowUserHistoryEntry extends DataClass
   final String ownerId;
   final String userId;
   final String reverseDiffJson;
+  final String? runId;
   final DateTime timestamp;
   const FollowUserHistoryEntry({
     required this.id,
     required this.ownerId,
     required this.userId,
     required this.reverseDiffJson,
+    this.runId,
     required this.timestamp,
   });
   @override
@@ -2495,6 +2564,9 @@ class FollowUserHistoryEntry extends DataClass
     map['owner_id'] = Variable<String>(ownerId);
     map['user_id'] = Variable<String>(userId);
     map['reverse_diff_json'] = Variable<String>(reverseDiffJson);
+    if (!nullToAbsent || runId != null) {
+      map['run_id'] = Variable<String>(runId);
+    }
     map['timestamp'] = Variable<DateTime>(timestamp);
     return map;
   }
@@ -2505,6 +2577,9 @@ class FollowUserHistoryEntry extends DataClass
       ownerId: Value(ownerId),
       userId: Value(userId),
       reverseDiffJson: Value(reverseDiffJson),
+      runId: runId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(runId),
       timestamp: Value(timestamp),
     );
   }
@@ -2519,6 +2594,7 @@ class FollowUserHistoryEntry extends DataClass
       ownerId: serializer.fromJson<String>(json['ownerId']),
       userId: serializer.fromJson<String>(json['userId']),
       reverseDiffJson: serializer.fromJson<String>(json['reverseDiffJson']),
+      runId: serializer.fromJson<String?>(json['runId']),
       timestamp: serializer.fromJson<DateTime>(json['timestamp']),
     );
   }
@@ -2530,6 +2606,7 @@ class FollowUserHistoryEntry extends DataClass
       'ownerId': serializer.toJson<String>(ownerId),
       'userId': serializer.toJson<String>(userId),
       'reverseDiffJson': serializer.toJson<String>(reverseDiffJson),
+      'runId': serializer.toJson<String?>(runId),
       'timestamp': serializer.toJson<DateTime>(timestamp),
     };
   }
@@ -2539,12 +2616,14 @@ class FollowUserHistoryEntry extends DataClass
     String? ownerId,
     String? userId,
     String? reverseDiffJson,
+    Value<String?> runId = const Value.absent(),
     DateTime? timestamp,
   }) => FollowUserHistoryEntry(
     id: id ?? this.id,
     ownerId: ownerId ?? this.ownerId,
     userId: userId ?? this.userId,
     reverseDiffJson: reverseDiffJson ?? this.reverseDiffJson,
+    runId: runId.present ? runId.value : this.runId,
     timestamp: timestamp ?? this.timestamp,
   );
   FollowUserHistoryEntry copyWithCompanion(FollowUsersHistoryCompanion data) {
@@ -2555,6 +2634,7 @@ class FollowUserHistoryEntry extends DataClass
       reverseDiffJson: data.reverseDiffJson.present
           ? data.reverseDiffJson.value
           : this.reverseDiffJson,
+      runId: data.runId.present ? data.runId.value : this.runId,
       timestamp: data.timestamp.present ? data.timestamp.value : this.timestamp,
     );
   }
@@ -2566,6 +2646,7 @@ class FollowUserHistoryEntry extends DataClass
           ..write('ownerId: $ownerId, ')
           ..write('userId: $userId, ')
           ..write('reverseDiffJson: $reverseDiffJson, ')
+          ..write('runId: $runId, ')
           ..write('timestamp: $timestamp')
           ..write(')'))
         .toString();
@@ -2573,7 +2654,7 @@ class FollowUserHistoryEntry extends DataClass
 
   @override
   int get hashCode =>
-      Object.hash(id, ownerId, userId, reverseDiffJson, timestamp);
+      Object.hash(id, ownerId, userId, reverseDiffJson, runId, timestamp);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2582,6 +2663,7 @@ class FollowUserHistoryEntry extends DataClass
           other.ownerId == this.ownerId &&
           other.userId == this.userId &&
           other.reverseDiffJson == this.reverseDiffJson &&
+          other.runId == this.runId &&
           other.timestamp == this.timestamp);
 }
 
@@ -2591,12 +2673,14 @@ class FollowUsersHistoryCompanion
   final Value<String> ownerId;
   final Value<String> userId;
   final Value<String> reverseDiffJson;
+  final Value<String?> runId;
   final Value<DateTime> timestamp;
   const FollowUsersHistoryCompanion({
     this.id = const Value.absent(),
     this.ownerId = const Value.absent(),
     this.userId = const Value.absent(),
     this.reverseDiffJson = const Value.absent(),
+    this.runId = const Value.absent(),
     this.timestamp = const Value.absent(),
   });
   FollowUsersHistoryCompanion.insert({
@@ -2604,6 +2688,7 @@ class FollowUsersHistoryCompanion
     required String ownerId,
     required String userId,
     required String reverseDiffJson,
+    this.runId = const Value.absent(),
     required DateTime timestamp,
   }) : ownerId = Value(ownerId),
        userId = Value(userId),
@@ -2614,6 +2699,7 @@ class FollowUsersHistoryCompanion
     Expression<String>? ownerId,
     Expression<String>? userId,
     Expression<String>? reverseDiffJson,
+    Expression<String>? runId,
     Expression<DateTime>? timestamp,
   }) {
     return RawValuesInsertable({
@@ -2621,6 +2707,7 @@ class FollowUsersHistoryCompanion
       if (ownerId != null) 'owner_id': ownerId,
       if (userId != null) 'user_id': userId,
       if (reverseDiffJson != null) 'reverse_diff_json': reverseDiffJson,
+      if (runId != null) 'run_id': runId,
       if (timestamp != null) 'timestamp': timestamp,
     });
   }
@@ -2630,6 +2717,7 @@ class FollowUsersHistoryCompanion
     Value<String>? ownerId,
     Value<String>? userId,
     Value<String>? reverseDiffJson,
+    Value<String?>? runId,
     Value<DateTime>? timestamp,
   }) {
     return FollowUsersHistoryCompanion(
@@ -2637,6 +2725,7 @@ class FollowUsersHistoryCompanion
       ownerId: ownerId ?? this.ownerId,
       userId: userId ?? this.userId,
       reverseDiffJson: reverseDiffJson ?? this.reverseDiffJson,
+      runId: runId ?? this.runId,
       timestamp: timestamp ?? this.timestamp,
     );
   }
@@ -2656,6 +2745,9 @@ class FollowUsersHistoryCompanion
     if (reverseDiffJson.present) {
       map['reverse_diff_json'] = Variable<String>(reverseDiffJson.value);
     }
+    if (runId.present) {
+      map['run_id'] = Variable<String>(runId.value);
+    }
     if (timestamp.present) {
       map['timestamp'] = Variable<DateTime>(timestamp.value);
     }
@@ -2669,6 +2761,7 @@ class FollowUsersHistoryCompanion
           ..write('ownerId: $ownerId, ')
           ..write('userId: $userId, ')
           ..write('reverseDiffJson: $reverseDiffJson, ')
+          ..write('runId: $runId, ')
           ..write('timestamp: $timestamp')
           ..write(')'))
         .toString();
@@ -5007,6 +5100,7 @@ typedef $$FollowUsersTableCreateCompanionBuilder =
       Value<String?> bio,
       Value<String?> avatarLocalPath,
       Value<String?> bannerLocalPath,
+      Value<String?> runId,
       Value<bool> isFollower,
       Value<bool> isFollowing,
       Value<int?> followerSort,
@@ -5025,6 +5119,7 @@ typedef $$FollowUsersTableUpdateCompanionBuilder =
       Value<String?> bio,
       Value<String?> avatarLocalPath,
       Value<String?> bannerLocalPath,
+      Value<String?> runId,
       Value<bool> isFollower,
       Value<bool> isFollowing,
       Value<int?> followerSort,
@@ -5107,6 +5202,11 @@ class $$FollowUsersTableFilterComposer
 
   ColumnFilters<String> get bannerLocalPath => $composableBuilder(
     column: $table.bannerLocalPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get runId => $composableBuilder(
+    column: $table.runId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5208,6 +5308,11 @@ class $$FollowUsersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get runId => $composableBuilder(
+    column: $table.runId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get isFollower => $composableBuilder(
     column: $table.isFollower,
     builder: (column) => ColumnOrderings(column),
@@ -5296,6 +5401,9 @@ class $$FollowUsersTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get runId =>
+      $composableBuilder(column: $table.runId, builder: (column) => column);
+
   GeneratedColumn<bool> get isFollower => $composableBuilder(
     column: $table.isFollower,
     builder: (column) => column,
@@ -5378,6 +5486,7 @@ class $$FollowUsersTableTableManager
                 Value<String?> bio = const Value.absent(),
                 Value<String?> avatarLocalPath = const Value.absent(),
                 Value<String?> bannerLocalPath = const Value.absent(),
+                Value<String?> runId = const Value.absent(),
                 Value<bool> isFollower = const Value.absent(),
                 Value<bool> isFollowing = const Value.absent(),
                 Value<int?> followerSort = const Value.absent(),
@@ -5394,6 +5503,7 @@ class $$FollowUsersTableTableManager
                 bio: bio,
                 avatarLocalPath: avatarLocalPath,
                 bannerLocalPath: bannerLocalPath,
+                runId: runId,
                 isFollower: isFollower,
                 isFollowing: isFollowing,
                 followerSort: followerSort,
@@ -5412,6 +5522,7 @@ class $$FollowUsersTableTableManager
                 Value<String?> bio = const Value.absent(),
                 Value<String?> avatarLocalPath = const Value.absent(),
                 Value<String?> bannerLocalPath = const Value.absent(),
+                Value<String?> runId = const Value.absent(),
                 Value<bool> isFollower = const Value.absent(),
                 Value<bool> isFollowing = const Value.absent(),
                 Value<int?> followerSort = const Value.absent(),
@@ -5428,6 +5539,7 @@ class $$FollowUsersTableTableManager
                 bio: bio,
                 avatarLocalPath: avatarLocalPath,
                 bannerLocalPath: bannerLocalPath,
+                runId: runId,
                 isFollower: isFollower,
                 isFollowing: isFollowing,
                 followerSort: followerSort,
@@ -5507,6 +5619,7 @@ typedef $$FollowUsersHistoryTableCreateCompanionBuilder =
       required String ownerId,
       required String userId,
       required String reverseDiffJson,
+      Value<String?> runId,
       required DateTime timestamp,
     });
 typedef $$FollowUsersHistoryTableUpdateCompanionBuilder =
@@ -5515,6 +5628,7 @@ typedef $$FollowUsersHistoryTableUpdateCompanionBuilder =
       Value<String> ownerId,
       Value<String> userId,
       Value<String> reverseDiffJson,
+      Value<String?> runId,
       Value<DateTime> timestamp,
     });
 
@@ -5544,6 +5658,11 @@ class $$FollowUsersHistoryTableFilterComposer
 
   ColumnFilters<String> get reverseDiffJson => $composableBuilder(
     column: $table.reverseDiffJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get runId => $composableBuilder(
+    column: $table.runId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5582,6 +5701,11 @@ class $$FollowUsersHistoryTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get runId => $composableBuilder(
+    column: $table.runId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get timestamp => $composableBuilder(
     column: $table.timestamp,
     builder: (column) => ColumnOrderings(column),
@@ -5610,6 +5734,9 @@ class $$FollowUsersHistoryTableAnnotationComposer
     column: $table.reverseDiffJson,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get runId =>
+      $composableBuilder(column: $table.runId, builder: (column) => column);
 
   GeneratedColumn<DateTime> get timestamp =>
       $composableBuilder(column: $table.timestamp, builder: (column) => column);
@@ -5659,12 +5786,14 @@ class $$FollowUsersHistoryTableTableManager
                 Value<String> ownerId = const Value.absent(),
                 Value<String> userId = const Value.absent(),
                 Value<String> reverseDiffJson = const Value.absent(),
+                Value<String?> runId = const Value.absent(),
                 Value<DateTime> timestamp = const Value.absent(),
               }) => FollowUsersHistoryCompanion(
                 id: id,
                 ownerId: ownerId,
                 userId: userId,
                 reverseDiffJson: reverseDiffJson,
+                runId: runId,
                 timestamp: timestamp,
               ),
           createCompanionCallback:
@@ -5673,12 +5802,14 @@ class $$FollowUsersHistoryTableTableManager
                 required String ownerId,
                 required String userId,
                 required String reverseDiffJson,
+                Value<String?> runId = const Value.absent(),
                 required DateTime timestamp,
               }) => FollowUsersHistoryCompanion.insert(
                 id: id,
                 ownerId: ownerId,
                 userId: userId,
                 reverseDiffJson: reverseDiffJson,
+                runId: runId,
                 timestamp: timestamp,
               ),
           withReferenceMapper: (p0) => p0

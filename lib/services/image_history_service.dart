@@ -247,11 +247,25 @@ class ImageHistoryService {
     return relativeFilePath;
   }
 
+  Future<void> deduplicateMediaHistory() async {
+    await _db.customStatement('''
+    DELETE FROM media_history 
+    WHERE id NOT IN (
+      SELECT MAX(id) 
+      FROM media_history 
+      GROUP BY remote_url
+    )
+  ''');
+  }
+
   Future<MediaHistoryEntry?> getMediaRecord(String remoteUrl) async {
-    final query = await (_db.select(
-      _db.mediaHistory,
-    )..where((tbl) => tbl.remoteUrl.equals(remoteUrl))).getSingleOrNull();
-    return query;
+    return (_db.select(_db.mediaHistory)
+          ..where((tbl) => tbl.remoteUrl.equals(remoteUrl))
+          ..orderBy([
+            (t) => OrderingTerm(expression: t.id, mode: OrderingMode.desc),
+          ])
+          ..limit(1))
+        .getSingleOrNull();
   }
 
   Future<String?> downloadAndSave({

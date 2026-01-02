@@ -463,7 +463,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),
           child: Center(
             child: Text(
-              _getFormattedLastUpdate(context, l10n, cache.lastUpdateTime),
+              '${_getFormattedLastUpdate(context, l10n, cache.lastUpdateTime)} ${cache.lastRunId}',
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),

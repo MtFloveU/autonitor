@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:autonitor/services/migrations/introduce_runid.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
@@ -63,6 +64,7 @@ class FollowUsers extends Table {
       text().named('avatar_local_path').nullable()();
   TextColumn get bannerLocalPath =>
       text().named('banner_local_path').nullable()();
+  TextColumn get runId => text().named('run_id').nullable()();
   BoolColumn get isFollower => boolean().withDefault(const Constant(false))();
   BoolColumn get isFollowing => boolean().withDefault(const Constant(false))();
 
@@ -80,6 +82,7 @@ class FollowUsersHistory extends Table {
   TextColumn get ownerId => text().named('owner_id')();
   TextColumn get userId => text().named('user_id')();
   TextColumn get reverseDiffJson => text().named('reverse_diff_json')();
+  TextColumn get runId => text().named('run_id').nullable()();
   DateTimeColumn get timestamp => dateTime()();
   @override
   List<String> get customConstraints => [
@@ -137,7 +140,7 @@ class AppDatabase extends _$AppDatabase {
   // 数据库迁移
   @override
   // [Upgraded] Upgrade to version 3 to include indices
-  int get schemaVersion => 3;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -156,9 +159,39 @@ class AppDatabase extends _$AppDatabase {
           'CREATE INDEX IF NOT EXISTS idx_following_sort ON follow_users (owner_id, is_following, following_sort)',
         );
       }
+      if (from < 4) {
+        // [New Migration] Add run_id columns
+        await customStatement(
+          'ALTER TABLE follow_users ADD COLUMN run_id TEXT',
+        );
+      }
+      if (from < 5) {
+        await MigrateToV5.execute(this);
+      }
     },
   );
   // 快捷方法
+
+  Future<List<TypedResult>> getFollowHistoryWithLogs(
+    String ownerId,
+    String userId,
+  ) {
+    return (select(followUsersHistory).join([
+            leftOuterJoin(
+              syncLogs,
+              syncLogs.runId.equalsExp(followUsersHistory.runId),
+            ),
+          ])
+          ..where(
+            followUsersHistory.ownerId.equals(ownerId) &
+                followUsersHistory.userId.equals(userId),
+          )
+          ..orderBy([
+            OrderingTerm.desc(syncLogs.timestamp),
+          ])) // Order by master run time
+        .get();
+  }
+
   Future<List<FollowUser>> getNetworkRelationships(String ownerId) async {
     return (select(
       followUsers,

@@ -253,7 +253,7 @@ class _HistoryItem extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
           child: Text(
-            "ID: ${snapshot.entry.id}  (${snapshot.entry.timestamp.toLocal().toString().substring(0, 16)})",
+            "RUN ID: ${snapshot.entry.runId ?? 'N/A'}  (${snapshot.entry.timestamp.toLocal().toString().substring(0, 16)})",
             style: TextStyle(
               color: Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.bold,

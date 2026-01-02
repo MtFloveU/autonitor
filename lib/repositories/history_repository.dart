@@ -15,7 +15,6 @@ final historyRepositoryProvider = Provider<HistoryRepository>((ref) {
   return HistoryRepository(db, worker);
 });
 
-// [新增] 结果封装类
 class HistoryPagedResult {
   final List<HistorySnapshot> snapshots;
   final int totalCount;
@@ -28,21 +27,23 @@ class HistoryRepository {
 
   HistoryRepository(this._db, this._worker);
 
-  // 在 HistoryRepository 类中添加
   Future<List<Map<String, dynamic>>> getFieldHistory({
     required String ownerId,
     required String userId,
     required String targetKey,
   }) async {
     String? latestRawJson;
+    int? currentStateTs;
     List<Map<String, dynamic>> historyEntriesForIsolate = [];
 
-    // 复用数据库查询逻辑（与 getFilteredHistory 类似，但不需要 mediaHistory）
     if (userId == ownerId) {
       final account = await (_db.select(
         _db.loggedAccounts,
       )..where((tbl) => tbl.id.equals(ownerId))).getSingleOrNull();
       latestRawJson = account?.latestRawJson;
+      // 登录账户目前没有 RunID 概念，暂时使用当前时间
+      currentStateTs = DateTime.now().millisecondsSinceEpoch;
+
       if (latestRawJson != null) {
         final historyEntries =
             await (_db.select(_db.accountProfileHistory)
@@ -71,28 +72,45 @@ class HistoryRepository {
               ))
               .getSingleOrNull();
       latestRawJson = user?.latestRawJson;
-      if (latestRawJson != null) {
-        final historyEntries =
-            await (_db.select(_db.followUsersHistory)
-                  ..where(
-                    (tbl) =>
-                        tbl.ownerId.equals(ownerId) & tbl.userId.equals(userId),
-                  )
-                  ..orderBy([
-                    (tbl) => OrderingTerm(
-                      expression: tbl.timestamp,
-                      mode: OrderingMode.desc,
-                    ),
-                  ]))
-                .get();
-        historyEntriesForIsolate = historyEntries
-            .map(
-              (e) => {
-                'reverseDiffJson': e.reverseDiffJson,
-                'timestampMs': e.timestamp.millisecondsSinceEpoch,
-              },
-            )
-            .toList();
+
+      if (user != null && latestRawJson != null) {
+        // [修复] 获取当前 User 主表状态对应的业务时间戳 (SyncLogs)
+        final currentRunLog = await (_db.select(
+          _db.syncLogs,
+        )..where((t) => t.runId.equals(user.runId ?? ''))).getSingleOrNull();
+
+        currentStateTs =
+            currentRunLog?.timestamp.millisecondsSinceEpoch ??
+            DateTime.now().millisecondsSinceEpoch;
+
+        // [修复] 联表查询：获取历史记录及其对应的业务时间戳
+        final query =
+            _db.select(_db.followUsersHistory).join([
+                leftOuterJoin(
+                  _db.syncLogs,
+                  _db.syncLogs.runId.equalsExp(_db.followUsersHistory.runId),
+                ),
+              ])
+              ..where(
+                _db.followUsersHistory.ownerId.equals(ownerId) &
+                    _db.followUsersHistory.userId.equals(userId),
+              )
+              ..orderBy([OrderingTerm.desc(_db.syncLogs.timestamp)]);
+
+        final rows = await query.get();
+
+        historyEntriesForIsolate = rows.map((row) {
+          final history = row.readTable(_db.followUsersHistory);
+          final log = row.readTableOrNull(_db.syncLogs);
+
+          return {
+            'reverseDiffJson': history.reverseDiffJson,
+            // 优先使用 SyncLog 的时间，若无则回退到记录时间
+            'timestampMs':
+                log?.timestamp.millisecondsSinceEpoch ??
+                history.timestamp.millisecondsSinceEpoch,
+          };
+        }).toList();
       }
     }
 
@@ -103,6 +121,7 @@ class HistoryRepository {
       'latestRawJson': latestRawJson,
       'historyEntries': historyEntriesForIsolate,
       'targetKey': targetKey,
+      'currentStateTimestampMs': currentStateTs, // [关键] 传入锚点时间
     };
 
     final result = await _worker.run(payload);
@@ -113,10 +132,10 @@ class HistoryRepository {
     String ownerId,
     String userId,
   ) async {
+    // 此方法逻辑相对独立，暂时保持原有结构，若需 RunID 支持可参考 getFilteredHistory
     String? latestRawJson;
     List<Map<String, dynamic>> historyEntriesForIsolate = [];
 
-    // 复用逻辑：全量获取，因为 Worker 需要回溯过滤
     if (userId == ownerId) {
       final account = await (_db.select(
         _db.loggedAccounts,
@@ -180,12 +199,10 @@ class HistoryRepository {
     if (latestRawJson == null || historyEntriesForIsolate.isEmpty) return null;
 
     final payload = <String, dynamic>{
-      'action': 'fetch_latest_diff', // 告诉 Worker 执行新逻辑
+      'action': 'fetch_latest_diff',
       'userId': userId,
       'latestRawJson': latestRawJson,
       'historyEntries': historyEntriesForIsolate,
-      // Diff 不需要 MediaHistory 来计算文本差异，除非你想在结果中包含图片路径
-      // 为了简单，这里暂不传 MediaHistory，UI 层可以用 widget.user 的图片
       'mediaHistory': [],
     };
 
@@ -204,6 +221,7 @@ class HistoryRepository {
     String ownerId,
     String userId,
   ) async {
+    // 简单查询，暂不涉及 RunID 复杂逻辑
     if (userId == ownerId) {
       return await (_db.select(_db.accountProfileHistory)
             ..where((tbl) => tbl.ownerId.equals(ownerId))
@@ -240,7 +258,6 @@ class HistoryRepository {
     }
   }
 
-  // [修改] 只查 raw count 备用，实际过滤后总数由 worker 返回
   Future<int> getRawHistoryCount(String ownerId, String userId) async {
     Expression<int> countExp = const FunctionCallExpression('COUNT', [
       Constant('*'),
@@ -268,11 +285,12 @@ class HistoryRepository {
     AppSettings settings, {
     int page = 1,
     int pageSize = 20,
+    String? filterField, // [新增]
   }) async {
     String? latestRawJson;
+    int? currentStateTs; // 用于传递当前状态的时间锚点
     List<Map<String, dynamic>> historyEntriesForIsolate = [];
 
-    // [关键] 移除 limit/offset，获取全量数据以供 Worker 重建和过滤
     if (userId == ownerId) {
       final account = await (_db.select(
         _db.loggedAccounts,
@@ -288,7 +306,7 @@ class HistoryRepository {
                       expression: tbl.timestamp,
                       mode: OrderingMode.desc,
                     ),
-                  ])) // [移除 limit]
+                  ]))
                 .get();
 
         historyEntriesForIsolate = historyEntries.map((e) {
@@ -298,6 +316,7 @@ class HistoryRepository {
             'userId': e.ownerId,
             'reverseDiffJson': e.reverseDiffJson,
             'timestampMs': e.timestamp.millisecondsSinceEpoch,
+            'runId': null, // Account history 暂无 RunID
           };
         }).toList();
       }
@@ -310,28 +329,47 @@ class HistoryRepository {
               .getSingleOrNull();
       latestRawJson = currentUser?.latestRawJson;
 
-      if (latestRawJson != null) {
-        final historyEntries =
-            await (_db.select(_db.followUsersHistory)
-                  ..where(
-                    (tbl) =>
-                        tbl.ownerId.equals(ownerId) & tbl.userId.equals(userId),
-                  )
-                  ..orderBy([
-                    (tbl) => OrderingTerm(
-                      expression: tbl.timestamp,
-                      mode: OrderingMode.desc,
-                    ),
-                  ])) // [移除 limit]
-                .get();
+      if (currentUser != null && latestRawJson != null) {
+        // [修复] 获取当前状态的时间锚点
+        final currentRunLog =
+            await (_db.select(_db.syncLogs)
+                  ..where((t) => t.runId.equals(currentUser.runId ?? '')))
+                .getSingleOrNull();
+        currentStateTs =
+            currentRunLog?.timestamp.millisecondsSinceEpoch ??
+            DateTime.now().millisecondsSinceEpoch;
 
-        historyEntriesForIsolate = historyEntries.map((e) {
+        // [修复] 联表查询：提取 RunID 和 Log Timestamp
+        final query =
+            _db.select(_db.followUsersHistory).join([
+                leftOuterJoin(
+                  _db.syncLogs,
+                  _db.syncLogs.runId.equalsExp(_db.followUsersHistory.runId),
+                ),
+              ])
+              ..where(
+                _db.followUsersHistory.ownerId.equals(ownerId) &
+                    _db.followUsersHistory.userId.equals(userId),
+              )
+              ..orderBy([OrderingTerm.desc(_db.syncLogs.timestamp)]);
+
+        final rows = await query.get();
+
+        historyEntriesForIsolate = rows.map((row) {
+          final e = row.readTable(_db.followUsersHistory);
+          final log = row.readTableOrNull(_db.syncLogs);
+
           return <String, dynamic>{
             'id': e.id,
             'ownerId': e.ownerId,
             'userId': e.userId,
             'reverseDiffJson': e.reverseDiffJson,
-            'timestampMs': e.timestamp.millisecondsSinceEpoch,
+            // [关键] 传递 RunID
+            'runId': e.runId,
+            // [关键] 优先使用 Log 时间
+            'timestampMs':
+                log?.timestamp.millisecondsSinceEpoch ??
+                e.timestamp.millisecondsSinceEpoch,
           };
         }).toList();
       }
@@ -361,10 +399,12 @@ class HistoryRepository {
       'settings': settings.toJson(),
       'userId': userId,
       'latestRawJson': latestRawJson,
+      'currentStateTimestampMs': currentStateTs, // 传递给 Worker
       'historyEntries': historyEntriesForIsolate,
       'mediaHistory': mediaHistoryForIsolate,
-      'page': page, // [传递]
-      'pageSize': pageSize, // [传递]
+      'page': page,
+      'pageSize': pageSize,
+      'filterField': filterField, // [新增]
     };
 
     dynamic rawResult;
@@ -396,6 +436,8 @@ class HistoryRepository {
         final int entryId = itemMap['entryId'] as int;
         final String fullJson = itemMap['fullJson'] as String;
         final String diffJson = itemMap['diffJson'] as String;
+        // [修复] 从 Worker 结果中提取 RunID
+        final String? runId = itemMap['runId'] as String?;
 
         final Map<String, dynamic> userMap = Map<String, dynamic>.from(
           itemMap['userMap'] as Map,
@@ -405,14 +447,16 @@ class HistoryRepository {
 
         final originalData = originalEntryMap[entryId];
         if (originalData != null) {
-          final int timestampMs = originalData['timestampMs'] as int;
+          // Worker 已经返回了修正后的时间戳
+          final int timestampMs = itemMap['timestampMs'] as int;
 
           final entry = FollowUserHistoryEntry(
             id: entryId,
             ownerId: ownerId,
             userId: userId,
-            reverseDiffJson: diffJson, // Worker 返回的是正向 Diff
+            reverseDiffJson: diffJson,
             timestamp: DateTime.fromMillisecondsSinceEpoch(timestampMs),
+            runId: runId, // [关键] 将 RunID 存入 Entry
           );
 
           snapshots.add(
