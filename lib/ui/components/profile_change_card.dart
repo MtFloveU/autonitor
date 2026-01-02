@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:autonitor/l10n/app_localizations.dart';
-import 'package:autonitor/ui/user_list_page.dart';
+import 'package:autonitor/ui/user/user_list_page.dart';
 import 'package:diff_match_patch/diff_match_patch.dart' as diff_utils;
 import 'package:flutter/material.dart';
 import 'package:autonitor/models/twitter_user.dart';

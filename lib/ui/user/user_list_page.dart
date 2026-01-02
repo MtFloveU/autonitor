@@ -6,10 +6,10 @@ import 'package:autonitor/repositories/analysis_report_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:autonitor/ui/user_detail_page.dart';
+import 'package:autonitor/ui/user/profile/user_detail_page.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../l10n/app_localizations.dart';
-import '../providers/report_providers.dart';
+import '../../l10n/app_localizations.dart';
+import '../../providers/report_providers.dart';
 import 'package:autonitor/providers/media_provider.dart';
 
 class UserListTile extends StatelessWidget {

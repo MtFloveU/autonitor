@@ -1,13 +1,13 @@
 import 'package:autonitor/ui/components/user_avatar.dart';
 import '../providers/media_provider.dart';
 import 'package:autonitor/services/log_service.dart';
-import 'package:autonitor/ui/user_detail_page.dart';
+import 'package:autonitor/ui/user/profile/user_detail_page.dart';
 import 'package:autonitor/models/twitter_user.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:autonitor/models/cache_data.dart';
 import 'package:autonitor/providers/auth_provider.dart';
-import 'package:autonitor/ui/user_list_page.dart';
+import 'package:autonitor/ui/user/user_list_page.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/report_providers.dart';
 import '../providers/analysis_provider.dart';

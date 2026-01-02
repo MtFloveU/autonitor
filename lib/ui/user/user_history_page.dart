@@ -6,9 +6,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:autonitor/providers/media_provider.dart';
 import 'package:autonitor/providers/history_provider.dart';
-import 'package:autonitor/ui/user_detail_page.dart';
-import '../models/twitter_user.dart';
-import '../l10n/app_localizations.dart';
+import 'package:autonitor/ui/user/profile/user_detail_page.dart';
+import '../../models/twitter_user.dart';
+import '../../l10n/app_localizations.dart';
 import 'user_list_page.dart';
 
 class UserHistoryPage extends ConsumerStatefulWidget {

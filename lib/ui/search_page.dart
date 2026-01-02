@@ -6,8 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
 import '../providers/media_provider.dart';
-import 'user_detail_page.dart';
-import 'user_list_page.dart';
+import 'user/profile/user_detail_page.dart';
+import 'user/user_list_page.dart';
 
 class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key});
