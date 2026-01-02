@@ -9,9 +9,20 @@ extension _UserDetailPageMiscWidgets on _UserDetailPageState {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 4, 1, 0),
-          child: Text(l10n.user_content, style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
+          child: Text(
+            l10n.user_content,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
-        _buildInfoTile(context, Icons.push_pin, l10n.pinned_tweet_id, widget.user.pinnedTweetIdStr.toString()),
+        _buildInfoTile(
+          context,
+          Icons.push_pin,
+          l10n.pinned_tweet_id,
+          widget.user.pinnedTweetIdStr.toString(),
+        ),
       ],
     );
   }
@@ -22,15 +33,28 @@ extension _UserDetailPageMiscWidgets on _UserDetailPageState {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 4, 1, 0),
-          child: Text(AppLocalizations.of(context)!.identity, style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
+          child: Text(
+            AppLocalizations.of(context)!.identity,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
-        _buildInfoTile(context, Icons.fingerprint, "Rest ID", widget.user.restId),
+        _buildInfoTile(
+          context,
+          Icons.fingerprint,
+          "Rest ID",
+          widget.user.restId,
+        ),
       ],
     );
   }
 
   Widget _buildSnapshotInfo(BuildContext context) {
-    if (!widget.isFromHistory || widget.snapshotId == null || widget.snapshotTimestamp == null) {
+    if (!widget.isFromHistory ||
+        widget.snapshotId == null ||
+        widget.snapshotTimestamp == null) {
       return const SizedBox.shrink();
     }
     return Padding(
@@ -38,12 +62,19 @@ extension _UserDetailPageMiscWidgets on _UserDetailPageState {
       child: Text(
         "Snapshot ID: ${widget.snapshotId}\nTimestamp: ${widget.snapshotTimestamp!.toLocal()}",
         textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
       ),
     );
   }
 
-  Widget _buildInfoTile(BuildContext context, IconData icon, String title, String subtitle) {
+  Widget _buildInfoTile(
+    BuildContext context,
+    IconData icon,
+    String title,
+    String subtitle,
+  ) {
     return ListTile(
       leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
       title: Text(title),

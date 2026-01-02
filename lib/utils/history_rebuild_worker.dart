@@ -143,7 +143,8 @@ List<Map<String, dynamic>> _extractFieldHistory(Map<String, dynamic> context) {
   // 记录当前最新状态点
   series.add({
     'timestamp': DateTime.now().millisecondsSinceEpoch,
-    'value': (double.tryParse(stateCursor[targetKey]?.toString() ?? '0') ?? 0.0),
+    'value':
+        (double.tryParse(stateCursor[targetKey]?.toString() ?? '0') ?? 0.0),
   });
 
   // 逆向迭代历史，恢复每一个时间点的状态
@@ -163,7 +164,8 @@ List<Map<String, dynamic>> _extractFieldHistory(Map<String, dynamic> context) {
 
     series.add({
       'timestamp': entryMap['timestampMs'],
-      'value': (double.tryParse(stateCursor[targetKey]?.toString() ?? '0') ?? 0.0),
+      'value':
+          (double.tryParse(stateCursor[targetKey]?.toString() ?? '0') ?? 0.0),
     });
   }
 

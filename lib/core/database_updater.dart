@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:autonitor/models/twitter_user.dart';
+import 'package:autonitor/utils/runid_generator.dart';
 import 'package:flutter/foundation.dart';
 import 'media_processor.dart';
 import 'network_data_fetcher.dart';
@@ -18,6 +19,26 @@ class DatabaseUpdater {
   DatabaseUpdater({required AppDatabase database, required LogCallback log})
     : _database = database,
       _log = log;
+
+  Future<void> insertSyncLog({
+    required String ownerId,
+    required int status,
+    required DateTime timestamp,
+  }) async {
+    final runId = generateRunId();
+
+    await _database
+        .into(_database.syncLogs)
+        .insert(
+          SyncLogsCompanion.insert(
+            runId: runId,
+            ownerId: Value(ownerId), // 在这里将 String 包装为 Value<String>
+            timestamp: timestamp,
+            status: status,
+          ),
+        );
+    _log("Sync log recorded: $runId, status: $status");
+  }
 
   Future<void> saveChanges({
     required String ownerId,

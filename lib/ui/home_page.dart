@@ -290,14 +290,22 @@ class _HomePageState extends ConsumerState<HomePage> {
                             Text(
                               "@${activeAccount?.screenName ?? activeAccount?.id ?? '...'}",
                               style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(color: Theme.of(context).colorScheme.outline),
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.outline,
+                                  ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                             Text(
                               "ID: ${activeAccount?.id ?? '...'}",
                               style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: Theme.of(context).colorScheme.outline),
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.outline,
+                                  ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),

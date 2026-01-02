@@ -170,6 +170,13 @@ class DataProcessor {
         oldRelationsMap: oldRelationsMap,
       );
 
+      _log("Recording sync log...");
+      await _databaseUpdater.insertSyncLog(
+        ownerId: _ownerId,
+        status: 1,
+        timestamp: DateTime.now(),
+      );
+
       _log(
         "Analysis process completed successfully for account ID: $_ownerId.",
       );

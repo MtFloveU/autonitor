@@ -10,7 +10,7 @@ Widget _buildStorageSection(
 ) {
   final theme = Theme.of(context);
   final colorScheme = theme.colorScheme;
-  
+
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
@@ -48,12 +48,10 @@ Widget _buildStorageSection(
         title: Text(l10n.save_banner_history),
         value: settings.saveBannerHistory,
         onChanged: (bool newValue) {
-          ref
-              .read(settingsProvider.notifier)
-              .updateSaveBannerHistory(newValue);
+          ref.read(settingsProvider.notifier).updateSaveBannerHistory(newValue);
         },
       ),
-      
+
       _HistoryStrategyTile(
         l10n: l10n,
         settings: settings,
@@ -133,17 +131,17 @@ class _HistoryStrategyTileState extends ConsumerState<_HistoryStrategyTile> {
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<HistoryStrategy>(
                   key: _dropdownKey,
-                  isExpanded: false, 
+                  isExpanded: false,
                   isDense: true,
                   value: widget.settings.historyStrategy,
-                  focusColor: Colors.transparent, 
+                  focusColor: Colors.transparent,
                   items: List.generate(entries.length, (index) {
                     final entry = entries[index];
                     return DropdownMenuItem<HistoryStrategy>(
                       value: entry.key,
                       child: Text(
                         entry.value,
-                        style: textTheme.bodyMedium, 
+                        style: textTheme.bodyMedium,
                         overflow: TextOverflow.ellipsis,
                       ),
                     );
@@ -163,8 +161,8 @@ class _HistoryStrategyTileState extends ConsumerState<_HistoryStrategyTile> {
                         style: textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
-                        overflow: TextOverflow.ellipsis, 
-                        maxLines: 1, 
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       );
                     }).toList();
                   },
@@ -188,7 +186,7 @@ class _HistoryStrategyTileState extends ConsumerState<_HistoryStrategyTile> {
                   decoration: BoxDecoration(
                     color: colorScheme.surfaceContainerHighest.withValues(
                       alpha: 0.5,
-                    ), 
+                    ),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: TextField(

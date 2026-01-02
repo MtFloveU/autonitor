@@ -6,12 +6,42 @@ extension _UserDetailPageStatWidgets on _UserDetailPageState {
     final theme = Theme.of(context);
 
     final items = [
-      _StatItemData(Icons.group_outlined, l10n.following, widget.user.followingCount.toString(), 'following_count'),
-      _StatItemData(Icons.group, l10n.followers, widget.user.followersCount.toString(), 'followers_count'),
-      _StatItemData(Icons.create, l10n.tweets, widget.user.statusesCount.toString(), 'statuses_count'),
-      _StatItemData(Icons.image, l10n.media_count, widget.user.mediaCount.toString(), 'media_count'),
-      _StatItemData(Icons.favorite, l10n.likes, widget.user.favouritesCount.toString(), 'favourites_count'),
-      _StatItemData(Icons.list_alt, l10n.listed_count, widget.user.listedCount.toString(), 'listed_count'),
+      _StatItemData(
+        Icons.group_outlined,
+        l10n.following,
+        widget.user.followingCount.toString(),
+        'following_count',
+      ),
+      _StatItemData(
+        Icons.group,
+        l10n.followers,
+        widget.user.followersCount.toString(),
+        'followers_count',
+      ),
+      _StatItemData(
+        Icons.create,
+        l10n.tweets,
+        widget.user.statusesCount.toString(),
+        'statuses_count',
+      ),
+      _StatItemData(
+        Icons.image,
+        l10n.media_count,
+        widget.user.mediaCount.toString(),
+        'media_count',
+      ),
+      _StatItemData(
+        Icons.favorite,
+        l10n.likes,
+        widget.user.favouritesCount.toString(),
+        'favourites_count',
+      ),
+      _StatItemData(
+        Icons.list_alt,
+        l10n.listed_count,
+        widget.user.listedCount.toString(),
+        'listed_count',
+      ),
     ];
 
     return Container(
@@ -37,7 +67,9 @@ extension _UserDetailPageStatWidgets on _UserDetailPageState {
     return SizedBox(
       width: itemWidth,
       child: InkWell(
-        onTap: widget.isFromHistory ? null : () => _showHistoryChart(context, item),
+        onTap: widget.isFromHistory
+            ? null
+            : () => _showHistoryChart(context, item),
         borderRadius: BorderRadius.circular(8),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -47,13 +79,38 @@ extension _UserDetailPageStatWidgets on _UserDetailPageState {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(item.icon, size: 18, color: Theme.of(context).colorScheme.primary),
+                  Icon(
+                    item.icon,
+                    size: 18,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                   const SizedBox(width: 6),
-                  Flexible(child: FittedBox(fit: BoxFit.scaleDown, child: Text(item.value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, height: 1.1)))),
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        item.value,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          height: 1.1,
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 4),
-              Text(item.label, textAlign: TextAlign.center, style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.secondary), maxLines: 1, overflow: TextOverflow.ellipsis),
+              Text(
+                item.label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Theme.of(context).colorScheme.secondary,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
           ),
         ),
@@ -62,7 +119,9 @@ extension _UserDetailPageStatWidgets on _UserDetailPageState {
   }
 
   void _showHistoryChart(BuildContext context, _StatItemData item) async {
-    final data = await ref.read(historyRepositoryProvider).getFieldHistory(
+    final data = await ref
+        .read(historyRepositoryProvider)
+        .getFieldHistory(
           ownerId: widget.ownerId,
           userId: widget.user.restId,
           targetKey: item.jsonKey,
@@ -92,37 +151,92 @@ extension _UserDetailPageStatWidgets on _UserDetailPageState {
                 LineChartData(
                   lineTouchData: LineTouchData(
                     touchTooltipData: LineTouchTooltipData(
-                      getTooltipColor: (spot) => Theme.of(ctx).colorScheme.surfaceContainerHighest,
+                      getTooltipColor: (spot) =>
+                          Theme.of(ctx).colorScheme.surfaceContainerHighest,
                       getTooltipItems: (touchedSpots) => touchedSpots.map((s) {
-                        final date = DateTime.fromMillisecondsSinceEpoch(data[s.spotIndex]['timestamp']);
-                        return LineTooltipItem('${DateFormat('yyyy-MM-dd HH:mm').format(date)}\n${s.y.toInt()}', 
-                          TextStyle(color: Theme.of(ctx).colorScheme.onSurfaceVariant, fontSize: 12));
+                        final date = DateTime.fromMillisecondsSinceEpoch(
+                          data[s.spotIndex]['timestamp'],
+                        );
+                        return LineTooltipItem(
+                          '${DateFormat('yyyy-MM-dd HH:mm').format(date)}\n${s.y.toInt()}',
+                          TextStyle(
+                            color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                            fontSize: 12,
+                          ),
+                        );
                       }).toList(),
                     ),
                   ),
-                  gridData: FlGridData(show: true, drawVerticalLine: false, getDrawingHorizontalLine: (v) => FlLine(color: Theme.of(ctx).dividerColor.withAlpha(50), strokeWidth: 1)),
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    getDrawingHorizontalLine: (v) => FlLine(
+                      color: Theme.of(ctx).dividerColor.withAlpha(50),
+                      strokeWidth: 1,
+                    ),
+                  ),
                   titlesData: FlTitlesData(
-                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    bottomTitles: AxisTitles(sideTitles: SideTitles(
-                      showTitles: true,
-                      interval: (spots.length / 4).clamp(1, double.infinity),
-                      getTitlesWidget: (v, m) {
-                        final idx = v.toInt();
-                        if (idx < 0 || idx >= data.length) return const SizedBox.shrink();
-                        return Padding(padding: const EdgeInsets.only(top: 8.0), child: Text(DateFormat.yMd().format(DateTime.fromMillisecondsSinceEpoch(data[idx]['timestamp'])), style: const TextStyle(fontSize: 10)));
-                      },
-                    )),
-                    leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 40, getTitlesWidget: (v, m) => Text(v.toInt().toString(), style: const TextStyle(fontSize: 10)))),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        interval: (spots.length / 4).clamp(1, double.infinity),
+                        getTitlesWidget: (v, m) {
+                          final idx = v.toInt();
+                          if (idx < 0 || idx >= data.length) {
+                            return const SizedBox.shrink();
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              DateFormat.yMd().format(
+                                DateTime.fromMillisecondsSinceEpoch(
+                                  data[idx]['timestamp'],
+                                ),
+                              ),
+                              style: const TextStyle(fontSize: 10),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 40,
+                        getTitlesWidget: (v, meta) {
+                          // 将 m 改为 meta 以便阅读
+                          // --- 添加下面这一行判断 ---
+                          if (v == meta.min || v == meta.max) {
+                            return const SizedBox.shrink();
+                          }
+                          // -----------------------
+                          return Text(
+                            v.toInt().toString(),
+                            style: const TextStyle(fontSize: 10),
+                          );
+                        },
+                      ),
+                    ),
                   ),
                   borderData: FlBorderData(show: false),
                   lineBarsData: [
                     LineChartBarData(
                       spots: spots,
                       isCurved: true,
+                      preventCurveOverShooting: true,
                       color: Theme.of(ctx).colorScheme.primary,
                       barWidth: 3,
-                      belowBarData: BarAreaData(show: true, color: Theme.of(ctx).colorScheme.primary.withAlpha(20)),
+                      dotData: const FlDotData(show: false),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        color: Theme.of(ctx).colorScheme.primary.withAlpha(20),
+                      ),
                     ),
                   ],
                 ),

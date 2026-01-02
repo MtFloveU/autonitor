@@ -50,8 +50,7 @@ class ImageHistoryService {
     final basePath = await _getMediaHistoryPath();
     final hash = remoteUrl.hashCode.toUnsigned(32);
     final ext = p.extension(remoteUrl.split('?').first);
-    final fileName =
-        '${mediaType.name}_$hash${ext.isNotEmpty ? ext : ".jpg"}';
+    final fileName = '${mediaType.name}_$hash${ext.isNotEmpty ? ext : ".jpg"}';
     final absolutePath = p.join(basePath, fileName);
 
     // 3. 下载文件

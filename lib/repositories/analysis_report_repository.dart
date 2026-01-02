@@ -83,7 +83,8 @@ class AnalysisReportRepository {
               (isFollower
                   ? _database.followUsers.isFollower.equals(true)
                   : _database.followUsers.isFollowing.equals(true)) &
-              (_database.followUsers.followerSort.isNotNull() | _database.followUsers.followingSort.isNotNull()),
+              (_database.followUsers.followerSort.isNotNull() |
+                  _database.followUsers.followingSort.isNotNull()),
         );
       final result = await query.getSingle();
       return result.read(countExp) ?? 0;

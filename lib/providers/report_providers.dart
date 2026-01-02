@@ -57,10 +57,28 @@ final cacheProvider = FutureProvider.autoDispose<CacheData?>((ref) async {
       database.loggedAccounts,
     )..where((tbl) => tbl.id.equals(activeAccount.id))).getSingleOrNull();
 
+    final latestLog =
+        await (database.select(database.syncLogs)
+              ..where(
+                (tbl) =>
+                    tbl.ownerId.equals(activeAccount.id) & tbl.status.equals(1),
+              )
+              ..orderBy([
+                (t) => drift.OrderingTerm(
+                  expression: t.timestamp,
+                  mode: drift.OrderingMode.desc,
+                ),
+              ])
+              ..limit(1))
+            .getSingleOrNull();
+
+    // Use DB time if available, otherwise fallback to "N/A" (empty string) to indicate never updated
+    final lastUpdateTimeStr = latestLog?.timestamp.toIso8601String() ?? '';
+
     return CacheData(
       accountId: activeAccount.id,
       accountName: activeAccount.name ?? 'N/A',
-      lastUpdateTime: DateTime.now().toIso8601String(),
+      lastUpdateTime: lastUpdateTimeStr,
       followersCount: accountDetails?.followersCount ?? 0,
       followingCount: accountDetails?.followingCount ?? 0,
       unfollowedCount: categoryCounts['normal_unfollowed'] ?? 0,

@@ -54,7 +54,7 @@ class UserDetailPage extends ConsumerStatefulWidget {
 class _UserDetailPageState extends ConsumerState<UserDetailPage>
     with TickerProviderStateMixin {
   final List<Widget Function(BuildContext)> _builders = [];
-  
+
   // 0: Banner+Avatar (Hero) - Static
   // 1: Spacing - Static
   // 2: UserInfo - Animated Start
@@ -62,7 +62,6 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
   final List<AnimationController?> _fadeControllers = [];
   bool _isCheckingHistory = false;
 
-  // 代理方法：解决 extension 中调用 setState 的 protected 权限问题
   void _setState(VoidCallback fn) {
     if (mounted) setState(fn);
   }
@@ -142,17 +141,16 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
       ),
       body: ListView(
         padding: EdgeInsets.zero,
-        children: List.generate(_visibleCount.clamp(0, _builders.length), (index) {
+        children: List.generate(_visibleCount.clamp(0, _builders.length), (
+          index,
+        ) {
           Widget child = _builders[index](context);
 
           // 大屏适配适配：内容居中，最大宽度限制为 800
           Widget content = Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 800),
-              child: SizedBox(
-                width: double.infinity,
-                child: child,
-              ),
+              child: SizedBox(width: double.infinity, child: child),
             ),
           );
 

@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
 part 'database.g.dart';
+
 //数据库表定义
 @DataClassName('LoggedAccount')
 class LoggedAccounts extends Table {
@@ -133,7 +134,7 @@ class SyncLogs extends Table {
 // 主class
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
-// 数据库迁移
+  // 数据库迁移
   @override
   // [Upgraded] Upgrade to version 3 to include indices
   int get schemaVersion => 3;
@@ -157,7 +158,7 @@ class AppDatabase extends _$AppDatabase {
       }
     },
   );
-// 快捷方法
+  // 快捷方法
   Future<List<FollowUser>> getNetworkRelationships(String ownerId) async {
     return (select(
       followUsers,

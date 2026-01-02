@@ -77,6 +77,7 @@ class _SettingsDropdownTileState<T> extends State<_SettingsDropdownTile<T>>
       }
       element.visitChildElements(findGestureDetector);
     }
+
     context.visitChildElements(findGestureDetector);
   }
 

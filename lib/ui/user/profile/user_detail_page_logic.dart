@@ -77,7 +77,9 @@ extension _UserDetailPageLogic on _UserDetailPageState {
         _setState(() {
           _visibleCount = i + 1;
         });
-        final controller = _fadeControllers.length > i ? _fadeControllers[i] : null;
+        final controller = _fadeControllers.length > i
+            ? _fadeControllers[i]
+            : null;
         controller?.forward();
         await Future.delayed(_delayFor(i));
       }
@@ -135,7 +137,9 @@ extension _UserDetailPageLogic on _UserDetailPageState {
 
       final currentUserMap = widget.user.toJson();
       final cardJson = jsonEncode({'diff': uiDiffMap, 'user': currentUserMap});
-      final timestamp = DateTime.fromMillisecondsSinceEpoch(result['timestampMs']);
+      final timestamp = DateTime.fromMillisecondsSinceEpoch(
+        result['timestampMs'],
+      );
 
       showModalBottomSheet(
         context: context,
@@ -232,7 +236,9 @@ extension _UserDetailPageLogic on _UserDetailPageState {
                       color: Theme.of(context).colorScheme.onPrimaryContainer,
                     ),
                   ),
-                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer,
                 ),
               );
             },
