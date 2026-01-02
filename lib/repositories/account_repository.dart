@@ -82,9 +82,23 @@ class AccountRepository {
         "AccountRepository: Deleted cookie from SecureStorage for ID $id.",
       );
 
-      final deletedRows = await (_database.delete(
-        _database.loggedAccounts,
-      )..where((tbl) => tbl.id.equals(id))).go();
+      final deletedRows = await _database.transaction(() async {
+        await (_database.delete(
+          _database.changeReports,
+        )..where((tbl) => tbl.ownerId.equals(id))).go();
+        await (_database.delete(
+          _database.followUsersHistory,
+        )..where((tbl) => tbl.ownerId.equals(id))).go();
+        await (_database.delete(
+          _database.followUsers,
+        )..where((tbl) => tbl.ownerId.equals(id))).go();
+        await (_database.delete(
+          _database.syncLogs,
+        )..where((tbl) => tbl.ownerId.equals(id))).go();
+        return (_database.delete(
+          _database.loggedAccounts,
+        )..where((tbl) => tbl.id.equals(id))).go();
+      });
 
       if (deletedRows > 0) {
         logger.i(

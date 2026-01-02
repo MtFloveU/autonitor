@@ -173,5 +173,7 @@
   "license": "授權條款",
   "open_source_licenses": "開源授權條款",
   "author_on_twitter": "作者的 Twitter",
-  "others": "其它"
+  "others": "其它",
+  "no_data": "尚無資料",
+  "no_data_description": "此賬戶尚無資料，執行首次同步喵！"
 }

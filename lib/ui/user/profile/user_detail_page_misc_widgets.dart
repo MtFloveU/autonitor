@@ -63,7 +63,7 @@ extension _UserDetailPageMiscWidgets on _UserDetailPageState {
         "RUN ID: ${widget.snapshotId}\n${DateFormat.yMd().add_Hms().format(DateTime.fromMillisecondsSinceEpoch(widget.snapshotTimestamp!.millisecondsSinceEpoch))} ",
         textAlign: TextAlign.center,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Theme.of(context).colorScheme.outline,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
       ),
     );

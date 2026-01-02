@@ -72,8 +72,12 @@ final cacheProvider = FutureProvider.autoDispose<CacheData?>((ref) async {
               ..limit(1))
             .getSingleOrNull();
 
+    if (latestLog == null) {
+      return null;
+    }
+
     // Use DB time if available, otherwise fallback to "N/A" (empty string) to indicate never updated
-    final lastUpdateTimeStr = latestLog?.timestamp.toIso8601String() ?? '';
+    final lastUpdateTimeStr = latestLog.timestamp.toIso8601String();
 
     return CacheData(
       accountId: activeAccount.id,
@@ -91,7 +95,7 @@ final cacheProvider = FutureProvider.autoDispose<CacheData?>((ref) async {
       temporarilyRestrictedCount: categoryCounts['temporarily_restricted'] ?? 0,
       recoveredCount: categoryCounts['recovered'] ?? 0,
       profileUpdatedCount: categoryCounts['profile_update'] ?? 0,
-      lastRunId: latestLog?.runId ?? '',
+      lastRunId: latestLog.runId,
     );
   } catch (e, s) {
     logger.e(

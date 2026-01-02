@@ -173,5 +173,7 @@
   "feedback_and_suggestions": "反馈与建议",
   "license": "许可证",
   "open_source_licenses": "开源许可证",
-  "others": "其它"
+  "others": "其它",
+  "no_data": "暂无数据",
+  "no_data_description": "该账号暂无数据，先同步一下数据喵！"
 }

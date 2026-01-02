@@ -545,6 +545,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get others => '其它';
+
+  @override
+  String get no_data => '暂无数据';
+
+  @override
+  String get no_data_description => '该账号暂无数据，先同步一下数据喵！';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -1088,4 +1094,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get others => '其它';
+
+  @override
+  String get no_data => '尚無資料';
+
+  @override
+  String get no_data_description => '此賬戶尚無資料，執行首次同步喵！';
 }

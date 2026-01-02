@@ -549,4 +549,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get others => 'Others';
+
+  @override
+  String get no_data => 'No data';
+
+  @override
+  String get no_data_description =>
+      'No data available for this account. Run your first sync now!';
 }

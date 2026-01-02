@@ -1142,6 +1142,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Others'**
   String get others;
+
+  /// No description provided for @no_data.
+  ///
+  /// In en, this message translates to:
+  /// **'No data'**
+  String get no_data;
+
+  /// No description provided for @no_data_description.
+  ///
+  /// In en, this message translates to:
+  /// **'No data available for this account. Run your first sync now!'**
+  String get no_data_description;
 }
 
 class _AppLocalizationsDelegate

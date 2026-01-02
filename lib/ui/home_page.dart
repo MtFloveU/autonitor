@@ -152,7 +152,11 @@ class _HomePageState extends ConsumerState<HomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.group_outlined, size: 64, color: Colors.grey.shade400),
+            Icon(
+              Icons.group_outlined,
+              size: 64,
+              color: Theme.of(context).colorScheme.outline,
+            ),
             const SizedBox(height: 24),
             Text(
               l10n.login_first,
@@ -179,36 +183,213 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
+  Widget _buildUserProfileCard(
+    BuildContext context,
+    CacheData? cache, // cache 可以为空
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    final activeAccount = ref.watch(activeAccountProvider);
+    final mediaDir = ref.watch(appSupportDirProvider).value;
+
+    if (activeAccount == null) return const SizedBox.shrink();
+
+    // 如果 cache 为空（无数据状态），则尝试使用 activeAccount 中的静态数据，或显示 0
+    final followingCount =
+        cache?.followingCount ?? "--";
+    final followersCount =
+        cache?.followersCount ?? "--";
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      margin: EdgeInsets.zero,
+      child: InkWell(
+        onTap: () {
+          final user = TwitterUser(
+            avatarUrl: activeAccount.avatarUrl ?? '',
+            avatarLocalPath: activeAccount.avatarLocalPath ?? '',
+            bannerLocalPath: activeAccount.bannerLocalPath ?? '',
+            name: activeAccount.name ?? 'Unknown',
+            screenName: activeAccount.screenName ?? activeAccount.id,
+            restId: activeAccount.id,
+            joinedTime: activeAccount.joinTime ?? '',
+            bio: activeAccount.bio,
+            location: activeAccount.location,
+            bannerUrl: activeAccount.bannerUrl,
+            link: activeAccount.link,
+            followersCount: activeAccount.followersCount,
+            followingCount: activeAccount.followingCount,
+            statusesCount: activeAccount.statusesCount,
+            mediaCount: activeAccount.mediaCount,
+            favouritesCount: activeAccount.favouritesCount,
+            listedCount: activeAccount.listedCount,
+            isProtected: activeAccount.isProtected,
+            isVerified: activeAccount.isVerified,
+          );
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  UserDetailPage(user: user, ownerId: activeAccount.id),
+            ),
+          );
+        },
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+              child: Row(
+                children: [
+                  UserAvatar(
+                    avatarUrl: activeAccount.avatarUrl,
+                    avatarLocalPath: activeAccount.avatarLocalPath,
+                    mediaDir: mediaDir,
+                    radius: 24,
+                    heroTag: 'avatar_${activeAccount.id}',
+                    isHighQuality: true,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          activeAccount.name ?? 'Unknown Name',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          "@${activeAccount.screenName ?? activeAccount.id}",
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.outline,
+                              ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          "ID: ${activeAccount.id}",
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.outline,
+                              ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.swap_horiz),
+                    tooltip: l10n.switch_account,
+                    onPressed: () => _showAccountSwitcher(context),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1, indent: 0, endIndent: 0),
+            IntrinsicHeight(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      // 无数据时点击可能无法跳转到列表，或者跳转空列表，这里保持原样即可
+                      onTap: () => _navigateToUserList(context, 'following'),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12.0),
+                        child: Column(
+                          children: [
+                            Text(
+                              followingCount.toString(),
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              l10n.following,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const VerticalDivider(width: 1),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => _navigateToUserList(context, 'followers'),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12.0),
+                        child: Column(
+                          children: [
+                            Text(
+                              followersCount.toString(),
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              l10n.followers,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoDataState(BuildContext context, VoidCallback onNavigate) {
+    final l10n = AppLocalizations.of(context)!;
+
+    // 改用 ListView 以便容纳顶部的卡片，并允许小屏幕滚动
+    return ListView(
+      padding: const EdgeInsets.all(16.0),
+      children: [
+        // 1. 添加账号信息卡片
+        // 传入 null，因为此时没有 cache 数据，卡片会显示账号的静态信息(头像/名字)和默认数值
+        _buildUserProfileCard(context, null),
+
+        const SizedBox(height: 60), // 与下方图标保持一定距离
+        // 2. 原有的无数据提示部分
+        Icon(
+          Icons.folder_off_outlined,
+          size: 64,
+          color: Theme.of(context).colorScheme.outline,
+        ),
+        const SizedBox(height: 24),
+        Text(
+          l10n.no_data,
+          style: Theme.of(context).textTheme.headlineSmall,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Text(l10n.no_data_description, textAlign: TextAlign.center),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
   Widget _buildAccountView(BuildContext context) {
     final cacheAsyncValue = ref.watch(cacheProvider);
     final mediaDir = ref.watch(appSupportDirProvider).value;
     return cacheAsyncValue.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('加载缓存失败: $err')),
+      error: (err, stack) => Center(child: Text('Error on cache: $err')),
       data: (cacheData) {
         if (cacheData == null) {
-          return _buildEmptyCacheState(context);
+          return _buildNoDataState(context, () {});
         }
         return _buildDataDisplay(context, cacheData, mediaDir);
       },
-    );
-  }
-
-  Widget _buildEmptyCacheState(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(l10n.no_analysis_data),
-          const SizedBox(height: 20),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.sync),
-            onPressed: () => ref.invalidate(cacheProvider),
-            label: Text(l10n.run_analysis_now),
-          ),
-        ],
-      ),
     );
   }
 
@@ -218,164 +399,11 @@ class _HomePageState extends ConsumerState<HomePage> {
     String? mediaDir,
   ) {
     final l10n = AppLocalizations.of(context)!;
-    final activeAccount = ref.watch(activeAccountProvider);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 88.0),
       children: <Widget>[
-        Card(
-          clipBehavior: Clip.antiAlias,
-          margin: EdgeInsets.zero,
-          child: InkWell(
-            onTap: () {
-              if (activeAccount == null) return;
-              final user = TwitterUser(
-                avatarUrl: activeAccount.avatarUrl ?? '',
-                avatarLocalPath: activeAccount.avatarLocalPath ?? '',
-                bannerLocalPath: activeAccount.bannerLocalPath ?? '',
-                name: activeAccount.name ?? 'Unknown',
-                screenName: activeAccount.screenName ?? activeAccount.id,
-                restId: activeAccount.id,
-                joinedTime: activeAccount.joinTime ?? '',
-                bio: activeAccount.bio,
-                location: activeAccount.location,
-                bannerUrl: activeAccount.bannerUrl,
-                link: activeAccount.link,
-                followersCount: activeAccount.followersCount,
-                followingCount: activeAccount.followingCount,
-                statusesCount: activeAccount.statusesCount,
-                mediaCount: activeAccount.mediaCount,
-                favouritesCount: activeAccount.favouritesCount,
-                listedCount: activeAccount.listedCount,
-                isProtected: activeAccount.isProtected,
-                isVerified: activeAccount.isVerified,
-              );
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      UserDetailPage(user: user, ownerId: activeAccount.id),
-                ),
-              );
-            },
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                  child: Row(
-                    children: [
-                      UserAvatar(
-                        avatarUrl: activeAccount?.avatarUrl,
-                        avatarLocalPath: activeAccount?.avatarLocalPath,
-                        mediaDir: mediaDir,
-                        radius: 24,
-                        heroTag: 'avatar_${activeAccount?.id}',
-                        isHighQuality: true,
-                      ),
-
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              activeAccount?.name ?? 'Unknown Name',
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.bold),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              "@${activeAccount?.screenName ?? activeAccount?.id ?? '...'}",
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.outline,
-                                  ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              "ID: ${activeAccount?.id ?? '...'}",
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.outline,
-                                  ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.swap_horiz),
-                        tooltip: l10n.switch_account,
-                        onPressed: () => _showAccountSwitcher(context),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1, indent: 0, endIndent: 0),
-                IntrinsicHeight(
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: InkWell(
-                          onTap: () =>
-                              _navigateToUserList(context, 'following'),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 12.0),
-                            child: Column(
-                              children: [
-                                Text(
-                                  cache.followingCount.toString(),
-                                  style: Theme.of(context).textTheme.titleMedium
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  l10n.following,
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      const VerticalDivider(width: 1),
-                      Expanded(
-                        child: InkWell(
-                          onTap: () =>
-                              _navigateToUserList(context, 'followers'),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 12.0),
-                            child: Column(
-                              children: [
-                                Text(
-                                  cache.followersCount.toString(),
-                                  style: Theme.of(context).textTheme.titleMedium
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  l10n.followers,
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+        _buildUserProfileCard(context, cache),
         const SizedBox(height: 24),
         Card(
           margin: EdgeInsets.zero,

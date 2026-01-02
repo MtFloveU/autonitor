@@ -440,5 +440,9 @@
   "open_source_licenses": "Open Source Licenses",
   "@open_source_licenses": {},
   "others": "Others",
-  "@others": {}
+  "@others": {},
+  "no_data": "No data",
+  "@no_data": {},
+  "no_data_description": "No data available for this account. Run your first sync now!",
+  "@no_data_description": {}
 }

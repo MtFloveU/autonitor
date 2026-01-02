@@ -77,15 +77,15 @@ extension _UserDetailPageInfoWidgets on _UserDetailPageState {
     final children = <Widget>[
       Text(
         '@',
-        style: Theme.of(
-          context,
-        ).textTheme.bodyLarge?.copyWith(color: Colors.grey.shade600),
+        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
       ),
       SelectableText(
         widget.user.screenName ?? '',
-        style: Theme.of(
-          context,
-        ).textTheme.bodyLarge?.copyWith(color: Colors.grey.shade600),
+        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
       ),
     ];
 
@@ -282,12 +282,18 @@ extension _UserDetailPageInfoWidgets on _UserDetailPageState {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: Colors.grey, size: 16),
+        Icon(
+          icon,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          size: 16,
+        ),
         const SizedBox(width: 4),
         Flexible(
           child: SelectableText(
             text,
-            style: const TextStyle(color: Colors.grey),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
       ],
@@ -298,7 +304,11 @@ extension _UserDetailPageInfoWidgets on _UserDetailPageState {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.link, color: Colors.grey, size: 16),
+        Icon(
+          Icons.link,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          size: 16,
+        ),
         const SizedBox(width: 4),
         Flexible(
           child: SelectableText.rich(
