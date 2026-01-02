@@ -28,6 +28,87 @@ class HistoryRepository {
 
   HistoryRepository(this._db, this._worker);
 
+  // 在 HistoryRepository 类中添加
+  Future<List<Map<String, dynamic>>> getFieldHistory({
+    required String ownerId,
+    required String userId,
+    required String targetKey,
+  }) async {
+    String? latestRawJson;
+    List<Map<String, dynamic>> historyEntriesForIsolate = [];
+
+    // 复用数据库查询逻辑（与 getFilteredHistory 类似，但不需要 mediaHistory）
+    if (userId == ownerId) {
+      final account = await (_db.select(
+        _db.loggedAccounts,
+      )..where((tbl) => tbl.id.equals(ownerId))).getSingleOrNull();
+      latestRawJson = account?.latestRawJson;
+      if (latestRawJson != null) {
+        final historyEntries =
+            await (_db.select(_db.accountProfileHistory)
+                  ..where((tbl) => tbl.ownerId.equals(ownerId))
+                  ..orderBy([
+                    (tbl) => OrderingTerm(
+                      expression: tbl.timestamp,
+                      mode: OrderingMode.desc,
+                    ),
+                  ]))
+                .get();
+        historyEntriesForIsolate = historyEntries
+            .map(
+              (e) => {
+                'reverseDiffJson': e.reverseDiffJson,
+                'timestampMs': e.timestamp.millisecondsSinceEpoch,
+              },
+            )
+            .toList();
+      }
+    } else {
+      final user =
+          await (_db.select(_db.followUsers)..where(
+                (tbl) =>
+                    tbl.ownerId.equals(ownerId) & tbl.userId.equals(userId),
+              ))
+              .getSingleOrNull();
+      latestRawJson = user?.latestRawJson;
+      if (latestRawJson != null) {
+        final historyEntries =
+            await (_db.select(_db.followUsersHistory)
+                  ..where(
+                    (tbl) =>
+                        tbl.ownerId.equals(ownerId) & tbl.userId.equals(userId),
+                  )
+                  ..orderBy([
+                    (tbl) => OrderingTerm(
+                      expression: tbl.timestamp,
+                      mode: OrderingMode.desc,
+                    ),
+                  ]))
+                .get();
+        historyEntriesForIsolate = historyEntries
+            .map(
+              (e) => {
+                'reverseDiffJson': e.reverseDiffJson,
+                'timestampMs': e.timestamp.millisecondsSinceEpoch,
+              },
+            )
+            .toList();
+      }
+    }
+
+    if (latestRawJson == null) return [];
+
+    final payload = {
+      'action': 'fetch_field_history',
+      'latestRawJson': latestRawJson,
+      'historyEntries': historyEntriesForIsolate,
+      'targetKey': targetKey,
+    };
+
+    final result = await _worker.run(payload);
+    return (result as List).cast<Map<String, dynamic>>();
+  }
+
   Future<Map<String, dynamic>?> getLatestRelevantDiff(
     String ownerId,
     String userId,

@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:autonitor/providers/media_provider.dart';
 import 'package:autonitor/repositories/history_repository.dart';
 import 'package:autonitor/ui/components/profile_change_card.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -881,31 +882,37 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
         Icons.group_outlined,
         l10n.following,
         widget.user.followingCount.toString(),
+        'following_count',
       ),
       _StatItemData(
         Icons.group,
         l10n.followers,
         widget.user.followersCount.toString(),
+        'followers_count',
       ),
       _StatItemData(
         Icons.create,
         l10n.tweets,
         widget.user.statusesCount.toString(),
+        'statuses_count',
       ),
       _StatItemData(
         Icons.image,
         l10n.media_count,
         widget.user.mediaCount.toString(),
+        'media_count',
       ),
       _StatItemData(
         Icons.favorite,
         l10n.likes,
         widget.user.favouritesCount.toString(),
+        'favourites_count',
       ),
       _StatItemData(
         Icons.list_alt,
         l10n.listed_count,
         widget.user.listedCount.toString(),
+        'listed_count',
       ),
     ];
 
@@ -939,6 +946,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
     return SizedBox(
       width: itemWidth,
       child: InkWell(
+        onTap: widget.isFromHistory ? null : () => _showHistoryChart(context, item),
         borderRadius: BorderRadius.circular(8),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -1331,6 +1339,150 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
     );
   }
 
+  void _showHistoryChart(BuildContext context, _StatItemData item) async {
+    // 1. 获取数据
+    final data = await ref
+        .read(historyRepositoryProvider)
+        .getFieldHistory(
+          ownerId: widget.ownerId,
+          userId: widget.user.restId,
+          targetKey: item.jsonKey,
+        );
+
+    if (!context.mounted || data.isEmpty) return;
+
+    // 2. 准备 Spots 数据
+    final List<FlSpot> spots = [];
+    for (int i = 0; i < data.length; i++) {
+      spots.add(FlSpot(i.toDouble(), data[i]['value']));
+    }
+
+    // 3. 弹出 BottomSheet
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(16, 0, 24, 24),
+        height: 400,
+        child: Column(
+          children: [
+            Text(item.label, style: Theme.of(ctx).textTheme.titleMedium),
+            const SizedBox(height: 24),
+            Expanded(
+              child: LineChart(
+                LineChartData(
+                  lineTouchData: LineTouchData(
+                    touchTooltipData: LineTouchTooltipData(
+                      getTooltipColor: (spot) =>
+                          Theme.of(ctx).colorScheme.surfaceContainerHighest,
+                      getTooltipItems: (touchedSpots) {
+                        return touchedSpots.map((s) {
+                          final date = DateTime.fromMillisecondsSinceEpoch(
+                            data[s.spotIndex]['timestamp'],
+                          );
+                          final dateStr = DateFormat(
+                            'yyyy-MM-dd HH:mm',
+                          ).format(date);
+                          return LineTooltipItem(
+                            '$dateStr\n${s.y.toInt()}',
+                            TextStyle(
+                              color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                              fontSize: 12,
+                            ),
+                          );
+                        }).toList();
+                      },
+                    ),
+                  ),
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    getDrawingHorizontalLine: (value) => FlLine(
+                      color: Theme.of(ctx).dividerColor.withAlpha(50),
+                      strokeWidth: 1,
+                    ),
+                  ),
+                  titlesData: FlTitlesData(
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    // X 轴：时间格式化
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        interval: (spots.length / 4).clamp(1, double.infinity),
+                        getTitlesWidget: (value, meta) {
+                          final index = value.toInt();
+                          if (index < 0 || index >= data.length)
+                          {
+                            return const SizedBox.shrink();
+                          }
+                          final date = DateTime.fromMillisecondsSinceEpoch(
+                            data[index]['timestamp'],
+                          );
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              DateFormat.yMd().format(date),
+                              style: const TextStyle(fontSize: 10),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    // Y 轴：大数字缩写 (1000 -> 1k)
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 40,
+                        getTitlesWidget: (value, meta) {
+                          String text = value.toInt().toString();
+                       /*   if (value >= 1000)
+                          {
+                            text = '${(value / 1000).toStringAsFixed(1)}k';
+                          } 
+                          if (value >= 1000000)
+                          {
+                            text = '${(value / 1000000).toStringAsFixed(1)}m';
+                          } */
+                          return Text(
+                            text,
+                            style: const TextStyle(fontSize: 10),
+                            textAlign: TextAlign.center,
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: spots,
+                      isCurved: true,
+                      color: Theme.of(ctx).colorScheme.primary,
+                      barWidth: 3,
+                      isStrokeCapRound: true,
+                      dotData: const FlDotData(show: false),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        color: Theme.of(ctx).colorScheme.primary.withAlpha(20),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showJsonDialog(BuildContext context, AppLocalizations l10n) {
     String rawJson = widget.snapshotJson ?? jsonEncode(widget.user.toJson());
     if (rawJson.isEmpty) return;
@@ -1422,8 +1574,9 @@ class _StatItemData {
   final IconData icon;
   final String label;
   final String value;
+  final String jsonKey;
 
-  _StatItemData(this.icon, this.label, this.value);
+  _StatItemData(this.icon, this.label, this.value, this.jsonKey);
 }
 
 class _TextEntity {

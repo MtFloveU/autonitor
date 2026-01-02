@@ -108,6 +108,8 @@ void _historyIsolateEntry(SendPort replyToMain) {
 
         if (action == 'fetch_latest_diff') {
           result = _findLatestRelevantDiff(payload);
+        } else if (action == 'fetch_field_history') {
+          result = _extractFieldHistory(payload);
         } else {
           result = _processHistory(payload);
         }
@@ -122,6 +124,51 @@ void _historyIsolateEntry(SendPort replyToMain) {
       }
     }
   });
+}
+
+// 具体回溯逻辑实现
+List<Map<String, dynamic>> _extractFieldHistory(Map<String, dynamic> context) {
+  final String latestRawJson = context['latestRawJson'];
+  final List<dynamic> historyEntries = context['historyEntries'];
+  final String targetKey = context['targetKey'];
+
+  List<Map<String, dynamic>> series = [];
+  Map<String, dynamic> stateCursor;
+  try {
+    stateCursor = jsonDecode(latestRawJson);
+  } catch (_) {
+    return [];
+  }
+
+  // 记录当前最新状态点
+  series.add({
+    'timestamp': DateTime.now().millisecondsSinceEpoch,
+    'value': (double.tryParse(stateCursor[targetKey]?.toString() ?? '0') ?? 0.0),
+  });
+
+  // 逆向迭代历史，恢复每一个时间点的状态
+  for (var entry in historyEntries) {
+    final Map<String, dynamic> entryMap = entry as Map<String, dynamic>;
+    final reverseDiffJson = entryMap['reverseDiffJson'] as String;
+
+    Map<String, dynamic> patch;
+    try {
+      patch = jsonDecode(reverseDiffJson);
+    } catch (_) {
+      patch = {};
+    }
+
+    // 应用逆向补丁回到前一个状态
+    stateCursor = _applyReversePatchInline(stateCursor, patch) ?? stateCursor;
+
+    series.add({
+      'timestamp': entryMap['timestampMs'],
+      'value': (double.tryParse(stateCursor[targetKey]?.toString() ?? '0') ?? 0.0),
+    });
+  }
+
+  // 返回按时间正序排列的数据（从旧到新）
+  return series.reversed.toList();
 }
 
 // --- 过滤配置 ---
