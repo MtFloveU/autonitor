@@ -35,6 +35,9 @@ dependencies:
   diff_match_patch: ^0.4.1
   package_info_plus: ^9.0.0
   fl_chart: ^1.1.1
+  flutter_background_service: ^5.1.0
+  flutter_foreground_task: ^9.2.0
+  flutter_local_notifications: ^19.5.0
 
 dev_dependencies:
   flutter_test:

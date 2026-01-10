@@ -181,5 +181,9 @@
   "account_deactivated": "账号已注销",
   "account_deactivated_description": "此账号已注销。",
   "account_temporarily_restricted": "账号暂时受限",
-  "account_temporarily_restricted_description": "此账号目前处于暂时受限状态。"
+  "account_temporarily_restricted_description": "此账号目前处于暂时受限状态。",
+  "sync_notification_title": "Autonitor 数据同步",
+  "sync_notification_text": "正在同步账号 @{screenName} 的数据",
+  "sync_completed_notification_text": "账号 @{screenName} 的数据同步已完成",
+  "sync_failed_notification_text": "账号 @{screenName} 的数据同步失败"
 }

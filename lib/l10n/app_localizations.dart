@@ -1190,6 +1190,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This account has been temporarily restricted.'**
   String get account_temporarily_restricted_description;
+
+  /// No description provided for @sync_notification_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Autonitor Sync'**
+  String get sync_notification_title;
+
+  /// No description provided for @sync_notification_text.
+  ///
+  /// In en, this message translates to:
+  /// **'Syncing data for account @{screenName}'**
+  String sync_notification_text(String screenName);
+
+  /// No description provided for @sync_completed_notification_text.
+  ///
+  /// In en, this message translates to:
+  /// **'Data sync for account @{screenName} completed successfully'**
+  String sync_completed_notification_text(String screenName);
+
+  /// No description provided for @sync_failed_notification_text.
+  ///
+  /// In en, this message translates to:
+  /// **'Data sync for account @{screenName} failed'**
+  String sync_failed_notification_text(String screenName);
 }
 
 class _AppLocalizationsDelegate

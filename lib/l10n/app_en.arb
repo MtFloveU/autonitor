@@ -456,5 +456,31 @@
   "account_temporarily_restricted": "Account Temporarily Restricted",
   "@account_temporarily_restricted": {},
   "account_temporarily_restricted_description": "This account has been temporarily restricted.",
-  "@account_temporarily_restricted_description": {}
+  "@account_temporarily_restricted_description": {},
+  "sync_notification_title": "Autonitor Sync",
+  "@sync_notification_title": {},
+  "sync_notification_text": "Syncing data for account @{screenName}",
+  "@sync_notification_text": {
+    "placeholders": {
+      "screenName": {
+        "type": "String"
+      }
+    }
+  },
+  "sync_completed_notification_text": "Data sync for account @{screenName} completed successfully",
+  "@sync_completed_notification_text": {
+    "placeholders": {
+      "screenName": {
+        "type": "String"
+      }
+    }
+  },
+  "sync_failed_notification_text": "Data sync for account @{screenName} failed",
+  "@sync_failed_notification_text": {
+    "placeholders": {
+      "screenName": {
+        "type": "String"
+      }
+    }
+  }
 }

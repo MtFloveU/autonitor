@@ -10,6 +10,7 @@ import 'l10n/app_localizations.dart';
 import 'providers/settings_provider.dart';
 import 'services/database.dart';
 import 'package:autonitor/theme/app_theme.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -19,6 +20,7 @@ final databaseProvider = Provider<AppDatabase>((ref) {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  FlutterForegroundTask.initCommunicationPort();
 
   await initializeDateFormatting();
 

@@ -104,7 +104,7 @@ extension _UserDetailPageStatWidgets on _UserDetailPageState {
                 lineBarsData: [
                   LineChartBarData(
                     spots: viewState.spots,
-                    isCurved: true,
+                    isCurved: false,
                     preventCurveOverShooting: true,
                     color: theme.colorScheme.primary,
                     barWidth: 2,
@@ -186,52 +186,67 @@ extension _UserDetailPageStatWidgets on _UserDetailPageState {
 
   Widget _buildGridItem(BuildContext context, _StatItemData item) {
     const double itemWidth = 100;
+    final colorScheme = Theme.of(context).colorScheme;
+
     return SizedBox(
       width: itemWidth,
       child: InkWell(
         onTap: widget.isFromHistory
             ? null
             : () => _showHistoryChart(context, item),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12), // MD3 standard: larger radius
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4.0),
+          padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              Stack(
+                alignment: Alignment.topRight,
                 children: [
-                  Icon(
-                    item.icon,
-                    size: 18,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        item.value,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          height: 1.1,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(item.icon, size: 18, color: colorScheme.primary),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              item.value,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: colorScheme.onSurface,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
+                  // MD3 Hint Icon: Indicates more data/chart available
+                  if (!widget.isFromHistory)
+                    Positioned(
+                      top: -2,
+                      right: 0,
+                      child: Icon(
+                        Icons.analytics_outlined,
+                        size: 10,
+                        color: colorScheme.outline,
+                      ),
+                    ),
                 ],
               ),
               const SizedBox(height: 4),
               Text(
                 item.label,
-                textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 11,
-                  color: Theme.of(context).colorScheme.secondary,
+                  color:
+                      colorScheme.onSurfaceVariant, // MD3 secondary text color
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

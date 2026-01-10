@@ -8,7 +8,7 @@ import 'package:autonitor/repositories/history_repository.dart';
 import 'package:autonitor/services/log_service.dart';
 import 'package:autonitor/ui/components/full_screen_image_viewer.dart';
 import 'package:autonitor/ui/components/profile_change_card.dart';
-import 'package:autonitor/ui/user/user_history_page.dart';
+import 'package:autonitor/ui/subpages/user/user_history_page.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

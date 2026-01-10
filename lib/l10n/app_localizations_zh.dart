@@ -569,6 +569,24 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get account_temporarily_restricted_description => '此账号目前处于暂时受限状态。';
+
+  @override
+  String get sync_notification_title => 'Autonitor 数据同步';
+
+  @override
+  String sync_notification_text(String screenName) {
+    return '正在同步账号 @$screenName 的数据';
+  }
+
+  @override
+  String sync_completed_notification_text(String screenName) {
+    return '账号 @$screenName 的数据同步已完成';
+  }
+
+  @override
+  String sync_failed_notification_text(String screenName) {
+    return '账号 @$screenName 的数据同步失败';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -1136,4 +1154,22 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get account_temporarily_restricted_description => '此帳戶目前處於暫時受限狀態。';
+
+  @override
+  String get sync_notification_title => 'Autonitor 資料同步';
+
+  @override
+  String sync_notification_text(String screenName) {
+    return '正在同步帳戶 @$screenName 的資料';
+  }
+
+  @override
+  String sync_completed_notification_text(String screenName) {
+    return '帳戶 @$screenName 的資料同步已完成';
+  }
+
+  @override
+  String sync_failed_notification_text(String screenName) {
+    return '帳戶 @$screenName 的資料同步失敗';
+  }
 }

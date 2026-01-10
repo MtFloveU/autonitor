@@ -1,14 +1,14 @@
 import 'dart:io';
 import 'package:autonitor/providers/media_provider.dart';
-import 'package:autonitor/ui/auth/webview_login_page.dart';
+import 'package:autonitor/ui/accounts/webview_login_page.dart';
 import 'package:autonitor/ui/components/user_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/auth_provider.dart';
-import '../l10n/app_localizations.dart';
-import '../models/account.dart';
-import '../services/log_service.dart';
+import '../../providers/auth_provider.dart';
+import '../../l10n/app_localizations.dart';
+import '../../models/account.dart';
+import '../../services/log_service.dart';
 
 class AccountsPage extends ConsumerStatefulWidget {
   final bool useSideNav;

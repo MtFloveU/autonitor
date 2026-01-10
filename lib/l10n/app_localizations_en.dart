@@ -577,4 +577,22 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get account_temporarily_restricted_description =>
       'This account has been temporarily restricted.';
+
+  @override
+  String get sync_notification_title => 'Autonitor Sync';
+
+  @override
+  String sync_notification_text(String screenName) {
+    return 'Syncing data for account @$screenName';
+  }
+
+  @override
+  String sync_completed_notification_text(String screenName) {
+    return 'Data sync for account @$screenName completed successfully';
+  }
+
+  @override
+  String sync_failed_notification_text(String screenName) {
+    return 'Data sync for account @$screenName failed';
+  }
 }

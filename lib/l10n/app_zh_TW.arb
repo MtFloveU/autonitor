@@ -181,5 +181,9 @@
   "account_deactivated": "帳戶已註銷",
   "account_deactivated_description": "此帳戶已註銷。",
   "account_temporarily_restricted": "帳戶暫時受限",
-  "account_temporarily_restricted_description": "此帳戶目前處於暫時受限狀態。"
+  "account_temporarily_restricted_description": "此帳戶目前處於暫時受限狀態。",
+  "sync_notification_title": "Autonitor 資料同步",
+  "sync_notification_text": "正在同步帳戶 @{screenName} 的資料",
+  "sync_completed_notification_text": "帳戶 @{screenName} 的資料同步已完成",
+  "sync_failed_notification_text": "帳戶 @{screenName} 的資料同步失敗"
 }

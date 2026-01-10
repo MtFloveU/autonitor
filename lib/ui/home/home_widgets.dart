@@ -1,26 +1,7 @@
-import 'package:autonitor/ui/components/user_avatar.dart';
-import 'package:intl/intl.dart';
-import '../providers/media_provider.dart';
-import 'package:autonitor/services/log_service.dart';
-import 'package:autonitor/ui/user/profile/user_detail_page.dart';
-import 'package:autonitor/models/twitter_user.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:autonitor/models/cache_data.dart';
-import 'package:autonitor/providers/auth_provider.dart';
-import 'package:autonitor/ui/user/user_list_page.dart';
-import '../l10n/app_localizations.dart';
-import '../providers/report_providers.dart';
-import '../providers/analysis_provider.dart';
+part of 'home_page.dart';
 
-class HomePage extends ConsumerStatefulWidget {
-  final VoidCallback onNavigateToAccounts;
-  const HomePage({super.key, required this.onNavigateToAccounts});
-  @override
-  ConsumerState<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends ConsumerState<HomePage> {
+extension _HomePageWidgets on _HomePageState {
+  /// 格式化最后更新时间
   String _getFormattedLastUpdate(
     BuildContext context,
     AppLocalizations l10n,
@@ -33,12 +14,12 @@ class _HomePageState extends ConsumerState<HomePage> {
         DateTime.fromMillisecondsSinceEpoch(dateTime.millisecondsSinceEpoch),
       );
       return l10n.last_updated_at(formattedDate);
-    } catch (e, s) {
-      logger.e("Error parsing lastUpdateTime: $e", error: e, stackTrace: s);
+    } catch (e) {
       return l10n.last_updated_at("Invalid Date");
     }
   }
 
+  /// 显示账号切换底栏
   void _showAccountSwitcher(BuildContext context) {
     final allAccounts = ref.read(accountsProvider);
     final activeAccount = ref.read(activeAccountProvider);
@@ -113,7 +94,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                     ),
                   ],
                 ),
-                trailing: null,
                 onTap: () {
                   ref.read(activeAccountProvider.notifier).setActive(account);
                   Navigator.pop(context);
@@ -126,24 +106,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Future<void> _navigateToUserList(
-    BuildContext context,
-    String categoryKey,
-  ) async {
-    final activeAccount = ref.read(activeAccountProvider);
-    if (activeAccount == null) return;
-    logger.i(
-      '--- HomePage: Navigating to UserListPage for category $categoryKey ---',
-    );
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) =>
-            UserListPage(ownerId: activeAccount.id, categoryKey: categoryKey),
-      ),
-    );
-  }
-
+  /// 构建未登录状态 UI
   Widget _buildNoAccountState(BuildContext context, VoidCallback onNavigate) {
     final l10n = AppLocalizations.of(context)!;
     return Center(
@@ -183,21 +146,16 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Widget _buildUserProfileCard(
-    BuildContext context,
-    CacheData? cache, // cache 可以为空
-  ) {
+  /// 构建用户资料卡片
+  Widget _buildUserProfileCard(BuildContext context, CacheData? cache) {
     final l10n = AppLocalizations.of(context)!;
     final activeAccount = ref.watch(activeAccountProvider);
     final mediaDir = ref.watch(appSupportDirProvider).value;
 
     if (activeAccount == null) return const SizedBox.shrink();
 
-    // 如果 cache 为空（无数据状态），则尝试使用 activeAccount 中的静态数据，或显示 0
-    final followingCount =
-        cache?.followingCount ?? "--";
-    final followersCount =
-        cache?.followersCount ?? "--";
+    final followingCount = cache?.followingCount ?? "--";
+    final followersCount = cache?.followersCount ?? "--";
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -294,7 +252,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                 children: [
                   Expanded(
                     child: InkWell(
-                      // 无数据时点击可能无法跳转到列表，或者跳转空列表，这里保持原样即可
                       onTap: () => _navigateToUserList(context, 'following'),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 12.0),
@@ -347,19 +304,14 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
+  /// 构建无数据状态 UI
   Widget _buildNoDataState(BuildContext context, VoidCallback onNavigate) {
     final l10n = AppLocalizations.of(context)!;
-
-    // 改用 ListView 以便容纳顶部的卡片，并允许小屏幕滚动
     return ListView(
       padding: const EdgeInsets.all(16.0),
       children: [
-        // 1. 添加账号信息卡片
-        // 传入 null，因为此时没有 cache 数据，卡片会显示账号的静态信息(头像/名字)和默认数值
         _buildUserProfileCard(context, null),
-
-        const SizedBox(height: 60), // 与下方图标保持一定距离
-        // 2. 原有的无数据提示部分
+        const SizedBox(height: 60),
         Icon(
           Icons.folder_off_outlined,
           size: 64,
@@ -378,6 +330,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
+  /// 构建账号视图入口
   Widget _buildAccountView(BuildContext context) {
     final cacheAsyncValue = ref.watch(cacheProvider);
     final mediaDir = ref.watch(appSupportDirProvider).value;
@@ -393,6 +346,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
+  /// 构建数据展示列表
   Widget _buildDataDisplay(
     BuildContext context,
     CacheData cache,
@@ -412,10 +366,9 @@ class _HomePageState extends ConsumerState<HomePage> {
               _buildDetailListItem(
                 context,
                 'profile_update',
-                Icons.badge_outlined, // Or Icons.assignment_ind_outlined
+                Icons.badge_outlined,
                 l10n.profile_updates,
                 cache.profileUpdatedCount,
-                onTap: () => _navigateToUserList(context, 'profile_update'),
               ),
               _buildDetailListItem(
                 context,
@@ -498,23 +451,19 @@ class _HomePageState extends ConsumerState<HomePage> {
               ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
               child: InkWell(
                 borderRadius: BorderRadius.circular(12),
-                onTap: () {
-                  // TODO:在此处添加点击逻辑
-                },
+                onTap: () {},
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16.0,
                     vertical: 8.0,
                   ),
-                  // 使用 ConstrainedBox 限制最大宽度，防止卡片在超大屏上过宽
                   child: ConstrainedBox(
                     constraints: BoxConstraints(
                       maxWidth: MediaQuery.of(context).size.width * 0.85,
                     ),
                     child: Row(
-                      mainAxisSize: MainAxisSize.min, // 紧凑布局
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        // 使用 Flexible 防止文本过长导致溢出
                         Flexible(
                           child: Text(
                             '${_getFormattedLastUpdate(context, l10n, cache.lastUpdateTime)} ${cache.lastRunId}',
@@ -528,7 +477,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                           ),
                         ),
                         const SizedBox(width: 4),
-
                         Icon(
                           Icons.chevron_right,
                           size: 16,
@@ -546,6 +494,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
+  /// 构建详情列表项
   Widget _buildDetailListItem(
     BuildContext context,
     String categoryKey,
@@ -582,164 +531,16 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.outlineVariant),
+                Icon(
+                  Icons.chevron_right,
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
               ],
             ),
           ),
           if (showDivider) const Divider(height: 1, indent: 56),
         ],
       ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
-    final activeAccountNotifier = ref.read(activeAccountProvider.notifier);
-    final activeAccount = ref.watch(activeAccountProvider);
-
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.app_title)),
-
-      body: !activeAccountNotifier.isInitialized
-          ? const Center(child: CircularProgressIndicator())
-          : activeAccount != null
-          ? _buildAccountView(context)
-          : _buildNoAccountState(context, widget.onNavigateToAccounts),
-      floatingActionButton: activeAccount == null
-          ? null
-          : FloatingActionButton.extended(
-              onPressed: () async {
-                final currentContext = context;
-                final currentRef = ref;
-                final currentL10n = AppLocalizations.of(currentContext)!;
-                final currentTheme = Theme.of(currentContext);
-
-                final accountToProcess = currentRef.read(activeAccountProvider);
-                if (accountToProcess == null) {
-                  ScaffoldMessenger.of(currentContext).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        currentL10n.no_active_account_error,
-                        style: TextStyle(
-                          color: currentTheme.colorScheme.onError,
-                        ),
-                      ),
-                      backgroundColor: currentTheme.colorScheme.error,
-                      duration: const Duration(seconds: 3),
-                    ),
-                  );
-                  return;
-                }
-
-                currentRef
-                    .read(analysisServiceProvider.notifier)
-                    .runAnalysis(accountToProcess)
-                    .catchError((e, s) {
-                      logger.e(
-                        "runAnalysisProcess top-level error (should be handled in Notifier): $e",
-                        error: e,
-                        stackTrace: s,
-                      );
-                    })
-                    .whenComplete(() {
-                      currentRef.invalidate(cacheProvider);
-                    });
-
-                showDialog(
-                  context: currentContext,
-                  barrierDismissible: false,
-                  builder: (dialogContext) => PopScope(
-                    canPop: true,
-                    child: AlertDialog(
-                      title: Row(
-                        children: [
-                          Consumer(
-                            builder: (context, ref, child) {
-                              final isRunning = ref.watch(
-                                analysisIsRunningProvider,
-                              );
-                              return isRunning
-                                  ? SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 3,
-                                      ),
-                                    )
-                                  : Icon(
-                                      Icons.check_circle,
-                                      color: Colors.green,
-                                    );
-                            },
-                          ),
-                          SizedBox(width: 16),
-                          Text(currentL10n.analysis_log),
-                        ],
-                      ),
-                      content: SizedBox(
-                        width: double.maxFinite,
-                        height: MediaQuery.of(currentContext).size.height * 0.7,
-                        child: Consumer(
-                          builder: (context, ref, child) {
-                            final logs = ref.watch(analysisLogProvider);
-                            final String logText = logs.join('\n');
-                            final controller = TextEditingController(
-                              text: logText,
-                            );
-
-                            return Container(
-                              decoration: BoxDecoration(
-                                color: currentTheme
-                                    .colorScheme
-                                    .surfaceContainerHighest,
-                                borderRadius: BorderRadius.circular(8.0),
-                              ),
-                              child: SingleChildScrollView(
-                                reverse: true,
-                                padding: const EdgeInsets.all(8.0),
-                                child: TextField(
-                                  controller: controller,
-                                  readOnly: true,
-                                  maxLines: null,
-                                  decoration: InputDecoration.collapsed(
-                                    hintText: null,
-                                  ),
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontFamily: 'monospace',
-                                    color: currentTheme
-                                        .colorScheme
-                                        .onSurfaceVariant,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      actions: [
-                        Consumer(
-                          builder: (context, ref, child) {
-                            final isRunning = ref.watch(
-                              analysisIsRunningProvider,
-                            );
-                            if (isRunning) return const SizedBox.shrink();
-                            return TextButton(
-                              child: Text(currentL10n.close),
-                              onPressed: () => Navigator.pop(dialogContext),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-              label: Text(l10n.run),
-              icon: const Icon(Icons.sync_outlined),
-            ),
     );
   }
 }
