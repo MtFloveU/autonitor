@@ -58,7 +58,10 @@ class UserAvatar extends StatelessWidget {
     final placeholder = SizedBox(
       width: diameter,
       height: diameter,
-      child: const Icon(Icons.person, color: Colors.grey),
+      child: Icon(
+        Icons.person,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
     );
 
     Widget imageContent;

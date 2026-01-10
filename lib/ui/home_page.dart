@@ -102,13 +102,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                     Text(
                       "@${account.screenName ?? account.id}",
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey.shade600,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                     Text(
                       "ID: ${account.id}",
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey.shade600,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -582,7 +582,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Icon(Icons.chevron_right, color: Colors.grey),
+                Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.outlineVariant),
               ],
             ),
           ),
@@ -651,7 +651,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   context: currentContext,
                   barrierDismissible: false,
                   builder: (dialogContext) => PopScope(
-                    canPop: false,
+                    canPop: true,
                     child: AlertDialog(
                       title: Row(
                         children: [

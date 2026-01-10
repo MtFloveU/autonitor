@@ -133,7 +133,7 @@ extension _UserDetailPageHeaderWidgets on _UserDetailPageState {
   }
 
   Widget _buildNetworkBanner(BuildContext context) {
-    return Container(color: Colors.grey.shade300);
+    return Container(color: Theme.of(context).colorScheme.outlineVariant);
   }
 
   Widget _buildButtonsRow(BuildContext context) {

@@ -175,7 +175,7 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => PopScope(
-        canPop: false,
+        canPop: true,
         child: AlertDialog(
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -236,7 +236,7 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => const PopScope(
-        canPop: false,
+        canPop: true,
         child: AlertDialog(
           content: Column(
             mainAxisSize: MainAxisSize.min,

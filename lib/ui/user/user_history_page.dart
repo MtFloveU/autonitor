@@ -73,9 +73,9 @@ class _UserHistoryPageState extends ConsumerState<UserHistoryPage> {
             const SizedBox(height: 2),
             Text(
               '@${widget.user.screenName}',
-              style: Theme.of(
-                context,
-              ).textTheme.titleSmall?.copyWith(color: Colors.grey.shade600),
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -284,7 +284,10 @@ class _HistoryItem extends StatelessWidget {
                 right: 4,
                 top: 4,
                 child: IconButton(
-                  icon: const Icon(Icons.expand_more, color: Colors.grey),
+                  icon: Icon(
+                    Icons.expand_more,
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
                   onPressed: onToggle,
                 ),
               ),
