@@ -175,5 +175,11 @@
   "author_on_twitter": "作者的 Twitter",
   "others": "其它",
   "no_data": "尚無資料",
-  "no_data_description": "此賬戶尚無資料，執行首次同步喵！"
+  "no_data_description": "此賬戶尚無資料，執行首次同步喵！",
+  "account_suspended": "帳戶遭停權",
+  "account_suspended_description": "此帳戶已遭 Twitter 停權。",
+  "account_deactivated": "帳戶已註銷",
+  "account_deactivated_description": "此帳戶已註銷。",
+  "account_temporarily_restricted": "帳戶暫時受限",
+  "account_temporarily_restricted_description": "此帳戶目前處於暫時受限狀態。"
 }

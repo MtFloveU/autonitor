@@ -551,6 +551,24 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get no_data_description => '该账号暂无数据，先同步一下数据喵！';
+
+  @override
+  String get account_suspended => '账号已冻结';
+
+  @override
+  String get account_suspended_description => '此账号已被 Twitter 冻结。';
+
+  @override
+  String get account_deactivated => '账号已注销';
+
+  @override
+  String get account_deactivated_description => '此账号已注销。';
+
+  @override
+  String get account_temporarily_restricted => '账号暂时受限';
+
+  @override
+  String get account_temporarily_restricted_description => '此账号目前处于暂时受限状态。';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -1100,4 +1118,22 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get no_data_description => '此賬戶尚無資料，執行首次同步喵！';
+
+  @override
+  String get account_suspended => '帳戶遭停權';
+
+  @override
+  String get account_suspended_description => '此帳戶已遭 Twitter 停權。';
+
+  @override
+  String get account_deactivated => '帳戶已註銷';
+
+  @override
+  String get account_deactivated_description => '此帳戶已註銷。';
+
+  @override
+  String get account_temporarily_restricted => '帳戶暫時受限';
+
+  @override
+  String get account_temporarily_restricted_description => '此帳戶目前處於暫時受限狀態。';
 }

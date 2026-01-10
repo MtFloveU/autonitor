@@ -556,4 +556,25 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get no_data_description =>
       'No data available for this account. Run your first sync now!';
+
+  @override
+  String get account_suspended => 'Account Suspended';
+
+  @override
+  String get account_suspended_description =>
+      'This account has been suspended by Twitter.';
+
+  @override
+  String get account_deactivated => 'Account Deactivated';
+
+  @override
+  String get account_deactivated_description =>
+      'This account has been deactivated.';
+
+  @override
+  String get account_temporarily_restricted => 'Account Temporarily Restricted';
+
+  @override
+  String get account_temporarily_restricted_description =>
+      'This account has been temporarily restricted.';
 }

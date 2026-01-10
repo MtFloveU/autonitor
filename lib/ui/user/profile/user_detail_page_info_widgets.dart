@@ -397,4 +397,120 @@ extension _UserDetailPageInfoWidgets on _UserDetailPageState {
       ),
     );
   }
+
+  Widget _buildStatusPrompts(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final List<Widget> prompts = [];
+
+    // 检查封禁状态 (Taiwan: 遭停權)
+    if (widget.user.status == "suspended") {
+      prompts.add(
+        _buildPromptCard(
+          context,
+          icon: Icons.lock_outlined,
+          title: l10n.account_suspended,
+          subtitle: l10n.account_suspended_description,
+          color: theme.colorScheme.errorContainer,
+          onColor: theme.colorScheme.onErrorContainer,
+        ),
+      );
+    }
+
+    // 检查停用状态
+    if (widget.user.status == "deactivated") {
+      prompts.add(
+        _buildPromptCard(
+          context,
+          icon: Icons.no_accounts_outlined,
+          title: l10n.account_deactivated,
+          subtitle: l10n.account_deactivated_description,
+          color: theme.colorScheme.errorContainer,
+          onColor: theme.colorScheme.onErrorContainer,
+        ),
+      );
+    }
+
+    // 检查暂时受限状态
+    if (widget.user.status == "temporarily_restricted" ||
+        widget.user.keptIdsStatus == "temporarily_restricted") {
+      prompts.add(
+        _buildPromptCard(
+          context,
+          icon: Icons.warning_amber_rounded,
+          title: l10n.account_temporarily_restricted,
+          subtitle: l10n.account_temporarily_restricted_description,
+          color: theme.colorScheme.errorContainer,
+          onColor: theme.colorScheme.onErrorContainer,
+        ),
+      );
+    }
+
+    if (prompts.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Wrap(
+        spacing: 8.0, // 子组件之间的水平间距
+        runSpacing: 8.0, // 行与行之间的垂直间距
+        alignment: WrapAlignment.start, // 整体左对齐
+        children: prompts,
+      ),
+    );
+  }
+
+  Widget _buildPromptCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required Color onColor,
+  }) {
+    return Card(
+      elevation: 0,
+      color: color,
+      margin: EdgeInsets.zero, // 由 Wrap 的 spacing 控制间距
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        child: Row(
+          mainAxisSize: MainAxisSize.min, // 允许卡片宽度根据内容自适应，从而在 Wrap 中并排
+          crossAxisAlignment: CrossAxisAlignment.center, // 关键：强制所有内容垂直居中
+          children: [
+            Icon(icon, color: onColor, size: 24),
+            const SizedBox(width: 12),
+            // 使用 Flexible 防止文本过长导致溢出，同时在 Wrap 中能正确换行
+            Flexible(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                // 这里不需要额外的垂直对齐设置，因为父级 Row 已经处理了
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: onColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      height: 1.2, // 微调行高
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: onColor.withAlpha(200),
+                      fontSize: 12,
+                      height: 1.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

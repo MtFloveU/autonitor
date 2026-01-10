@@ -208,7 +208,22 @@ _PrepareDataResult _prepareDatabaseData(_PrepareDataParams params) {
   // 主处理循环：计算 diff、收集 changedUserIds、构建 companions / history
   // -------------------------------------------------------------------------
   for (final id in allUsers.keys) {
-    final newUser = allUsers[id]!;
+    var newUser = allUsers[id]!; // 变更为 var 以便更新
+
+    // [Fix] 核心修复：强制使用 NetworkDataFetcher 的 Sets 作为权威来源
+    // 防止因为 TwitterUser 对象的原始 JSON 解析不完整导致的状态不一致
+    // 只有在 uniqueUsers 中存在的（即本次网络获取到的）用户才应用此逻辑
+    if (params.networkData.uniqueUsers.containsKey(id)) {
+      final bool realIsFollower = params.networkData.followerIds.contains(id);
+      final bool realIsFollowing = params.networkData.followingIds.contains(id);
+
+      // 更新 newUser 对象，确保后续生成的 JSON 和 Companion 状态一致
+      newUser = newUser.copyWith(
+        isFollower: realIsFollower,
+        isFollowing: realIsFollowing,
+      );
+    }
+
     final oldRel = params.oldRelationsMap[id];
 
     final newJson = jsonEncode(newUser.toJson());
@@ -294,8 +309,8 @@ _PrepareDataResult _prepareDatabaseData(_PrepareDataParams params) {
           bannerUrl: Value(newUser.bannerUrl),
           bio: Value(newUser.bio),
           latestRawJson: Value(newJson),
-          isFollower: Value(newUser.isFollower),
-          isFollowing: Value(newUser.isFollowing),
+          isFollower: Value(newUser.isFollower), // 使用修正后的状态
+          isFollowing: Value(newUser.isFollowing), // 使用修正后的状态
           followerSort: Value(followerIndexMap[id]),
           followingSort: Value(followingIndexMap[id]),
           avatarLocalPath: finalAvatarPath == null

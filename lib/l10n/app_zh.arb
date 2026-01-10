@@ -175,5 +175,11 @@
   "open_source_licenses": "开源许可证",
   "others": "其它",
   "no_data": "暂无数据",
-  "no_data_description": "该账号暂无数据，先同步一下数据喵！"
+  "no_data_description": "该账号暂无数据，先同步一下数据喵！",
+  "account_suspended": "账号已冻结",
+  "account_suspended_description": "此账号已被 Twitter 冻结。",
+  "account_deactivated": "账号已注销",
+  "account_deactivated_description": "此账号已注销。",
+  "account_temporarily_restricted": "账号暂时受限",
+  "account_temporarily_restricted_description": "此账号目前处于暂时受限状态。"
 }

@@ -119,7 +119,7 @@ extension _UserDetailPageStatWidgets on _UserDetailPageState {
   }
 
   void _showHistoryChart(BuildContext context, _StatItemData item) async {
-    final data = await ref
+    final rawData = await ref
         .read(historyRepositoryProvider)
         .getFieldHistory(
           ownerId: widget.ownerId,
@@ -127,124 +127,178 @@ extension _UserDetailPageStatWidgets on _UserDetailPageState {
           targetKey: item.jsonKey,
         );
 
-    if (!context.mounted || data.isEmpty) return;
+    if (!context.mounted || rawData.isEmpty) return;
+
+    final validData = rawData.where((e) {
+      final t = e['timestamp'];
+      return t != null && t != 0;
+    }).toList();
+
+    if (validData.isEmpty) return;
+
+    validData.sort(
+      (a, b) => (a['timestamp'] as int).compareTo(b['timestamp'] as int),
+    );
 
     final List<FlSpot> spots = [];
-    for (int i = 0; i < data.length; i++) {
-      spots.add(FlSpot(i.toDouble(), data[i]['value']));
+    for (var entry in validData) {
+      spots.add(
+        FlSpot(
+          (entry['timestamp'] as int).toDouble(),
+          (entry['value'] as num).toDouble(),
+        ),
+      );
     }
+
+    final double minX = spots.first.x;
+    final double maxX = spots.last.x;
+    final double timeRange = maxX - minX;
+
+    double xInterval = timeRange / 5;
+    if (xInterval < 86400000) {
+      xInterval = 86400000;
+    }
+
+    final Iterable<double> yIterable = spots.map((s) => s.y);
+    double minYValue = yIterable.reduce((a, b) => a < b ? a : b);
+    double maxYValue = yIterable.reduce((a, b) => a > b ? a : b);
+
+    double paddingY;
+    if ((maxYValue - minYValue).abs() < 0.000001) {
+      paddingY = maxYValue == 0 ? 1.0 : maxYValue.abs() * 0.1;
+    } else {
+      paddingY = (maxYValue - minYValue) * 0.1;
+    }
+
+    final double chartMinY = minYValue == 0 ? 0 : minYValue - paddingY;
+    final double chartMaxY = maxYValue + paddingY;
+    double leftInterval = (chartMaxY - chartMinY) / 4;
+    if (leftInterval <= 0) leftInterval = 1;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.fromLTRB(16, 0, 24, 24),
-        height: 400,
-        child: Column(
-          children: [
-            Text(item.label, style: Theme.of(ctx).textTheme.titleMedium),
-            const SizedBox(height: 24),
-            Expanded(
-              child: LineChart(
-                LineChartData(
-                  lineTouchData: LineTouchData(
-                    touchTooltipData: LineTouchTooltipData(
-                      getTooltipColor: (spot) =>
-                          Theme.of(ctx).colorScheme.surfaceContainerHighest,
-                      getTooltipItems: (touchedSpots) => touchedSpots.map((s) {
-                        final date = DateTime.fromMillisecondsSinceEpoch(
-                          data[s.spotIndex]['timestamp'],
-                        );
-                        return LineTooltipItem(
-                          '${DateFormat('yyyy-MM-dd HH:mm').format(date)}\n${s.y.toInt()}',
-                          TextStyle(
-                            color: Theme.of(ctx).colorScheme.onSurfaceVariant,
-                            fontSize: 12,
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                  gridData: FlGridData(
-                    show: true,
-                    drawVerticalLine: false,
-                    getDrawingHorizontalLine: (v) => FlLine(
-                      color: Theme.of(ctx).dividerColor.withAlpha(50),
-                      strokeWidth: 1,
-                    ),
-                  ),
-                  titlesData: FlTitlesData(
-                    topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        interval: (spots.length / 4).clamp(1, double.infinity),
-                        getTitlesWidget: (v, m) {
-                          final idx = v.toInt();
-                          if (idx < 0 || idx >= data.length) {
-                            return const SizedBox.shrink();
-                          }
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: Text(
-                              DateFormat.yMd().format(
-                                DateTime.fromMillisecondsSinceEpoch(
-                                  data[idx]['timestamp'],
-                                ),
-                              ),
-                              style: const TextStyle(fontSize: 10),
+      builder: (ctx) {
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(ctx).size.height * 0.6,
+            minHeight: 300,
+          ),
+          padding: const EdgeInsets.fromLTRB(16, 0, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(item.label, style: Theme.of(ctx).textTheme.titleMedium),
+              const SizedBox(height: 24),
+              Expanded(
+                child: LineChart(
+                  LineChartData(
+                    lineTouchData: LineTouchData(
+                      touchTooltipData: LineTouchTooltipData(
+                        fitInsideHorizontally: true,
+                        getTooltipColor: (spot) =>
+                            Theme.of(ctx).colorScheme.surfaceContainerHighest,
+                        getTooltipItems: (touchedSpots) => touchedSpots.map((
+                          spot,
+                        ) {
+                          final date = DateTime.fromMillisecondsSinceEpoch(
+                            spot.x.toInt(),
+                          );
+                          return LineTooltipItem(
+                            '${DateFormat.yMd().add_Hms().format(date)}\n${spot.y.toInt()}',
+                            TextStyle(
+                              color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                              fontSize: 12,
                             ),
                           );
-                        },
+                        }).toList(),
                       ),
                     ),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 40,
-                        getTitlesWidget: (v, meta) {
-                          // 将 m 改为 meta 以便阅读
-                          // --- 添加下面这一行判断 ---
-                          if (v == meta.min || v == meta.max) {
-                            return const SizedBox.shrink();
-                          }
-                          // -----------------------
-                          return Text(
-                            v.toInt().toString(),
-                            style: const TextStyle(fontSize: 10),
-                          );
-                        },
+                    gridData: FlGridData(
+                      show: true,
+                      drawVerticalLine: false,
+                      getDrawingHorizontalLine: (v) => FlLine(
+                        color: Theme.of(ctx).dividerColor.withAlpha(50),
+                        strokeWidth: 1,
                       ),
                     ),
+                    titlesData: FlTitlesData(
+                      topTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      rightTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          interval: xInterval,
+                          getTitlesWidget: (xValue, titleMeta) {
+                            if (xValue == titleMeta.min ||
+                                xValue == titleMeta.max) {
+                              return const SizedBox.shrink();
+                            }
+                            final date = DateTime.fromMillisecondsSinceEpoch(
+                              xValue.toInt(),
+                            );
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: Text(
+                                DateFormat.Md().format(date),
+                                style: const TextStyle(fontSize: 10),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 48,
+                          interval: leftInterval,
+                          getTitlesWidget: (yValue, titleMeta) {
+                            if (yValue == titleMeta.min ||
+                                yValue == titleMeta.max) {
+                              return const SizedBox.shrink();
+                            }
+                            return Text(
+                              yValue.toInt().toString(),
+                              style: const TextStyle(fontSize: 10),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    borderData: FlBorderData(show: false),
+                    minX: minX,
+                    maxX: maxX,
+                    minY: chartMinY,
+                    maxY: chartMaxY,
+                    lineBarsData: [
+                      LineChartBarData(
+                        spots: spots,
+                        isCurved: true,
+                        preventCurveOverShooting: true,
+                        color: Theme.of(ctx).colorScheme.primary,
+                        barWidth: 2,
+                        dotData: const FlDotData(show: false),
+                        belowBarData: BarAreaData(
+                          show: true,
+                          color: Theme.of(
+                            ctx,
+                          ).colorScheme.primary.withAlpha(20),
+                        ),
+                      ),
+                    ],
                   ),
-                  borderData: FlBorderData(show: false),
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: spots,
-                      isCurved: true,
-                      preventCurveOverShooting: true,
-                      color: Theme.of(ctx).colorScheme.primary,
-                      barWidth: 3,
-                      dotData: const FlDotData(show: false),
-                      belowBarData: BarAreaData(
-                        show: true,
-                        color: Theme.of(ctx).colorScheme.primary.withAlpha(20),
-                      ),
-                    ),
-                  ],
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

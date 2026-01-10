@@ -444,5 +444,17 @@
   "no_data": "No data",
   "@no_data": {},
   "no_data_description": "No data available for this account. Run your first sync now!",
-  "@no_data_description": {}
+  "@no_data_description": {},
+  "account_suspended": "Account Suspended",
+  "@account_suspended": {},
+  "account_suspended_description": "This account has been suspended by Twitter.",
+  "@account_suspended_description": {},
+  "account_deactivated": "Account Deactivated",
+  "@account_deactivated": {},
+  "account_deactivated_description": "This account has been deactivated.",
+  "@account_deactivated_description": {},
+  "account_temporarily_restricted": "Account Temporarily Restricted",
+  "@account_temporarily_restricted": {},
+  "account_temporarily_restricted_description": "This account has been temporarily restricted.",
+  "@account_temporarily_restricted_description": {}
 }

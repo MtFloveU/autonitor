@@ -31,7 +31,13 @@ extension _UserDetailPageLogic on _UserDetailPageState {
     _builders.add(_buildBannerAvatarSection);
     _builders.add((c) => const SizedBox(height: 5));
     _builders.add(_buildUserInfoColumn);
-    _builders.add((c) => const SizedBox(height: 12));
+    _builders.add(_buildStatusPrompts);
+    if (widget.user.status != 'suspended' &&
+        widget.user.status != 'deactivated' &&
+        widget.user.status != 'temporary_restricted' &&
+        widget.user.keptIdsStatus != 'temporary_restricted') {
+      _builders.add((c) => const SizedBox(height: 12));
+    }
     _builders.add(_buildMetadataRow);
     _builders.add((c) => const SizedBox(height: 5));
     _builders.add(_buildFlexibleStatGrid);

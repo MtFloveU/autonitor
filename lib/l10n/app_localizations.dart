@@ -1154,6 +1154,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No data available for this account. Run your first sync now!'**
   String get no_data_description;
+
+  /// No description provided for @account_suspended.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Suspended'**
+  String get account_suspended;
+
+  /// No description provided for @account_suspended_description.
+  ///
+  /// In en, this message translates to:
+  /// **'This account has been suspended by Twitter.'**
+  String get account_suspended_description;
+
+  /// No description provided for @account_deactivated.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Deactivated'**
+  String get account_deactivated;
+
+  /// No description provided for @account_deactivated_description.
+  ///
+  /// In en, this message translates to:
+  /// **'This account has been deactivated.'**
+  String get account_deactivated_description;
+
+  /// No description provided for @account_temporarily_restricted.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Temporarily Restricted'**
+  String get account_temporarily_restricted;
+
+  /// No description provided for @account_temporarily_restricted_description.
+  ///
+  /// In en, this message translates to:
+  /// **'This account has been temporarily restricted.'**
+  String get account_temporarily_restricted_description;
 }
 
 class _AppLocalizationsDelegate

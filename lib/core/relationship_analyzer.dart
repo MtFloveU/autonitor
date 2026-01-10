@@ -56,10 +56,11 @@ class RelationshipAnalyzer {
     required NetworkFetchResult networkData,
   }) async {
     final Set<String> newIds = networkData.uniqueUsers.keys.toSet();
-    final Set<String> oldIds = oldRelationsMap.values
-        .where((u) => u.isFollower || u.isFollowing)
-        .map((u) => u.userId)
-        .toSet();
+
+    // [Fix] 直接使用所有数据库中的 ID，不根据状态过滤
+    // 这样即使之前的状态是 false/false (Bug导致) 或者已取关，
+    // 也会进入 keptIds 逻辑进行状态恢复(Recovered)或静默更新，而不是被误判为 New
+    final Set<String> oldIds = oldRelationsMap.keys.toSet();
 
     final Set<String> addedIds = newIds.difference(oldIds);
     final Set<String> rawRemovedIds = oldIds.difference(newIds);
@@ -72,7 +73,12 @@ class RelationshipAnalyzer {
       final oldUser = oldRelationsMap[id];
       bool skip = false;
 
-      if (oldUser?.latestRawJson != null) {
+      // [Fix] 如果用户在数据库中已经是“非关注且非粉丝”状态（即已完全断开），则跳过，防止重复报 Removed
+      if (oldUser != null && !oldUser.isFollower && !oldUser.isFollowing) {
+        skip = true;
+      }
+
+      if (!skip && oldUser?.latestRawJson != null) {
         try {
           final Map<String, dynamic> jsonMap = jsonDecode(
             oldUser!.latestRawJson!,
