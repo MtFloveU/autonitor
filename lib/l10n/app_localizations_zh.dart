@@ -587,6 +587,27 @@ class AppLocalizationsZh extends AppLocalizations {
   String sync_failed_notification_text(String screenName) {
     return '账号 @$screenName 的数据同步失败';
   }
+
+  @override
+  String get pause => '暂停';
+
+  @override
+  String get resume => '继续';
+
+  @override
+  String get stop => '停止';
+
+  @override
+  String get comfirm_stop_sync_title => '确定要停止同步嘛？';
+
+  @override
+  String get comfirm_stop_sync_text => '停止同步将取消所有正在进行的数据获取操作，本次同步不会保存任何数据。';
+
+  @override
+  String get paused => '已暂停';
+
+  @override
+  String get stopped_by_user => '已被用户停止';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -1172,4 +1193,25 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String sync_failed_notification_text(String screenName) {
     return '帳戶 @$screenName 的資料同步失敗';
   }
+
+  @override
+  String get pause => '暫停';
+
+  @override
+  String get resume => '繼續';
+
+  @override
+  String get stop => '停止';
+
+  @override
+  String get comfirm_stop_sync_title => '確定要停止同步嘛？';
+
+  @override
+  String get comfirm_stop_sync_text => '停止同步將取消所有進行中的資料擷取作業，本次同步不會儲存任何資料。';
+
+  @override
+  String get paused => '已暫停';
+
+  @override
+  String get stopped_by_user => '已由使用者停止';
 }

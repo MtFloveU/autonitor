@@ -28,6 +28,8 @@ class NetworkDataFetcher {
   final String _ownerId;
   final String _ownerCookie;
   final LogCallback _log;
+  // [新增] 暂停回调
+  final Future<void> Function() _checkPauseCallback;
 
   NetworkDataFetcher({
     required TwitterApiService apiServiceGql,
@@ -36,12 +38,14 @@ class NetworkDataFetcher {
     required String ownerId,
     required String ownerCookie,
     required LogCallback log,
+    required Future<void> Function() checkPauseCallback, // [Init]
   }) : _apiServiceGql = apiServiceGql,
        _apiServiceV1 = apiServiceV1,
        _ref = ref,
        _ownerId = ownerId,
        _ownerCookie = ownerCookie,
-       _log = log;
+       _log = log,
+       _checkPauseCallback = checkPauseCallback;
 
   Future<NetworkFetchResult> fetchAllNetworkData() async {
     final Map<String, TwitterUser> newUsers = {};
@@ -53,6 +57,9 @@ class NetworkDataFetcher {
     _log("Fetching new followers from API (V1)...");
     String? nextFollowerCursor;
     do {
+      // [Check] 每次分页前检查暂停
+      await _checkPauseCallback();
+
       final followerResult = await _apiServiceV1.getFollowers(
         _ownerId,
         _ownerCookie,
@@ -85,6 +92,9 @@ class NetworkDataFetcher {
         .getCurrentQueryIdForDisplay('Following');
     UserListResultGql followingResult;
     do {
+      // [Check] 每次分页前检查暂停
+      await _checkPauseCallback();
+
       final transactionId = await _ref
           .read(transactionIdProvider.notifier)
           .generate(

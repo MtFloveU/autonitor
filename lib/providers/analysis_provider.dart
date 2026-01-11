@@ -18,22 +18,39 @@ import '../services/image_history_service.dart';
 import '../repositories/account_repository.dart';
 import 'package:autonitor/l10n/app_localizations.dart';
 
-// --- 1. Define the state that this service will hold ---
+// --- 1. Define Status Enum ---
+enum AnalysisStatus {
+  idle,
+  running,
+  pausing,
+  paused,
+  stopping,
+  completed,
+  failed,
+  stopped,
+}
+
+// --- 2. Define State ---
 class AnalysisState {
-  final bool isRunning;
+  final AnalysisStatus status;
   final List<String> log;
 
-  AnalysisState({this.isRunning = false, this.log = const []});
+  AnalysisState({this.status = AnalysisStatus.idle, this.log = const []});
 
-  AnalysisState copyWith({bool? isRunning, List<String>? log}) {
-    return AnalysisState(
-      isRunning: isRunning ?? this.isRunning,
-      log: log ?? this.log,
-    );
+  // 辅助 getter：是否处于“活跃”处理状态（不包含完成或失败）
+  // 用于判断是否需要阻止返回、显示停止按钮等
+  bool get isProcessing =>
+      status == AnalysisStatus.running ||
+      status == AnalysisStatus.pausing ||
+      status == AnalysisStatus.paused ||
+      status == AnalysisStatus.stopping;
+
+  AnalysisState copyWith({AnalysisStatus? status, List<String>? log}) {
+    return AnalysisState(status: status ?? this.status, log: log ?? this.log);
   }
 }
 
-// --- 2. Define the StateNotifier (the Service itself) ---
+// --- 3. Define Service ---
 class AnalysisService extends StateNotifier<AnalysisState> {
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
@@ -43,12 +60,12 @@ class AnalysisService extends StateNotifier<AnalysisState> {
   late final TwitterApiService _apiServiceGql;
   late final TwitterApiV1Service _apiServiceV1;
 
+  Completer<void>? _pauseLock;
+
   AnalysisService(this._ref) : super(AnalysisState()) {
-    // Initialize notification settings only on Android
     if (Platform.isAndroid) {
       _initLocalNotifications();
     }
-
     _database = _ref.read(databaseProvider);
     _apiServiceGql = _ref.read(twitterApiServiceProvider);
     _apiServiceV1 = _ref.read(twitterApiV1ServiceProvider);
@@ -56,16 +73,13 @@ class AnalysisService extends StateNotifier<AnalysisState> {
 
   void _initLocalNotifications() {
     if (!Platform.isAndroid) return;
-
     const androidInit = AndroidInitializationSettings('@mipmap/launcher_icon');
     const initSettings = InitializationSettings(android: androidInit);
     _localNotifications.initialize(initSettings);
   }
 
-  /// Sends a completion/failure notification (Android Only)
   Future<void> _showStatusNotification(String title, String body) async {
     if (!Platform.isAndroid) return;
-
     const androidDetails = AndroidNotificationDetails(
       'analysis_completion_channel',
       'Analysis Status',
@@ -82,7 +96,6 @@ class AnalysisService extends StateNotifier<AnalysisState> {
 
   void _initForegroundTask() {
     if (!Platform.isAndroid) return;
-
     FlutterForegroundTask.init(
       androidNotificationOptions: AndroidNotificationOptions(
         channelId: 'analysis_service',
@@ -92,7 +105,7 @@ class AnalysisService extends StateNotifier<AnalysisState> {
         priority: NotificationPriority.LOW,
       ),
       iosNotificationOptions: const IOSNotificationOptions(
-        showNotification: false, // Explicitly false for safety
+        showNotification: false,
         playSound: false,
       ),
       foregroundTaskOptions: ForegroundTaskOptions(
@@ -104,26 +117,73 @@ class AnalysisService extends StateNotifier<AnalysisState> {
     );
   }
 
+  // --- 控制逻辑 ---
+
+  void togglePause() {
+    if (state.status == AnalysisStatus.running) {
+      state = state.copyWith(status: AnalysisStatus.pausing);
+    } else if (state.status == AnalysisStatus.paused) {
+      state = state.copyWith(status: AnalysisStatus.running);
+      if (_pauseLock != null && !_pauseLock!.isCompleted) {
+        _pauseLock!.complete();
+      }
+      _pauseLock = null;
+    }
+  }
+
+  void stopAnalysis() {
+    if (state.isProcessing) {
+      state = state.copyWith(status: AnalysisStatus.stopping);
+      // 如果处于暂停状态，需释放锁以便程序继续运行至抛出 Stop 异常
+      if (_pauseLock != null && !_pauseLock!.isCompleted) {
+        _pauseLock!.complete();
+      }
+    }
+  }
+
+  Future<void> _workerCheckPoint() async {
+    if (state.status == AnalysisStatus.stopping) {
+      state = state.copyWith(status: AnalysisStatus.stopped);
+      throw Exception("User stopped analysis");
+    }
+
+    if (state.status == AnalysisStatus.pausing) {
+      _pauseLock = Completer<void>();
+      state = state.copyWith(status: AnalysisStatus.paused);
+    }
+
+    if (state.status == AnalysisStatus.paused && _pauseLock != null) {
+      await _pauseLock!.future;
+    }
+
+    if (state.status == AnalysisStatus.stopping) {
+      throw Exception("User stopped analysis");
+    }
+  }
+
+  // 重置状态（UI返回时调用）
+  void resetState() {
+    if (!state.isProcessing) {
+      state = state.copyWith(status: AnalysisStatus.idle, log: []);
+    }
+  }
+
   Future<void> runAnalysis(Account accountToProcess) async {
     final context = navigatorKey.currentContext;
     if (context == null) return;
     final l10n = AppLocalizations.of(context)!;
 
-    // --- Android Specific Setup ---
     if (Platform.isAndroid) {
       if (await FlutterForegroundTask.checkNotificationPermission() !=
           NotificationPermission.granted) {
         await FlutterForegroundTask.requestNotificationPermission();
       }
-
       final bool isIgnoringBattery =
           await FlutterForegroundTask.isIgnoringBatteryOptimizations;
       if (!isIgnoringBattery) {
         await FlutterForegroundTask.requestIgnoreBatteryOptimization();
       }
-
       _initForegroundTask();
-
       await FlutterForegroundTask.startService(
         notificationTitle: l10n.sync_notification_title,
         notificationText: l10n.sync_notification_text(
@@ -132,8 +192,10 @@ class AnalysisService extends StateNotifier<AnalysisState> {
       );
     }
 
-    // --- Core Logic (Cross-platform) ---
-    state = state.copyWith(isRunning: true, log: []);
+    // --- Init ---
+    _pauseLock = null;
+    state = state.copyWith(status: AnalysisStatus.running, log: []);
+
     void logCallback(String message) {
       state = state.copyWith(log: [...state.log, message]);
     }
@@ -155,6 +217,7 @@ class AnalysisService extends StateNotifier<AnalysisState> {
         settings: settings,
         imageService: imageService,
         accountRepository: accountRepository,
+        checkPauseCallback: _workerCheckPoint,
       );
 
       await dataProcessor.runFullProcess();
@@ -162,7 +225,9 @@ class AnalysisService extends StateNotifier<AnalysisState> {
 
       logCallback('Process finished successfully.');
 
-      // Notify completion (Android Only)
+      // [Change] 成功完成，状态设为 completed
+      state = state.copyWith(status: AnalysisStatus.completed);
+
       await _showStatusNotification(
         l10n.sync_notification_title,
         l10n.sync_completed_notification_text(
@@ -170,20 +235,35 @@ class AnalysisService extends StateNotifier<AnalysisState> {
         ),
       );
     } catch (e, s) {
-      logCallback('!!! PROCESS FAILED for account ${accountToProcess.id}: $e');
-      logger.e("Analysis process failed", error: e, stackTrace: s);
+      if (e.toString().contains("User stopped analysis")) {
+        logCallback('Analysis stopped by user.');
+      } else {
+        logCallback(
+          '!!! PROCESS FAILED for account ${accountToProcess.id}: $e',
+        );
+        logger.e("Analysis process failed", error: e, stackTrace: s);
 
-      // Notify failure (Android Only)
-      await _showStatusNotification(
-        l10n.sync_notification_title,
-        l10n.sync_failed_notification_text(
-          accountToProcess.screenName ?? 'Unknown',
-        ),
-      );
+        // [Change] 失败，状态设为 failed
+        state = state.copyWith(status: AnalysisStatus.failed);
+
+        await _showStatusNotification(
+          l10n.sync_notification_title,
+          l10n.sync_failed_notification_text(
+            accountToProcess.screenName ?? 'Unknown',
+          ),
+        );
+      }
     } finally {
-      state = state.copyWith(isRunning: false);
+      // Cleanup locks
+      if (_pauseLock != null && !_pauseLock!.isCompleted) {
+        _pauseLock!.complete();
+      }
 
-      // --- Android Specific Teardown ---
+      // [Change] 不再在 finally 强制重置为 idle，除非是 stopping 过程中的意外
+      if (state.status == AnalysisStatus.stopping) {
+        state = state.copyWith(status: AnalysisStatus.idle);
+      }
+
       if (Platform.isAndroid) {
         await FlutterForegroundTask.stopService();
       }
@@ -191,14 +271,13 @@ class AnalysisService extends StateNotifier<AnalysisState> {
   }
 }
 
-// --- 3. Providers ---
 final analysisServiceProvider =
     StateNotifierProvider<AnalysisService, AnalysisState>((ref) {
       return AnalysisService(ref);
     });
 
 final analysisIsRunningProvider = Provider<bool>((ref) {
-  return ref.watch(analysisServiceProvider).isRunning;
+  return ref.watch(analysisServiceProvider).isProcessing;
 });
 
 final analysisLogProvider = Provider<List<String>>((ref) {

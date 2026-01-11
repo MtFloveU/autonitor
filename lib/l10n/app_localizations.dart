@@ -1214,6 +1214,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Data sync for account @{screenName} failed'**
   String sync_failed_notification_text(String screenName);
+
+  /// No description provided for @pause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get pause;
+
+  /// No description provided for @resume.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get resume;
+
+  /// No description provided for @stop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get stop;
+
+  /// No description provided for @comfirm_stop_sync_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to stop the sync?'**
+  String get comfirm_stop_sync_title;
+
+  /// No description provided for @comfirm_stop_sync_text.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopping the sync will cancel all ongoing data fetching operations. No data will be saved for this sync session.'**
+  String get comfirm_stop_sync_text;
+
+  /// No description provided for @paused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get paused;
+
+  /// No description provided for @stopped_by_user.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped by User'**
+  String get stopped_by_user;
 }
 
 class _AppLocalizationsDelegate

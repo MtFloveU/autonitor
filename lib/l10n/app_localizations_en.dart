@@ -595,4 +595,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String sync_failed_notification_text(String screenName) {
     return 'Data sync for account @$screenName failed';
   }
+
+  @override
+  String get pause => 'Pause';
+
+  @override
+  String get resume => 'Resume';
+
+  @override
+  String get stop => 'Stop';
+
+  @override
+  String get comfirm_stop_sync_title =>
+      'Are you sure you want to stop the sync?';
+
+  @override
+  String get comfirm_stop_sync_text =>
+      'Stopping the sync will cancel all ongoing data fetching operations. No data will be saved for this sync session.';
+
+  @override
+  String get paused => 'Paused';
+
+  @override
+  String get stopped_by_user => 'Stopped by User';
 }

@@ -482,5 +482,19 @@
         "type": "String"
       }
     }
-  }
+  },
+  "pause": "Pause",
+  "@pause": {},
+  "resume": "Resume",
+  "@resume": {},
+  "stop": "Stop",
+  "@stop": {},
+  "comfirm_stop_sync_title": "Are you sure you want to stop the sync?",
+  "@comfirm_stop_sync_title": {},
+  "comfirm_stop_sync_text": "Stopping the sync will cancel all ongoing data fetching operations. No data will be saved for this sync session.",
+  "@comfirm_stop_sync_text": {},
+  "paused": "Paused",
+  "@paused": {},
+  "stopped_by_user": "Stopped by User",
+  "@stopped_by_user": {}
 }

@@ -38,15 +38,19 @@ class MediaProcessor {
   final ImageHistoryService _imageService;
   final AppSettings _settings;
   final LogCallback _log;
+  // [新增] 暂停回调
+  final Future<void> Function() _checkPauseCallback;
 
   MediaProcessor({
     required ImageHistoryService imageService,
     required AppSettings settings,
     required String ownerId,
     required LogCallback log,
+    required Future<void> Function() checkPauseCallback, // [Init]
   }) : _imageService = imageService,
        _settings = settings,
-       _log = log;
+       _log = log,
+       _checkPauseCallback = checkPauseCallback;
 
   Future<MediaProcessingResult> processMedia({
     // [修改] 适配 TwitterUser
@@ -105,6 +109,9 @@ class MediaProcessor {
     final checkGroup = FutureGroup<void>();
 
     for (final candidate in candidates) {
+      // [Check] 提交任务前检查暂停
+      await _checkPauseCallback();
+
       checkGroup.add(
         Future(() async {
           await checkSemaphore.acquire();
@@ -158,6 +165,9 @@ class MediaProcessor {
     final counterLock = Semaphore(1); // 简单的计数锁
 
     for (final task in toDownload) {
+      // [Check] 提交下载任务前检查暂停
+      await _checkPauseCallback();
+
       downloadGroup.add(
         Future(() async {
           await downloadSemaphore.acquire();

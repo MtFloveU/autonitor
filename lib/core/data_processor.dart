@@ -16,6 +16,8 @@ import '../providers/x_client_transaction_provider.dart';
 import '../providers/graphql_queryid_provider.dart';
 
 typedef LogCallback = void Function(String message);
+// 回调定义保持不变
+typedef CheckPauseCallback = Future<void> Function();
 
 class DataProcessor {
   final Ref _ref;
@@ -28,8 +30,9 @@ class DataProcessor {
   final LogCallback _log;
   final AppSettings _settings;
   final ImageHistoryService _imageService;
+  
+  final CheckPauseCallback _checkPauseCallback;
 
-  // New helper classes
   late final NetworkDataFetcher _networkFetcher;
   late final RelationshipAnalyzer _relationshipAnalyzer;
   late final MediaProcessor _mediaProcessor;
@@ -45,6 +48,7 @@ class DataProcessor {
     required AppSettings settings,
     required ImageHistoryService imageService,
     required LogCallback logCallback,
+    required CheckPauseCallback checkPauseCallback,
   }) : _ref = ref,
        _database = database,
        _apiServiceGql = apiServiceGql,
@@ -54,8 +58,9 @@ class DataProcessor {
        _ownerCookie = ownerAccount.cookie,
        _log = logCallback,
        _settings = settings,
-       _imageService = imageService {
-    // Initialize the helper classes, passing them the dependencies they need
+       _imageService = imageService,
+       _checkPauseCallback = checkPauseCallback
+  {
     _networkFetcher = NetworkDataFetcher(
       apiServiceGql: _apiServiceGql,
       apiServiceV1: _apiServiceV1,
@@ -63,14 +68,17 @@ class DataProcessor {
       ownerId: _ownerId,
       ownerCookie: _ownerCookie,
       log: _log,
+      checkPauseCallback: _checkPauseCallback,
     );
 
+    // [Fix] 现在将回调注入分析器，解决分析阶段卡顿无法暂停的问题
     _relationshipAnalyzer = RelationshipAnalyzer(
       apiServiceGql: _apiServiceGql,
       accountRepository: _accountRepository,
       ownerId: _ownerId,
       ownerCookie: _ownerCookie,
       log: _log,
+      checkPauseCallback: _checkPauseCallback, 
     );
 
     _mediaProcessor = MediaProcessor(
@@ -78,6 +86,7 @@ class DataProcessor {
       settings: _settings,
       ownerId: _ownerId,
       log: _log,
+      checkPauseCallback: _checkPauseCallback,
     );
 
     _databaseUpdater = DatabaseUpdater(database: _database);
@@ -90,10 +99,7 @@ class DataProcessor {
       await _accountRepository.refreshAccountProfile(ownerAccount);
       _log("Owner account profile refresh successful.");
     } catch (e) {
-      _log(
-        "!!! WARNING: Failed to refresh owner account profile: $e. "
-        "Continuing with follower/following analysis...",
-      );
+      _log("!!! WARNING: Failed to refresh owner account profile: $e. Continuing...");
     }
   }
 
@@ -102,17 +108,11 @@ class DataProcessor {
     try {
       await _ref.read(transactionIdProvider.notifier).init();
     } catch (e) {
-      _log(
-        "!!! CRITICAL ERROR: Failed to initialize XClientTransactionID generator: $e",
-      );
-      // Depending on severity, you might want to rethrow here
+      _log("!!! CRITICAL ERROR: Failed to initialize XClientTransactionID generator: $e");
     }
     _log("Loading GQL Query IDs...");
     try {
-      // Ensure query IDs are loaded. This can be expanded.
-      _ref
-          .read(gqlQueryIdProvider.notifier)
-          .getCurrentQueryIdForDisplay('Following');
+      _ref.read(gqlQueryIdProvider.notifier).getCurrentQueryIdForDisplay('Following');
     } catch (e) {
       _log("Error ensuring GQL Query IDs are loaded: $e");
     }
@@ -120,57 +120,48 @@ class DataProcessor {
 
   Future<void> runFullProcess() async {
     _log("Starting analysis process for account ID: $_ownerId...");
-
-    // [New Logic] 1. Generate and Verify RunID
     final runIdService = _ref.read(runIdProvider);
-
-    // 生成 ID (Provider 内部已包含防重逻辑)
     final currentRunId = await runIdService.generateUniqueRunId();
     _log("Generated unique RunID: $currentRunId");
 
     try {
-      // 2. Refresh Owner Profile
-      await _refreshOwnerProfile();
+      await _checkPauseCallback();
 
-      // 3. Initialize Dependencies
+      await _refreshOwnerProfile();
+      await _checkPauseCallback();
+
       await _initDependencies();
 
-      // 4. Get Old Data from Database
       _log("Fetching old relationships from database...");
-      final oldRelationsList = await _database.getNetworkRelationships(
-        _ownerId,
-      );
+      final oldRelationsList = await _database.getNetworkRelationships(_ownerId);
       final Map<String, FollowUser> oldRelationsMap = {
         for (var relation in oldRelationsList) relation.userId: relation,
       };
       _log("Found ${oldRelationsMap.length} existing relationships.");
 
-      // 5. Fetch New Network Data (Delegated)
-      final networkData = await _networkFetcher.fetchAllNetworkData();
-      _log(
-        "Finished fetching. Total unique users: ${networkData.uniqueUsers.length}",
-      );
+      await _checkPauseCallback();
 
-      // 6. Analyze Changes (Delegated)
+      final networkData = await _networkFetcher.fetchAllNetworkData();
+      _log("Finished fetching. Total unique users: ${networkData.uniqueUsers.length}");
+
+      await _checkPauseCallback();
+
       final analysisResult = await _relationshipAnalyzer.analyze(
         oldRelationsMap: oldRelationsMap,
         networkData: networkData,
       );
-      _log(
-        "Analysis complete: ${analysisResult.addedIds.length} added, "
-        "${analysisResult.removedIds.length} removed, "
-        "${analysisResult.keptIds.length} kept.",
-      );
-      _log("Generated ${analysisResult.reports.length} change reports.");
+      _log("Analysis complete. Generated ${analysisResult.reports.length} change reports.");
 
-      // 7. Process Media (Delegated)
+      await _checkPauseCallback();
+
       final mediaResult = await _mediaProcessor.processMedia(
         newUsers: networkData.uniqueUsers,
         oldRelations: oldRelationsMap,
       );
       _log("Finished downloading ${mediaResult.newDownloadCount} images.");
 
-      // 8. Save to Database (Delegated)
+      await _checkPauseCallback();
+
       _log("Writing changes to database...");
       await _databaseUpdater.saveChanges(
         ownerId: _ownerId,
@@ -178,25 +169,20 @@ class DataProcessor {
         analysisResult: analysisResult,
         mediaResult: mediaResult,
         oldRelationsMap: oldRelationsMap,
-        currentRunId: currentRunId, // [Pass] Inject current RunID
+        currentRunId: currentRunId,
       );
 
-      // 9. Record Sync Log
       _log("Recording sync log...");
       await _databaseUpdater.insertSyncLog(
-        runId: currentRunId, // [Pass] Use the pre-generated ID
+        runId: currentRunId,
         ownerId: _ownerId,
-        status: 1, // 1 for Success
+        status: 1, 
         timestamp: DateTime.now(),
       );
 
-      _log(
-        "Analysis process completed successfully for account ID: $_ownerId.",
-      );
+      _log("Analysis process completed successfully for account ID: $_ownerId.");
     } catch (e, s) {
-      _log(
-        "!!! CRITICAL ERROR during analysis process for account ID: $_ownerId: $e",
-      );
+      _log("!!! CRITICAL ERROR: $e");
       _log("Stacktrace: $s");
       rethrow;
     }

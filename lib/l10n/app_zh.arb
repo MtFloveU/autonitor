@@ -185,5 +185,12 @@
   "sync_notification_title": "Autonitor 数据同步",
   "sync_notification_text": "正在同步账号 @{screenName} 的数据",
   "sync_completed_notification_text": "账号 @{screenName} 的数据同步已完成",
-  "sync_failed_notification_text": "账号 @{screenName} 的数据同步失败"
+  "sync_failed_notification_text": "账号 @{screenName} 的数据同步失败",
+  "pause": "暂停",
+  "resume": "继续",
+  "stop": "停止",
+  "comfirm_stop_sync_title": "确定要停止同步嘛？",
+  "comfirm_stop_sync_text": "停止同步将取消所有正在进行的数据获取操作，本次同步不会保存任何数据。",
+  "paused": "已暂停",
+  "stopped_by_user": "已被用户停止"
 }

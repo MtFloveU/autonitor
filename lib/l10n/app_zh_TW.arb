@@ -185,5 +185,12 @@
   "sync_notification_title": "Autonitor 資料同步",
   "sync_notification_text": "正在同步帳戶 @{screenName} 的資料",
   "sync_completed_notification_text": "帳戶 @{screenName} 的資料同步已完成",
-  "sync_failed_notification_text": "帳戶 @{screenName} 的資料同步失敗"
+  "sync_failed_notification_text": "帳戶 @{screenName} 的資料同步失敗",
+  "pause": "暫停",
+  "resume": "繼續",
+  "stop": "停止",
+  "comfirm_stop_sync_title": "確定要停止同步嘛？",
+  "comfirm_stop_sync_text": "停止同步將取消所有進行中的資料擷取作業，本次同步不會儲存任何資料。",
+  "paused": "已暫停",
+  "stopped_by_user": "已由使用者停止"
 }
