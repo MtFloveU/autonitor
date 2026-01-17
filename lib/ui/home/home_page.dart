@@ -27,12 +27,12 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final activeAccountNotifier = ref.read(activeAccountProvider.notifier);
     final activeAccount = ref.watch(activeAccountProvider);
+    final authState = ref.watch(activeAccountStateProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.app_title)),
-      body: !activeAccountNotifier.isInitialized
+      body: !authState.isInitialized
           ? const Center(child: CircularProgressIndicator())
           : activeAccount != null
           ? _buildAccountView(context)

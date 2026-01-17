@@ -132,9 +132,8 @@ class AnalysisService extends StateNotifier<AnalysisState> {
   }
 
   void stopAnalysis() {
+    state = state.copyWith(status: AnalysisStatus.stopping);
     if (state.isProcessing) {
-      state = state.copyWith(status: AnalysisStatus.stopping);
-      // 如果处于暂停状态，需释放锁以便程序继续运行至抛出 Stop 异常
       if (_pauseLock != null && !_pauseLock!.isCompleted) {
         _pauseLock!.complete();
       }
@@ -157,6 +156,7 @@ class AnalysisService extends StateNotifier<AnalysisState> {
     }
 
     if (state.status == AnalysisStatus.stopping) {
+      state = state.copyWith(status: AnalysisStatus.stopped);
       throw Exception("User stopped analysis");
     }
   }
@@ -237,6 +237,7 @@ class AnalysisService extends StateNotifier<AnalysisState> {
     } catch (e, s) {
       if (e.toString().contains("User stopped analysis")) {
         logCallback('Analysis stopped by user.');
+        state = state.copyWith(status: AnalysisStatus.stopped);
       } else {
         logCallback(
           '!!! PROCESS FAILED for account ${accountToProcess.id}: $e',
@@ -259,9 +260,8 @@ class AnalysisService extends StateNotifier<AnalysisState> {
         _pauseLock!.complete();
       }
 
-      // [Change] 不再在 finally 强制重置为 idle，除非是 stopping 过程中的意外
       if (state.status == AnalysisStatus.stopping) {
-        state = state.copyWith(status: AnalysisStatus.idle);
+        state = state.copyWith(status: AnalysisStatus.stopped);
       }
 
       if (Platform.isAndroid) {

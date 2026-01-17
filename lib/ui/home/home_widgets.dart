@@ -95,7 +95,9 @@ extension _HomePageWidgets on _HomePageState {
                   ],
                 ),
                 onTap: () {
-                  ref.read(activeAccountProvider.notifier).setActive(account);
+                  ref
+                      .read(activeAccountStateProvider.notifier)
+                      .setActive(account);
                   Navigator.pop(context);
                 },
               );

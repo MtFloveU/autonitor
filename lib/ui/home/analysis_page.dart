@@ -123,7 +123,7 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
     if (status == AnalysisStatus.failed) {
       return colorScheme.error.withValues(alpha: 0.5);
     } else if (status == AnalysisStatus.completed) {
-      return Colors.green.withValues(alpha: 0.5); // 成功使用绿色
+      return colorScheme.primary;
     }
     return colorScheme.outlineVariant.withValues(alpha: 0.5);
   }
@@ -134,8 +134,8 @@ class _AnalysisPageState extends ConsumerState<AnalysisPage> {
       return LinearProgressIndicator(
         value: 1.0,
         minHeight: 4,
-        color: Colors.green, // 显式绿色
-        backgroundColor: Colors.green.withValues(alpha: 0.2),
+        color: colorScheme.primary,
+        backgroundColor: colorScheme.primary.withAlpha(50),
       );
     }
 
