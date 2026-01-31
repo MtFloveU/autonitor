@@ -618,4 +618,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get stopped_by_user => 'Stopped by User';
+
+  @override
+  String get other_reasons => 'Other Reasons';
 }

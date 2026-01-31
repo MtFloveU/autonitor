@@ -188,6 +188,11 @@ class RelationshipAnalyzer {
 
     // 该方法内部有网络请求检查
     final categorizedRemovals = await _categorizeRemovals(removedIds);
+    for (final removedId in removedIds) {
+      if (!categorizedRemovals.containsKey(removedId)) {
+        categorizedRemovals[removedId] = 'other_reasons';
+      }
+    }
     final Set<String> potentialRestrictedIds = {};
 
     int loopCounter = 0;

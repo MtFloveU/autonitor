@@ -192,5 +192,6 @@
   "comfirm_stop_sync_title": "確定要停止同步嘛？",
   "comfirm_stop_sync_text": "停止同步將取消所有進行中的資料擷取作業，本次同步不會儲存任何資料。",
   "paused": "已暫停",
-  "stopped_by_user": "已由使用者停止"
+  "stopped_by_user": "已由使用者停止",
+  "other_reasons": "其它原因"
 }

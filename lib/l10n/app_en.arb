@@ -496,5 +496,7 @@
   "paused": "Paused",
   "@paused": {},
   "stopped_by_user": "Stopped by User",
-  "@stopped_by_user": {}
+  "@stopped_by_user": {},
+  "other_reasons": "Other Reasons",
+  "@other_reasons": {}
 }

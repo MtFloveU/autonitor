@@ -446,6 +446,8 @@ class _UserListPageState extends ConsumerState<UserListPage> {
         return l10n.recovered;
       case 'profile_update':
         return l10n.profile_updates;
+      case 'other_reasons':
+        return l10n.other_reasons;
       default:
         return widget.categoryKey;
     }

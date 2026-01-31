@@ -20,6 +20,7 @@ class CacheData {
   final int temporarilyRestrictedCount;
   final int recoveredCount;
   final int profileUpdatedCount;
+  final int otherReasonsCount;
 
   CacheData({
     required this.accountId,
@@ -37,6 +38,7 @@ class CacheData {
     required this.temporarilyRestrictedCount,
     required this.recoveredCount,
     required this.profileUpdatedCount,
+    required this.otherReasonsCount,
     required this.lastRunId,
   });
 
@@ -58,6 +60,7 @@ class CacheData {
       recoveredCount: json['recoveredCount'] ?? 0,
       profileUpdatedCount: json['profileUpdatedCount'] ?? 0,
       lastRunId: json['lastRunId'] ?? '',
+      otherReasonsCount: json['otherReasonsCount'] ?? 0,
     );
   }
 
@@ -80,6 +83,7 @@ class CacheData {
       'recoveredCount': recoveredCount,
       'profileUpdatedCount': profileUpdatedCount,
       'lastRunId': lastRunId,
+      'otherReasonsCount': otherReasonsCount,
     };
   }
 }

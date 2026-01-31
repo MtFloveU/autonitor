@@ -434,6 +434,14 @@ extension _HomePageWidgets on _HomePageState {
                 Icons.refresh_rounded,
                 l10n.recovered,
                 cache.recoveredCount,
+                showDivider: true,
+              ),
+              _buildDetailListItem(
+                context,
+                'other_reasons',
+                Icons.help_outline,
+                l10n.other_reasons,
+                cache.otherReasonsCount,
                 showDivider: false,
               ),
             ],
@@ -453,7 +461,17 @@ extension _HomePageWidgets on _HomePageState {
               ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
               child: InkWell(
                 borderRadius: BorderRadius.circular(12),
-                onTap: () {},
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => CommitsPage(
+                        lastRunId: cache.lastRunId,
+                        lastUpdateTime: cache.lastUpdateTime,
+                        activeAccountId: cache.accountId,
+                      ),
+                    ),
+                  );
+                },
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16.0,

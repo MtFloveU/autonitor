@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:autonitor/services/migrations/introduce_runid.dart';
 import 'package:drift/drift.dart';
@@ -202,7 +203,29 @@ class AppDatabase extends _$AppDatabase {
     List<FollowUsersCompanion> companions,
   ) async {
     await batch((batch) {
-      batch.insertAll(followUsers, companions, mode: InsertMode.replace);
+      for (final companion in companions) {
+        batch.insert(
+          followUsers,
+          companion,
+          mode: InsertMode.insertOrReplace,
+          onConflict: DoUpdate(
+            (old) => FollowUsersCompanion(
+              name: companion.name,
+              screenName: companion.screenName,
+              avatarUrl: companion.avatarUrl,
+              bannerUrl: companion.bannerUrl,
+              bio: companion.bio,
+              latestRawJson: companion.latestRawJson,
+              isFollower: companion.isFollower,
+              isFollowing: companion.isFollowing,
+              followerSort: companion.followerSort,
+              followingSort: companion.followingSort,
+              avatarLocalPath: companion.avatarLocalPath,
+              bannerLocalPath: companion.bannerLocalPath,
+            ),
+          ),
+        );
+      }
     });
   }
 
@@ -283,6 +306,136 @@ class AppDatabase extends _$AppDatabase {
     return (update(
       loggedAccounts,
     )..where((tbl) => tbl.id.equals(accountId))).write(companion);
+  }
+
+  // 获取指定账号的所有同步记录
+  Stream<List<SyncLogsEntry>> watchSyncLogs(String ownerId) {
+    return (select(syncLogs)
+          ..where((tbl) => tbl.ownerId.equals(ownerId))
+          ..orderBy([(t) => OrderingTerm.desc(t.timestamp)]))
+        .watch();
+  }
+
+  // 核心回档事务
+  Future<void> rollbackToRun({
+    required String ownerId,
+    required String targetRunId,
+  }) async {
+    await transaction(() async {
+      // 1. 获取目标 RunID 的元数据（用于确定时间界限）
+      final targetLog = await (select(
+        syncLogs,
+      )..where((tbl) => tbl.runId.equals(targetRunId))).getSingle();
+      final targetTime = targetLog.timestamp;
+
+      // 2. 获取所有在目标时间点之后的历史记录，并按时间倒序排列
+      // 必须倒序（从新到旧）应用 Diff，才能正确回溯状态
+      final futureHistory =
+          await (select(followUsersHistory)
+                ..where(
+                  (tbl) =>
+                      tbl.ownerId.equals(ownerId) &
+                      tbl.timestamp.isBiggerThanValue(targetTime),
+                )
+                ..orderBy([(t) => OrderingTerm.desc(t.timestamp)]))
+              .get();
+
+      // 3. 应用反向 Diff 覆盖 follow_users 表
+      for (final history in futureHistory) {
+        final Map<String, dynamic> diffData = jsonDecode(
+          history.reverseDiffJson,
+        );
+
+        // 修正路径字段：由于 Drift 默认 JSON Key 可能与列名不同，
+        // 这里手动确保 avatar_local_path 和 banner_local_path 被正确映射
+        final companion = FollowUsersCompanion(
+          latestRawJson: diffData.containsKey('latest_raw_json')
+              ? Value(diffData['latest_raw_json'] as String?)
+              : const Value.absent(),
+          name: diffData.containsKey('name')
+              ? Value(diffData['name'] as String?)
+              : const Value.absent(),
+          screenName: diffData.containsKey('screen_name')
+              ? Value(diffData['screen_name'] as String?)
+              : const Value.absent(),
+          avatarUrl: diffData.containsKey('avatar_url')
+              ? Value(diffData['avatar_url'] as String?)
+              : const Value.absent(),
+          bannerUrl: diffData.containsKey('banner_url')
+              ? Value(diffData['banner_url'] as String?)
+              : const Value.absent(),
+          bio: diffData.containsKey('bio')
+              ? Value(diffData['bio'] as String?)
+              : const Value.absent(),
+          avatarLocalPath: diffData.containsKey('avatar_local_path')
+              ? Value(diffData['avatar_local_path'] as String?)
+              : const Value.absent(),
+          bannerLocalPath: diffData.containsKey('banner_local_path')
+              ? Value(diffData['banner_local_path'] as String?)
+              : const Value.absent(),
+          isFollower: diffData.containsKey('is_follower')
+              ? Value(diffData['is_follower'] as bool)
+              : const Value.absent(),
+          isFollowing: diffData.containsKey('is_following')
+              ? Value(diffData['is_following'] as bool)
+              : const Value.absent(),
+          followerSort: diffData.containsKey('follower_sort')
+              ? Value(diffData['follower_sort'] as int?)
+              : const Value.absent(),
+          followingSort: diffData.containsKey('following_sort')
+              ? Value(diffData['following_sort'] as int?)
+              : const Value.absent(),
+        );
+
+        await (update(followUsers)..where(
+              (tbl) =>
+                  tbl.ownerId.equals(ownerId) &
+                  tbl.userId.equals(history.userId),
+            ))
+            .write(companion);
+      }
+
+      // 4. 删除“未来”的用户
+      // 逻辑：如果在应用完所有反向 Diff 后，某个用户的 runId 仍然属于“未来”的 RunID，
+      // 或者该用户是在 targetTime 之后才第一次出现的，则将其删除。
+      // 这里通过时间戳比对删除所有在目标时间后新增且没有更早历史记录的用户。
+      await (delete(followUsers)..where((tbl) {
+            return tbl.ownerId.equals(ownerId) &
+                tbl.runId.isNotInQuery(
+                  selectOnly(syncLogs)
+                    ..addColumns([syncLogs.runId])
+                    ..where(
+                      syncLogs.timestamp.isSmallerOrEqualValue(targetTime),
+                    ),
+                );
+          }))
+          .go();
+
+      // 5. 清理“未来”的辅助数据
+      // 删除目标时间点之后的同步日志
+      await (delete(syncLogs)..where(
+            (tbl) =>
+                tbl.ownerId.equals(ownerId) &
+                tbl.timestamp.isBiggerThanValue(targetTime),
+          ))
+          .go();
+
+      // 删除目标时间点之后的变更报告
+      await (delete(changeReports)..where(
+            (tbl) =>
+                tbl.ownerId.equals(ownerId) &
+                tbl.timestamp.isBiggerThanValue(targetTime),
+          ))
+          .go();
+
+      // 删除已经回档过的历史记录
+      await (delete(followUsersHistory)..where(
+            (tbl) =>
+                tbl.ownerId.equals(ownerId) &
+                tbl.timestamp.isBiggerThanValue(targetTime),
+          ))
+          .go();
+    });
   }
 }
 

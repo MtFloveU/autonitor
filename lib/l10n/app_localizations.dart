@@ -1256,6 +1256,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stopped by User'**
   String get stopped_by_user;
+
+  /// No description provided for @other_reasons.
+  ///
+  /// In en, this message translates to:
+  /// **'Other Reasons'**
+  String get other_reasons;
 }
 
 class _AppLocalizationsDelegate

@@ -608,6 +608,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get stopped_by_user => '已被用户停止';
+
+  @override
+  String get other_reasons => '其它原因';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -1214,4 +1217,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get stopped_by_user => '已由使用者停止';
+
+  @override
+  String get other_reasons => '其它原因';
 }
