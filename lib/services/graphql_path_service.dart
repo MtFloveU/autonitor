@@ -8,8 +8,10 @@ class GraphQLService {
   static const String _jsonUrl =
       'https://raw.githubusercontent.com/fa0311/TwitterInternalAPIDocument/refs/heads/develop/docs/json/GraphQL.json';
   static const List<String> _targetOperations = [
-    'UserByRestId',
+    'UserByRestId'
+    'UsersByRestIds',
     'UserByScreenName',
+    'UsersByScreenNames',
     'Followers',
     'Following',
   ];

@@ -1,6 +1,8 @@
 // lib/repositories/account_repository.dart
 import 'dart:async';
 import 'package:autonitor/models/twitter_user.dart';
+import 'package:autonitor/providers/x_client_transaction_provider.dart';
+import 'package:autonitor/services/x_client_transaction_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart';
 import 'dart:convert';
@@ -198,14 +200,23 @@ class AccountRepository {
       final queryId = _ref
           .read(gqlQueryIdProvider.notifier)
           .getCurrentQueryIdForDisplay('UserByRestId');
-
+      final XClientTransactionService service = await _ref.read(
+        xctServiceProvider.future,
+      );
+      service.generateTransactionId(
+        method: "GET",
+        url: 'https://api.x.com/graphql/$queryId/UserByRestId',
+      );
       // 1. 获取原始 API 数据
       final Map<String, dynamic> userProfileJson = await _apiService
           .getUserByRestId(id, cookie, queryId);
-
+      final userData = userProfileJson['data']?['user'];
+      if (userData == null) {
+        throw Exception("Invalid API response: 'data.user' not found");
+      }
       // [核心修复] 2. 使用新工厂方法进行标准化解析
       // 这会自动处理：深层嵌套剥离、生日解析、BioLinks 提取
-      final twitterUser = TwitterUser.fromUserByRestId(userProfileJson);
+      final twitterUser = TwitterUser.fromUsersByRestIds(userData);
 
       // [核心修复] 3. 将标准化后的对象序列化为 JSON
       // 现在存入数据库的是扁平结构，HistoryWorker 可以识别了！

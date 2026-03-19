@@ -108,86 +108,17 @@ class TwitterUser {
     );
   }
 
-  factory TwitterUser.fromV1(Map<String, dynamic> raw, String runId) {
-    bool getBool(String key) => raw[key] == true || raw[key] == 'true';
-    int getInt(String key) => int.tryParse(raw[key]?.toString() ?? '0') ?? 0;
-    String? getString(String key) => raw[key] as String?;
+  // [新增] 专门用于处理 UsersByRestIds 接口的深层嵌套结构
+  factory TwitterUser.fromUsersByRestIds(Map<String, dynamic> raw) {
+    // 1. 直接尝试获取 result
+    // 批量接口 (UsersByRestIds) 返回的结构是: { "result": { ... } }
+    dynamic result = raw['result'];
 
-    String? description = getString('description');
+    // 兼容逻辑：万一传入的是已经解包的一层，或者其他结构
+    result ??= raw;
 
-    // [修复] 1. 统一获取 URL 列表，确保不为空
-    final List descUrlList =
-        (raw['entities']?['description']?['urls'] as List?) ?? [];
-
-    // [修复] 2. 提前定义 extractedLinks，确保作用域覆盖整个方法
-    final List<Map<String, String>> extractedLinks = [];
-
-    // [修复] 3. 提取链接逻辑 (先提取，保证数据纯净)
-    if (descUrlList.isNotEmpty) {
-      for (final entry in descUrlList) {
-        final String? expanded = entry['expanded_url']?.toString();
-        if (expanded != null && expanded.isNotEmpty) {
-          extractedLinks.add({'expanded_url': expanded});
-        }
-      }
-    }
-
-    // [逻辑保持] 4. 简介文本替换逻辑 (用于显示 expanded_url)
-    if (description != null && descUrlList.isNotEmpty) {
-      for (final urlEntry in descUrlList) {
-        final String? shortUrl = urlEntry['url'] as String?;
-        final String? expanded =
-            urlEntry['expanded_url'] as String? ??
-            urlEntry['display_url'] as String?;
-        if (shortUrl != null && expanded != null && shortUrl != expanded) {
-          description = description?.replaceAll(shortUrl, expanded);
-        }
-      }
-      description = description?.trim();
-    }
-
-    return TwitterUser(
-      restId: getString('id_str') ?? '',
-      name: getString('name'),
-      screenName: getString('screen_name'),
-      avatarUrl: getString('profile_image_url_https'),
-      avatarLocalPath: null,
-      bannerUrl: getString('profile_banner_url'),
-      bannerLocalPath: null,
-      bio: description,
-      bioLinks: extractedLinks, // [修复] 5. 确保传入 extractedLinks
-      location: getString('location'),
-      joinedTime: getString('created_at'),
-      link:
-          (raw['entities']?['url']?['urls'] as List?)
-                  ?.firstOrNull?['expanded_url']
-              as String? ??
-          getString('url'),
-      isVerified: getBool('verified') == true,
-      isProtected: getBool('protected') == true,
-      followersCount: getInt('followers_count'),
-      followingCount: getInt('friends_count'),
-      statusesCount: getInt('statuses_count'),
-      listedCount: getInt('listed_count'),
-      favouritesCount: getInt('favourites_count'),
-      mediaCount: getInt('media_count'),
-      isFollowing: getBool('following') == true,
-      isFollower: getBool('followed_by') == true,
-      canDm: getBool('can_dm') == true,
-      canMediaTag: getBool('can_media_tag') == true,
-    );
-  }
-
-  // [新增] 专门用于处理 UserByRestId 接口的深层嵌套结构
-  factory TwitterUser.fromUserByRestId(Map<String, dynamic> raw) {
-    // 1. 逐层拆解 JSON 结构
-    final data = raw['data'];
-    final user = (data is Map) ? data['user'] : null;
-    final result = (user is Map) ? user['result'] : null;
-
-    // 2. 异常处理：如果数据为空
-    if (result == null || result is! Map<String, dynamic>) {
-      // 返回一个空的安全对象，避免空指针崩溃
+    // 2. 异常处理：如果 result 依然为空或者不是 Map
+    if (result == null || result is! Map) {
       return const TwitterUser(
         restId: '',
         screenName: 'Unknown',
@@ -205,8 +136,9 @@ class TwitterUser {
       );
     }
 
-    // 4. 核心复用：将提取出的 result 传给 fromGraphQL 进行通用解析
-    return TwitterUser.fromGraphQL(result, '');
+    // 4. 核心复用：传给 fromGraphQL 进行通用解析
+    // 注意：我们将 result 传进去，fromGraphQL 会处理内部字段
+    return TwitterUser.fromGraphQL(result as Map<String, dynamic>, '');
   }
 
   // [修改] 增强版 fromGraphQL：集成了 bioLinks 和 生日解析
@@ -214,12 +146,11 @@ class TwitterUser {
     // 兼容逻辑：如果 raw 本身就是 result 层，则直接使用；否则尝试查找 result 字段
     final result = raw['result'] ?? raw;
 
-    final legacy = (result['legacy'] ?? {}) as Map<String, dynamic>;
-    final core = (result['core'] ?? {}) as Map<String, dynamic>;
-    final relationship =
-        (result['relationship_perspectives'] ?? {}) as Map<String, dynamic>;
-    final dm = (result['dm_permissions'] ?? {}) as Map<String, dynamic>;
-    final media = (result['media_permissions'] ?? {}) as Map<String, dynamic>;
+    final legacy = (result['legacy'] ?? {});
+    final core = (result['core'] ?? {});
+    final relationship = (result['relationship_perspectives'] ?? {});
+    final dm = (result['dm_permissions'] ?? {});
+    final media = (result['media_permissions'] ?? {});
 
     int getInt(String key) => int.tryParse(legacy[key]?.toString() ?? '0') ?? 0;
     String? getString(String key) => legacy[key] as String?;
@@ -332,6 +263,76 @@ class TwitterUser {
                       as List?)
                   ?.first?['ref']?['mention_results']?['result']?['core']?['screen_name']
               as String?,
+    );
+  }
+
+  factory TwitterUser.fromV1(Map<String, dynamic> raw, String runId) {
+    bool getBool(String key) => raw[key] == true || raw[key] == 'true';
+    int getInt(String key) => int.tryParse(raw[key]?.toString() ?? '0') ?? 0;
+    String? getString(String key) => raw[key] as String?;
+
+    String? description = getString('description');
+
+    // [修复] 1. 统一获取 URL 列表，确保不为空
+    final List descUrlList =
+        (raw['entities']?['description']?['urls'] as List?) ?? [];
+
+    // [修复] 2. 提前定义 extractedLinks，确保作用域覆盖整个方法
+    final List<Map<String, String>> extractedLinks = [];
+
+    // [修复] 3. 提取链接逻辑 (先提取，保证数据纯净)
+    if (descUrlList.isNotEmpty) {
+      for (final entry in descUrlList) {
+        final String? expanded = entry['expanded_url']?.toString();
+        if (expanded != null && expanded.isNotEmpty) {
+          extractedLinks.add({'expanded_url': expanded});
+        }
+      }
+    }
+
+    // [逻辑保持] 4. 简介文本替换逻辑 (用于显示 expanded_url)
+    if (description != null && descUrlList.isNotEmpty) {
+      for (final urlEntry in descUrlList) {
+        final String? shortUrl = urlEntry['url'] as String?;
+        final String? expanded =
+            urlEntry['expanded_url'] as String? ??
+            urlEntry['display_url'] as String?;
+        if (shortUrl != null && expanded != null && shortUrl != expanded) {
+          description = description?.replaceAll(shortUrl, expanded);
+        }
+      }
+      description = description?.trim();
+    }
+
+    return TwitterUser(
+      restId: getString('id_str') ?? '',
+      name: getString('name'),
+      screenName: getString('screen_name'),
+      avatarUrl: getString('profile_image_url_https'),
+      avatarLocalPath: null,
+      bannerUrl: getString('profile_banner_url'),
+      bannerLocalPath: null,
+      bio: description,
+      bioLinks: extractedLinks, // [修复] 5. 确保传入 extractedLinks
+      location: getString('location'),
+      joinedTime: getString('created_at'),
+      link:
+          (raw['entities']?['url']?['urls'] as List?)
+                  ?.firstOrNull?['expanded_url']
+              as String? ??
+          getString('url'),
+      isVerified: getBool('verified') == true,
+      isProtected: getBool('protected') == true,
+      followersCount: getInt('followers_count'),
+      followingCount: getInt('friends_count'),
+      statusesCount: getInt('statuses_count'),
+      listedCount: getInt('listed_count'),
+      favouritesCount: getInt('favourites_count'),
+      mediaCount: getInt('media_count'),
+      isFollowing: getBool('following') == true,
+      isFollower: getBool('followed_by') == true,
+      canDm: getBool('can_dm') == true,
+      canMediaTag: getBool('can_media_tag') == true,
     );
   }
 

@@ -9,7 +9,9 @@ import 'package:flutter/material.dart'; // 用于 SnackBar
 // 假设这是所有需要配置的 Operation Name 列表 (与 Service 中保持一致)
 const List<String> _targetOperations = [
   'UserByRestId',
+  'UsersByRestIds',
   'UserByScreenName',
+  'UsersByScreenNames',
   'Followers',
   'Following',
 ];
@@ -17,10 +19,12 @@ const List<String> _targetOperations = [
 // 辅助函数：生成默认路径（与 Service 中的默认值保持一致）
 Map<String, String> _getDefaultQueryIds() {
   return {
-    'UserByRestId': 'XIpMDIi_YoVzXeoON-cfAQ',
-    'UserByScreenName': 'ZHSN3WlvahPKVvUxVQbg1A',
-    'Followers': 'Efm7xwLreAw77q2Fq7rX-Q',
-    'Following': 'e0UtTAwQqgLKBllQxMgVxQ',
+    'UserByRestId': 'Bbaot8ySMtJD7K2t01gW7A',
+    'UsersByRestIds': 'xavgLWWbFH8wm_8MQN8plQ',
+    'UserByScreenName': 'oaLodhGbbnzJBACb1kk2Q',
+    'UsersByScreenNames': 'ujL_oXbgVlDHQzWSTgzvnA',
+    'Followers': 'oQWxG6XdR5SPvMBsPiKUPQ',
+    'Following': 'i2GOldCH2D3OUEhAdimLrA',
   };
 }
 

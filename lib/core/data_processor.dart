@@ -30,7 +30,7 @@ class DataProcessor {
   final LogCallback _log;
   final AppSettings _settings;
   final ImageHistoryService _imageService;
-  
+
   final CheckPauseCallback _checkPauseCallback;
 
   late final NetworkDataFetcher _networkFetcher;
@@ -59,8 +59,7 @@ class DataProcessor {
        _log = logCallback,
        _settings = settings,
        _imageService = imageService,
-       _checkPauseCallback = checkPauseCallback
-  {
+       _checkPauseCallback = checkPauseCallback {
     _networkFetcher = NetworkDataFetcher(
       apiServiceGql: _apiServiceGql,
       apiServiceV1: _apiServiceV1,
@@ -69,16 +68,6 @@ class DataProcessor {
       ownerCookie: _ownerCookie,
       log: _log,
       checkPauseCallback: _checkPauseCallback,
-    );
-
-    // [Fix] 现在将回调注入分析器，解决分析阶段卡顿无法暂停的问题
-    _relationshipAnalyzer = RelationshipAnalyzer(
-      apiServiceGql: _apiServiceGql,
-      accountRepository: _accountRepository,
-      ownerId: _ownerId,
-      ownerCookie: _ownerCookie,
-      log: _log,
-      checkPauseCallback: _checkPauseCallback, 
     );
 
     _mediaProcessor = MediaProcessor(
@@ -92,6 +81,27 @@ class DataProcessor {
     _databaseUpdater = DatabaseUpdater(database: _database);
   }
 
+  Future<void> _initializeRelationshipAnalyzer() async {
+    // [Fix] 现在将回调注入分析器，解决分析阶段卡顿无法暂停的问题
+    final xctServiceAsyncValue = _ref.read(xctServiceProvider);
+    final xctService = await xctServiceAsyncValue.when(
+      data: (service) => Future.value(service),
+      loading: () =>
+          throw Exception('XClientTransactionService is still loading'),
+      error: (error, stackTrace) => throw error,
+    );
+
+    _relationshipAnalyzer = RelationshipAnalyzer(
+      apiServiceGql: _apiServiceGql,
+      accountRepository: _accountRepository,
+      ownerId: _ownerId,
+      ownerCookie: _ownerCookie,
+      log: _log,
+      checkPauseCallback: _checkPauseCallback,
+      xctService: xctService,
+    );
+  }
+
   Future<void> _refreshOwnerProfile() async {
     _log("Refreshing owner account profile ($_ownerId)...");
     try {
@@ -99,7 +109,9 @@ class DataProcessor {
       await _accountRepository.refreshAccountProfile(ownerAccount);
       _log("Owner account profile refresh successful.");
     } catch (e) {
-      _log("!!! WARNING: Failed to refresh owner account profile: $e. Continuing...");
+      _log(
+        "!!! WARNING: Failed to refresh owner account profile: $e. Continuing...",
+      );
     }
   }
 
@@ -108,11 +120,15 @@ class DataProcessor {
     try {
       await _ref.read(transactionIdProvider.notifier).init();
     } catch (e) {
-      _log("!!! CRITICAL ERROR: Failed to initialize XClientTransactionID generator: $e");
+      _log(
+        "!!! CRITICAL ERROR: Failed to initialize XClientTransactionID generator: $e",
+      );
     }
     _log("Loading GQL Query IDs...");
     try {
-      _ref.read(gqlQueryIdProvider.notifier).getCurrentQueryIdForDisplay('Following');
+      _ref
+          .read(gqlQueryIdProvider.notifier)
+          .getCurrentQueryIdForDisplay('Following');
     } catch (e) {
       _log("Error ensuring GQL Query IDs are loaded: $e");
     }
@@ -130,10 +146,15 @@ class DataProcessor {
       await _refreshOwnerProfile();
       await _checkPauseCallback();
 
+      await _initializeRelationshipAnalyzer();
+      await _checkPauseCallback();
+
       await _initDependencies();
 
       _log("Fetching old relationships from database...");
-      final oldRelationsList = await _database.getNetworkRelationships(_ownerId);
+      final oldRelationsList = await _database.getNetworkRelationships(
+        _ownerId,
+      );
       final Map<String, FollowUser> oldRelationsMap = {
         for (var relation in oldRelationsList) relation.userId: relation,
       };
@@ -142,7 +163,9 @@ class DataProcessor {
       await _checkPauseCallback();
 
       final networkData = await _networkFetcher.fetchAllNetworkData();
-      _log("Finished fetching. Total unique users: ${networkData.uniqueUsers.length}");
+      _log(
+        "Finished fetching. Total unique users: ${networkData.uniqueUsers.length}",
+      );
 
       await _checkPauseCallback();
 
@@ -150,7 +173,9 @@ class DataProcessor {
         oldRelationsMap: oldRelationsMap,
         networkData: networkData,
       );
-      _log("Analysis complete. Generated ${analysisResult.reports.length} change reports.");
+      _log(
+        "Analysis complete. Generated ${analysisResult.reports.length} change reports.",
+      );
 
       await _checkPauseCallback();
 
@@ -176,11 +201,13 @@ class DataProcessor {
       await _databaseUpdater.insertSyncLog(
         runId: currentRunId,
         ownerId: _ownerId,
-        status: 1, 
+        status: 1,
         timestamp: DateTime.now(),
       );
 
-      _log("Analysis process completed successfully for account ID: $_ownerId.");
+      _log(
+        "Analysis process completed successfully for account ID: $_ownerId.",
+      );
     } catch (e, s) {
       _log("!!! CRITICAL ERROR: $e");
       _log("Stacktrace: $s");
