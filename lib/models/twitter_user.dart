@@ -128,11 +128,20 @@ class TwitterUser {
 
     // 3. 异常处理：如果是 UserUnavailable (账号被封禁或注销)
     if (result['__typename'] == 'UserUnavailable') {
-      return const TwitterUser(
+      final String? message = result['message']?.toString();
+      String status = 'unavailable';
+
+      if (message == 'User is suspended') {
+        status = 'suspended';
+      } else if (message == 'User is deactivated') {
+        status = 'deactivated';
+      }
+
+      return TwitterUser(
         restId: '',
         screenName: 'Unavailable',
         name: 'User Unavailable',
-        status: 'unavailable',
+        status: status,
       );
     }
 

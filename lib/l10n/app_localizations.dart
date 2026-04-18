@@ -1262,6 +1262,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Other Reasons'**
   String get other_reasons;
+
+  /// No description provided for @rollback_to_here.
+  ///
+  /// In en, this message translates to:
+  /// **'Rollback to here'**
+  String get rollback_to_here;
+
+  /// No description provided for @open_in_app.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in App'**
+  String get open_in_app;
+
+  /// No description provided for @browser_via_screen_name.
+  ///
+  /// In en, this message translates to:
+  /// **'Browser (via Screen Name)'**
+  String get browser_via_screen_name;
+
+  /// No description provided for @browser_via_rest_id.
+  ///
+  /// In en, this message translates to:
+  /// **'Browser (via Rest ID)'**
+  String get browser_via_rest_id;
 }
 
 class _AppLocalizationsDelegate

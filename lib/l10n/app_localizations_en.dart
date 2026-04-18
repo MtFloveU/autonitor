@@ -621,4 +621,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get other_reasons => 'Other Reasons';
+
+  @override
+  String get rollback_to_here => 'Rollback to here';
+
+  @override
+  String get open_in_app => 'Open in App';
+
+  @override
+  String get browser_via_screen_name => 'Browser (via Screen Name)';
+
+  @override
+  String get browser_via_rest_id => 'Browser (via Rest ID)';
 }

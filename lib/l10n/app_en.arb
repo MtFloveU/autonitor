@@ -498,5 +498,13 @@
   "stopped_by_user": "Stopped by User",
   "@stopped_by_user": {},
   "other_reasons": "Other Reasons",
-  "@other_reasons": {}
+  "@other_reasons": {},
+  "rollback_to_here": "Rollback to here",
+  "@rollback_to_here": {},
+  "open_in_app": "Open in App",
+  "@open_in_app": {},
+  "browser_via_screen_name": "Browser (via Screen Name)",
+  "@browser_via_screen_name": {},
+  "browser_via_rest_id": "Browser (via Rest ID)",
+  "@browser_via_rest_id": {}
 }

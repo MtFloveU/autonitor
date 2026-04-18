@@ -611,6 +611,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get other_reasons => '其它原因';
+
+  @override
+  String get rollback_to_here => '回滚到此';
+
+  @override
+  String get open_in_app => '在App中打开';
+
+  @override
+  String get browser_via_screen_name => '浏览器（通过用户名）';
+
+  @override
+  String get browser_via_rest_id => '浏览器（通过 Rest ID）';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -1220,4 +1232,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get other_reasons => '其它原因';
+
+  @override
+  String get rollback_to_here => '回滾到此';
+
+  @override
+  String get open_in_app => '在App中打開';
+
+  @override
+  String get browser_via_screen_name => '瀏覽器（透過用戶名）';
+
+  @override
+  String get browser_via_rest_id => '瀏覽器（透過 Rest ID）';
 }

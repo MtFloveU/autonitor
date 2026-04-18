@@ -265,13 +265,64 @@ extension _UserDetailPageLogic on _UserDetailPageState {
     String? screenName,
   }) async {
     final name = screenName ?? widget.user.screenName;
+    final restId = widget.user.restId;
+
     if (name == null || name.isEmpty) return;
-    final appUrl = Uri.parse('twitter://user?screen_name=$name');
-    final webUrl = Uri.parse('https://x.com/$name');
-    if (await canLaunchUrl(appUrl)) {
-      await launchUrl(appUrl);
-    } else {
-      await launchUrl(webUrl, mode: LaunchMode.externalApplication);
-    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(Icons.open_in_new),
+        title: Text(l10n.visit),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (Platform.isAndroid)
+              ListTile(
+                leading: const Icon(Icons.android),
+                title: Text(l10n.open_in_app),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final appUrl = Uri.parse('twitter://user?screen_name=$name');
+                  if (await canLaunchUrl(appUrl)) {
+                    await launchUrl(appUrl);
+                  }
+                },
+              ),
+            ListTile(
+              leading: const Icon(Icons.language),
+              title: Text(l10n.browser_via_screen_name),
+              subtitle: Text('@$name'),
+              onTap: () {
+                Navigator.pop(context);
+                launchUrl(
+                  Uri.parse('https://x.com/$name'),
+                  mode: LaunchMode.externalApplication,
+                );
+              },
+            ),
+            if (restId.isNotEmpty)
+              ListTile(
+                leading: const Icon(Icons.fingerprint),
+                title: Text(l10n.browser_via_rest_id),
+                subtitle: Text('ID: $restId'),
+                onTap: () {
+                  Navigator.pop(context);
+                  launchUrl(
+                    Uri.parse('https://x.com/intent/user?user_id=$restId'),
+                    mode: LaunchMode.externalApplication,
+                  );
+                },
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.cancel),
+          ),
+        ],
+      ),
+    );
   }
 }

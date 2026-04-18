@@ -193,5 +193,9 @@
   "comfirm_stop_sync_text": "停止同步將取消所有進行中的資料擷取作業，本次同步不會儲存任何資料。",
   "paused": "已暫停",
   "stopped_by_user": "已由使用者停止",
-  "other_reasons": "其它原因"
+  "other_reasons": "其它原因",
+  "rollback_to_here": "回滾到此",
+  "open_in_app": "在App中打開",
+  "browser_via_screen_name": "瀏覽器（透過用戶名）",
+  "browser_via_rest_id": "瀏覽器（透過 Rest ID）"
 }

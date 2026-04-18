@@ -2,7 +2,7 @@ name: autonitor
 description: "A FOSS Twitter follower analysis app that outperforms paid alternatives."
 publish_to: 'none'
 
-version: 1.0.0+10000
+version: 1.0.0+10001
 
 environment:
   sdk: ^3.9.2

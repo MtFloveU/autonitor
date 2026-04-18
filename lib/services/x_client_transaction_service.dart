@@ -1,4 +1,3 @@
-// lib/x_client_transaction_service.dart
 import 'dart:convert';
 import 'dart:math';
 // ignore: depend_on_referenced_packages
@@ -9,16 +8,16 @@ import 'package:dio/dio.dart';
 import 'package:autonitor/services/log_service.dart';
 
 /// XClientTransactionService / XClientGenerator
-/// 基于最新 Python 版本重写并修正的完整 Dart 实现。
-/// 使用 XClientGenerator().fetchAndGenerateTransactionId(method: "GET", url: "https://x.com/....")
-/// 来获取有效的 x-client-transaction-id 字符串。
+/// A full Dart implementation rewritten and corrected based on the latest Python version.
+/// Use XClientGenerator().fetchAndGenerateTransactionId(method: "GET", url: "https://x.com/....")
+/// to obtain a valid x-client-transaction-id string.
 ///
-/// 注意：网络请求使用 Dio，并依赖正常的网络连通性。
+/// Note: Network requests use Dio and rely on normal network connectivity.
 class XClientTransactionService {
-  // 数值插值
+  // Numerical interpolation
   List<double> interpolate(List<num> fromList, List<num> toList, double f) {
     if (fromList.length != toList.length) {
-      throw Exception("插值参数长度不匹配");
+      throw Exception("Interpolation parameter length mismatch");
     }
     final List<double> out = [];
     for (int i = 0; i < fromList.length; i++) {
@@ -35,22 +34,24 @@ class XClientTransactionService {
     final double radians = degrees * pi / 180.0;
     final double cosVal = cos(radians);
     final double sinVal = sin(radians);
-    // 匹配 Python 中返回的 4 元素列表：[cos, -sin, sin, cos]
+    // Matches the 4-element list returned in Python: [cos, -sin, sin, cos]
     return [cosVal, -sinVal, sinVal, cosVal];
   }
 
-  final String homePageHtml;    // 完整的主页 HTML 文本
-  final String ondemandJsText;  // ondemand.s.*.js 文本
+  final String homePageHtml; // Full home page HTML text
+  final String ondemandJsText; // ondemand.s.*.js text
   final String randomKeyword;
-  final int randomNumber;       // 附加的随机数 (类似于 Python 中的 ADDITIONAL_RANDOM_NUMBER)
+  final int
+  randomNumber; // Additional random number (similar to ADDITIONAL_RANDOM_NUMBER in Python)
 
-  late final int rowIndexIndex;       // 从 ondemand 中提取的首个索引
-  late final List<int> keyBytesIndices; // 用于计算 frameTimeProduct 的剩余索引
-  late final List<int> keyBytes;      // Base64 解码后的 key bytes (来自 meta)
-  late final String animationKey;     // 计算得出的动画 key
+  late final int rowIndexIndex; // First index extracted from ondemand
+  late final List<int>
+  keyBytesIndices; // Remaining indices used to calculate frameTimeProduct
+  late final List<int> keyBytes; // Base64 decoded key bytes (from meta)
+  late final String animationKey; // Calculated animation key
 
   static const int _epochOffsetSeconds = 1682924400;
-  // 匹配 indices 规则
+  // Matches indices pattern
   static const String _indicesPattern = r"""(\(\w{1}\[(\d{1,2})\],\s*16\))+""";
 
   XClientTransactionService({
@@ -58,7 +59,8 @@ class XClientTransactionService {
     required this.ondemandJsText,
     String? randomKeyword,
     int? randomNumber,
-  }) : randomKeyword = randomKeyword ?? "obfiowerehiring", // 最新默认关键字
+  }) : randomKeyword =
+           randomKeyword ?? "obfiowerehiring", // Latest default keyword
        randomNumber = randomNumber ?? 3 {
     final Map<String, dynamic> indices = _getIndices(ondemandJsText);
     rowIndexIndex = indices['rowIndex'] as int;
@@ -69,14 +71,14 @@ class XClientTransactionService {
     animationKey = _getAnimationKey(keyBytes, homePageHtml);
   }
 
-  // ----------------- 辅助方法: 从 ondemand 提取索引 -----------------
+  // ----------------- Helper method: Extract indices from ondemand -----------------
   Map<String, dynamic> _getIndices(String ondemandText) {
     final RegExp rx = RegExp(_indicesPattern, multiLine: true);
     final Iterable<RegExpMatch> matches = rx.allMatches(ondemandText);
     final List<int> idxs = [];
 
     for (final m in matches) {
-      // 第二个捕获组包含实际数字
+      // The second capture group contains the actual number
       if (m.groupCount >= 2) {
         final g = m.group(2);
         if (g != null) {
@@ -88,18 +90,18 @@ class XClientTransactionService {
     }
 
     if (idxs.isEmpty) {
-      throw Exception("无法从 ondemand JS 中获取 KEY_BYTE indices");
+      throw Exception("Unable to obtain KEY_BYTE indices from ondemand JS");
     }
 
     return {
-      // 第一项为 rowIndexIndex (用来检索 keyBytes)
+      // First item is rowIndexIndex (used to retrieve keyBytes)
       'rowIndex': idxs.first,
-      // 剩余的用来计算 frameTimeProduct
+      // The rest are used to calculate frameTimeProduct
       'keyBytesIndices': idxs.length > 1 ? idxs.sublist(1) : <int>[],
     };
   }
 
-  // ----------------- 辅助方法: 提取 Meta Key -----------------
+  // ----------------- Helper method: Extract Meta Key -----------------
   String _getKey(String htmlText) {
     final doc = html_parser.parse(htmlText);
     final html_dom.Element? meta = doc.querySelector(
@@ -108,7 +110,7 @@ class XClientTransactionService {
     final String? content = meta?.attributes['content'];
     if (content == null || content.isEmpty) {
       throw Exception(
-        "无法从页面 HTML 中获取 twitter-site-verification meta content",
+        "Unable to get twitter-site-verification meta content from page HTML",
       );
     }
     return content;
@@ -119,12 +121,12 @@ class XClientTransactionService {
       final bytes = base64.decode(keyBase64);
       return bytes;
     } catch (e) {
-      // 降级: 当作 utf8 字节处理
+      // Fallback: treat as utf8 bytes
       return utf8.encode(keyBase64);
     }
   }
 
-  // ----------------- 辅助方法: 提取 SVG 帧矩阵 -----------------
+  // ----------------- Helper method: Extract SVG frame matrices -----------------
   List<html_dom.Element> _getFrames(String htmlText) {
     final doc = html_parser.parse(htmlText);
     final List<html_dom.Element> frames = [];
@@ -135,15 +137,15 @@ class XClientTransactionService {
     return frames;
   }
 
-  /// 将 SVG path 'd' 的值解析为二维整数数组
-  /// 保留负数和小数点（我们会四舍五入到最近的整数）。
+  /// Parses the SVG path 'd' value into a 2D integer array.
+  /// Retains negative numbers and decimal points (rounded to the nearest integer).
   List<List<int>> _get2dArray(List<int> keyBytes, String homePageResponse) {
     final frames = _getFrames(homePageResponse);
     if (frames.isEmpty) {
-      throw Exception("无法在 HTML 中找到动画帧元素");
+      throw Exception("Animation frame elements not found in HTML");
     }
 
-    final frameIndex = keyBytes[5] % frames.length; // 安全索引
+    final frameIndex = keyBytes[5] % frames.length; // Safe index
     final html_dom.Element frame = frames[frameIndex];
 
     html_dom.Element? pathElement;
@@ -165,7 +167,9 @@ class XClientTransactionService {
 
     final String? dAttribute = pathElement?.attributes['d'];
     if (dAttribute == null || dAttribute.length < 9) {
-      throw Exception("无法从 SVG path 提取 'd' 属性。当前属性: $dAttribute");
+      throw Exception(
+        "Unable to extract 'd' attribute from SVG path. Current attribute: $dAttribute",
+      );
     }
 
     final List<String> cSegments = dAttribute.substring(9).split("C");
@@ -185,7 +189,7 @@ class XClientTransactionService {
       }
     }
 
-    // 如果只找到少于 4 行，复制几份，防止 rowIndex 越界
+    // If fewer than 4 rows are found, copy a few to prevent rowIndex out of bounds
     while (result.length < 4) {
       result.add(result[0]);
     }
@@ -193,9 +197,9 @@ class XClientTransactionService {
     return result;
   }
 
-  // ----------------- 浮点数处理 -----------------
+  // ----------------- Float processing -----------------
   static double _customRoundDouble(double x) {
-    // 模拟之前 Python 使用的舍入机制
+    // Simulate the rounding mechanism used in previous Python versions
     final int floorX = x.floor();
     return ((x - floorX).abs() >= 0.5) ? floorX + 1.0 : floorX.toDouble();
   }
@@ -204,15 +208,15 @@ class XClientTransactionService {
     return n % 2 != 0 ? -1.0 : 0.0;
   }
 
-  /// 模拟 Python 中浮点数转 Hex：将正双精度转为 hex integer.fraction 形式
+  /// Simulates float to hex in Python: convert positive double to hex integer.fraction format
   String _floatToHex(double x) {
     if (x == 0.0) return '0';
     x = x.abs();
     final int integer = x.floor();
     double frac = x - integer;
     final List<String> parts = [];
-    
-    // 处理整数部分
+
+    // Handle integer part
     if (integer == 0) {
       parts.add('0');
     } else {
@@ -229,8 +233,8 @@ class XClientTransactionService {
       }
       parts.addAll(intHex);
     }
-    
-    // 处理小数部分
+
+    // Handle fractional part
     if (frac > 0) {
       parts.add('.');
       int count = 0;
@@ -249,11 +253,11 @@ class XClientTransactionService {
     return parts.join();
   }
 
-  // ----------------- 动画生成及 Cubic 曲线计算 -----------------
+  // ----------------- Animation generation and Cubic curve calculation -----------------
   String _animate(List<int> frames, double targetTime) {
-    // frames 预期格式: [r0, g0, b0, r1, g1, b1, rotateByte, curveBytes...]
+    // Expected format for frames: [r0, g0, b0, r1, g1, b1, rotateByte, curveBytes...]
     if (frames.length < 7) {
-      throw Exception("帧行必须包含至少 7 个值");
+      throw Exception("Frame row must contain at least 7 values");
     }
     final List<double> fromColor = [
       frames[0].toDouble(),
@@ -289,25 +293,25 @@ class XClientTransactionService {
     final Cubic cubic = Cubic(curves);
     final double v = cubic.getValue(targetTime);
 
-    // 颜色插值
+    // Color interpolation
     final List<double> color = interpolate(fromColor, toColor, v);
     final List<int> roundedColor = color
         .map((c) => max(0, min(255, c.round())))
         .toList();
 
-    // 旋转矩阵插值
+    // Rotation matrix interpolation
     final List<double> rotation = interpolate([0.0], [toRotationDeg], v);
     final List<double> matrix = convertRotationToMatrix(rotation[0]);
 
-    // 构建最终字符串
+    // Build final string
     final List<String> strArr = [];
-    // 颜色的 hex 值 (Python 使用 format(round(value), 'x')：不补 0)
+    // Hex value of color (Python uses format(round(value), 'x'): no padding with 0)
     for (int i = 0; i < 3; i++) {
       final String hx = roundedColor[i].toRadixString(16);
       strArr.add(hx);
     }
 
-    // 矩阵浮点数 -> 类 hex 的字符串表达形式
+    // Matrix float -> hex-like string representation
     for (final val in matrix) {
       double r = double.parse(val.toStringAsFixed(2));
       if (r < 0) r = r.abs();
@@ -323,7 +327,7 @@ class XClientTransactionService {
       strArr.add(finalHex.toLowerCase());
     }
 
-    // 按照 Python 逻辑补两个 0 
+    // Add two zeros following Python logic
     strArr.addAll(['0', '0']);
     final String animationKey = strArr.join().replaceAll(RegExp(r'[.\-]'), '');
     return animationKey;
@@ -338,18 +342,18 @@ class XClientTransactionService {
   }
 
   String _getAnimationKey(List<int> keyBytesLocal, String homePage) {
-    // 参考 Python 代码中默认设置的 totalTime = 4096
+    // Refer to totalTime = 4096 default setting in Python code
     const int totalTime = 4096;
 
     if (rowIndexIndex >= keyBytesLocal.length) {
-      throw Exception("rowIndexIndex ($rowIndexIndex) 超出边界");
+      throw Exception("rowIndexIndex ($rowIndexIndex) out of bounds");
     }
     final int rowIndex = keyBytesLocal[rowIndexIndex] % 16;
 
     int frameTimeProduct = 1;
     for (final idx in keyBytesIndices) {
       if (idx >= keyBytesLocal.length) {
-        throw Exception("Key byte index $idx 超出边界");
+        throw Exception("Key byte index $idx out of bounds");
       }
       final int v = keyBytesLocal[idx] % 16;
       frameTimeProduct *= v;
@@ -359,7 +363,9 @@ class XClientTransactionService {
 
     final List<List<int>> arr = _get2dArray(keyBytesLocal, homePage);
     if (rowIndex >= arr.length) {
-      throw Exception("帧行索引 $rowIndex 超出边界 (最大 ${arr.length})");
+      throw Exception(
+        "Frame row index $rowIndex out of bounds (max ${arr.length})",
+      );
     }
     final List<int> frameRow = arr[rowIndex];
 
@@ -368,19 +374,19 @@ class XClientTransactionService {
     return animKey;
   }
 
-  // ----------------- 公开方法: 生成 Transaction ID -----------------
+  // ----------------- Public method: Generate Transaction ID -----------------
   String generateTransactionId({
     required String method,
     required String url,
-    int? timeNowOverride, // 秒数, 基于 epoch offset
+    int? timeNowOverride, // Seconds, based on epoch offset
   }) {
     final String path = Uri.parse(url).path;
 
-    // 计算 finalTimeNow = floor(now_seconds - epochOffsetSeconds)
+    // Calculate finalTimeNow = floor(now_seconds - epochOffsetSeconds)
     final int nowSec = (DateTime.now().millisecondsSinceEpoch / 1000).floor();
     final int finalTimeNow = timeNowOverride ?? (nowSec - _epochOffsetSeconds);
 
-    // 基于 finalTimeNow 得到 4 字节的 little-endian
+    // Get 4-byte little-endian based on finalTimeNow
     final List<int> timeNowBytes = [
       (finalTimeNow >> 0) & 0xFF,
       (finalTimeNow >> 8) & 0xFF,
@@ -388,7 +394,7 @@ class XClientTransactionService {
       (finalTimeNow >> 24) & 0xFF,
     ];
 
-    // 构建 hash 输入。Python：f"{method}!{path}!{time_now}{self.random_keyword}{animation_key}"
+    // Construct hash input. Python: f"{method}!{path}!{time_now}{self.random_keyword}{animation_key}"
     final String hashInput =
         "$method!$path!$finalTimeNow$randomKeyword$animationKey";
     final List<int> hashInputBytes = utf8.encode(hashInput);
@@ -405,13 +411,13 @@ class XClientTransactionService {
 
     final List<int> out = [randomNum, ...bytesArr.map((b) => b ^ randomNum)];
 
-    // Base64 编码并移除末尾的 '='
+    // Base64 encode and remove trailing '='
     final String b64 = base64.encode(out);
     return b64.replaceAll('=', '');
   }
 }
 
-// -------------------- Cubic 贝塞尔曲线计算类 --------------------
+// -------------------- Cubic Bezier curve calculation class --------------------
 class Cubic {
   final List<double> curves;
   Cubic(List<double> arr) : curves = arr.map((e) => e.toDouble()).toList();
@@ -475,11 +481,11 @@ class Cubic {
   }
 }
 
-// -------------------- Generator: 抓取网页并生成 ID --------------------
+// -------------------- Generator: Scrape webpage and generate ID --------------------
 class XClientGenerator {
   final Dio _dio;
   XClientGenerator() : _dio = Dio() {
-    // 基于 utils.generate_headers() 的最新 header 参数配置
+    // Latest header parameter configuration based on utils.generate_headers()
     _dio.options.headers = {
       "Authority": "x.com",
       "Accept-Language": "en-US,en;q=0.9",
@@ -488,25 +494,25 @@ class XClientGenerator {
       "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36",
       "X-Twitter-Active-User": "yes",
-      "X-Twitter-Client-Language": "en"
+      "X-Twitter-Client-Language": "en",
     };
   }
 
   static const String _ondemandTemplate =
       "https://abs.twimg.com/responsive-web/client-web/ondemand.s.{filename}a.js";
 
-  // 最新 Python 的解析逻辑：先提取索引数字 -> 后查找对应该数字的哈希映射
+  // Latest Python parsing logic: first extract index number -> then look up the hash mapping corresponding to that number
   static final RegExp _ondemandIndexRegex = RegExp(
     r""",(\d+):["']ondemand\.s["']""",
     multiLine: true,
   );
 
   String? _getOndemandUrlFromHtml(String html) {
-    // 1. 获取映射索引
+    // 1. Get mapping index
     final m1 = _ondemandIndexRegex.firstMatch(html);
     if (m1 != null && m1.groupCount >= 1) {
       final String index = m1.group(1)!;
-      // 2. 根据索引去查找哈希值 (即文件名), 匹配: ,INDEX:"HASH"
+      // 2. Find hash value (i.e., filename) based on index, match: ,INDEX:"HASH"
       final RegExp hashRegex = RegExp(',$index:"([0-9a-f]+)"');
       final m2 = hashRegex.firstMatch(html);
       if (m2 != null && m2.groupCount >= 1) {
@@ -517,9 +523,9 @@ class XClientGenerator {
     return null;
   }
 
-  // 处理 X/Twitter 最近可能下发的重定向和挑战页面
+  // Handle redirection and challenge pages that X/Twitter might issue recently
   Future<String> _fetchHomePage() async {
-    logger.i("正在获取主页 https://x.com ...");
+    logger.i("Fetching https://x.com ...");
     var response = await _dio.get("https://x.com");
     var htmlText = response.data.toString();
 
@@ -527,22 +533,28 @@ class XClientGenerator {
       r"""(http(?:s)?://(?:www\.)?(twitter|x){1}\.com(/x)?/migrate([/?])?tok=[a-zA-Z0-9%\-_]+)+""",
     );
 
-    // 第一重防护：判断是否有 meta 自动重定向
+    // First layer of protection: determine if there is a meta automatic redirect
     var doc = html_parser.parse(htmlText);
     final metaRefresh = doc.querySelector("meta[http-equiv='refresh']");
     if (metaRefresh != null) {
-      final match = migrationUrlRegex.firstMatch(metaRefresh.outerHtml) ?? migrationUrlRegex.firstMatch(htmlText);
+      final match =
+          migrationUrlRegex.firstMatch(metaRefresh.outerHtml) ??
+          migrationUrlRegex.firstMatch(htmlText);
       if (match != null) {
         final redirectUrl = match.group(0)!;
-        logger.i("发现迁移重定向机制，正在跳转至: $redirectUrl");
+        logger.i(
+          "A migration redirection mechanism has been detected, redirecting to: $redirectUrl",
+        );
         response = await _dio.get(redirectUrl);
         htmlText = response.data.toString();
         doc = html_parser.parse(htmlText);
       }
     }
 
-    // 第二重防护：判断是否有迁移表单 (比如验证用户/机器人环境等)
-    final form = doc.querySelector("form[name='f']") ?? doc.querySelector("form[action='https://x.com/x/migrate']");
+    // Second layer of protection: determine if there is a migration form (e.g., verifying user/bot environment, etc.)
+    final form =
+        doc.querySelector("form[name='f']") ??
+        doc.querySelector("form[action='https://x.com/x/migrate']");
     if (form != null) {
       final action = form.attributes['action'] ?? "https://x.com/x/migrate";
       final method = (form.attributes['method'] ?? "POST").toUpperCase();
@@ -555,14 +567,16 @@ class XClientGenerator {
           data[name] = value ?? "";
         }
       }
-      logger.i("检测到环境验证/迁移表单，正在自动提交至: $action");
+      logger.i(
+        "A migration form has been detected, automatically submitting to: $action",
+      );
       if (method == "POST") {
         response = await _dio.post(
           action,
           data: data,
           options: Options(
-            headers: {"Content-Type": "application/x-www-form-urlencoded"}
-          )
+            headers: {"Content-Type": "application/x-www-form-urlencoded"},
+          ),
         );
       } else {
         response = await _dio.get(action, queryParameters: data);
@@ -574,34 +588,38 @@ class XClientGenerator {
   }
 
   Future<XClientTransactionService> fetchService() async {
-    logger.i("正在获取 XClient 生成所需要的网页及 JS...");
+    logger.i("Fetching XClient required web pages and JS...");
     try {
-      // 1. 获取处理重定向后的完整主页
+      // 1. Obtain the full home page after handling redirects
       final String homeHtml = await _fetchHomePage();
 
-      // 2. 解析主页寻找 ondemand 文件的动态 URL
+      // 2. Parse the home page to find the dynamic URL of the ondemand file
       final ondemandUrl = _getOndemandUrlFromHtml(homeHtml);
       if (ondemandUrl == null) {
-        throw Exception("主页 HTML 中未找到 ondemand 哈希及动态地址");
+        throw Exception(
+          "Ondemand hash and dynamic address not found in home page HTML",
+        );
       }
-      logger.i("获取到 ondemand js 的地址: $ondemandUrl");
+      logger.i("Obtained ondemand js address: $ondemandUrl");
 
-      // 3. 获取对应的 ondemand js 内容
+      // 3. Get the corresponding ondemand js content
       final ondemandResp = await _dio.get(ondemandUrl);
       final String ondemandJs = ondemandResp.data.toString();
 
-      // 4. 组装并初始化 Service 返回
+      // 4. Assemble and initialize Service return
       final svc = XClientTransactionService(
         homePageHtml: homeHtml,
         ondemandJsText: ondemandJs,
       );
-      logger.i("Service 实例创建并初始化完毕");
+      logger.i("Service instance created and initialized");
       return svc;
     } on DioException catch (e) {
-      logger.i("获取网页数据时发生网络错误: ${e.message}");
+      logger.i(
+        "Network error occurred while fetching web page data: ${e.message}",
+      );
       rethrow;
     } catch (e, s) {
-      logger.i("创建 Service 期间遇到未知异常: $e\n$s");
+      logger.i("Encountered unknown exception during Service creation: $e\n$s");
       rethrow;
     }
   }
@@ -610,18 +628,18 @@ class XClientGenerator {
     required String method,
     required String url,
   }) async {
-    logger.i("开始单次请求执行及获取过程...");
+    logger.i("Starting single request execution and retrieval process...");
     try {
       final svc = await fetchService();
 
       final txid = svc.generateTransactionId(method: method, url: url);
-      logger.i("成功生成 txid: $txid");
+      logger.i("Successfully generated txid: $txid");
       return txid;
     } on DioException catch (e) {
-      logger.i("网络层错误: ${e.message}");
+      logger.i("Network layer error: ${e.message}");
       return null;
     } catch (e, s) {
-      logger.i("计算 txid 时捕获到异常: $e\n$s");
+      logger.i("Exception caught while calculating txid: $e\n$s");
       return null;
     }
   }

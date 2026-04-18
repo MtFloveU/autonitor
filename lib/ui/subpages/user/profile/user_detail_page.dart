@@ -125,7 +125,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage>
                   child: Row(
                     children: [
                       Icon(
-                        Icons.description_outlined,
+                        Icons.code_outlined,
                         size: 20,
                         color: Theme.of(context).colorScheme.onSurface,
                       ),

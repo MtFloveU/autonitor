@@ -107,7 +107,6 @@ class RelationshipAnalyzer {
     final Map<String, String> results = {};
     if (ids.isEmpty) return results;
 
-    // 如果只有一个 ID，使用单体查询方法
     if (ids.length == 1) {
       final String removedId = ids.first;
       _log("Fetching status for single user $removedId...");
@@ -118,6 +117,7 @@ class RelationshipAnalyzer {
             .getUserByRestId(removedId, _ownerCookie, queryId);
         final result = gqlJson['data']?['user']?['result'];
         final typename = result?['__typename'];
+        final message = result?['message'] as String?;
 
         if (typename == 'User') {
           final legacy = result['legacy'];
@@ -126,7 +126,13 @@ class RelationshipAnalyzer {
               ? 'temporarily_restricted'
               : 'normal_unfollowed';
         } else if (typename == 'UserUnavailable') {
-          results[removedId] = 'suspended';
+          if (message == 'User is suspended') {
+            results[removedId] = 'suspended';
+          } else if (message == 'User is deactivated') {
+            results[removedId] = 'deactivated';
+          } else {
+            results[removedId] = 'suspended'; // 默认回退逻辑
+          }
         } else if (gqlJson['data']?['user'] == null ||
             (gqlJson['data']?['user'] is Map &&
                 (gqlJson['data']['user'] as Map).isEmpty)) {
@@ -141,7 +147,6 @@ class RelationshipAnalyzer {
       return results;
     }
 
-    // 多个 ID 使用批量查询
     _log("Batch fetching status for ${ids.length} users...");
     await _checkPauseCallback();
     try {
@@ -168,6 +173,7 @@ class RelationshipAnalyzer {
         }
 
         final String? typename = result['__typename'];
+        final String? message = result['message'] as String?;
         if (typename == 'User') {
           final legacy = result['legacy'];
           final interstitial = legacy?['profile_interstitial_type'] as String?;
@@ -175,7 +181,13 @@ class RelationshipAnalyzer {
               ? 'temporarily_restricted'
               : 'normal_unfollowed';
         } else if (typename == 'UserUnavailable') {
-          results[currentId] = 'suspended';
+          if (message == 'User is suspended') {
+            results[currentId] = 'suspended';
+          } else if (message == 'User is deactivated') {
+            results[currentId] = 'deactivated';
+          } else {
+            results[currentId] = 'suspended';
+          }
         } else {
           results[currentId] = 'unknown_gql_response';
         }
@@ -221,8 +233,12 @@ class RelationshipAnalyzer {
             jsonDecode(oldRel!.latestRawJson!),
           );
           final Map<String, Map<String, String?>> diffs = {};
+
+          // 修复：处理 null 与空字符串的等价性比较
           void check(String f, String? o, String? n) {
-            if (o?.trim() != n?.trim()) {
+            final oldTrimmed = o?.trim() ?? '';
+            final newTrimmed = n?.trim() ?? '';
+            if (oldTrimmed != newTrimmed) {
               diffs[f] = {'old': o?.trim(), 'new': n?.trim()};
             }
           }
@@ -232,13 +248,14 @@ class RelationshipAnalyzer {
           check('bio', oldUser.bio, newUser.bio);
           check('location', oldUser.location, newUser.location);
           check('link', oldUser.link, newUser.link);
-          if (oldUser.avatarUrl != newUser.avatarUrl) {
+
+          if ((oldUser.avatarUrl ?? '') != (newUser.avatarUrl ?? '')) {
             diffs['avatar'] = {
               'old': oldUser.avatarUrl,
               'new': newUser.avatarUrl,
             };
           }
-          if (oldUser.bannerUrl != newUser.bannerUrl) {
+          if ((oldUser.bannerUrl ?? '') != (newUser.bannerUrl ?? '')) {
             diffs['banner'] = {
               'old': oldUser.bannerUrl,
               'new': newUser.bannerUrl,
@@ -328,23 +345,19 @@ class RelationshipAnalyzer {
           oldKeptStatus = j['kept_ids_status'] ?? 'normal';
         } catch (_) {}
       }
-
+      final String currentStatus = restrictedChecks[keptId] ?? 'normal';
       String? changeType;
-      if ((oldStatus != 'normal' || oldKeptStatus != 'normal') &&
-          relationshipChanged) {
-        changeType = 'recovered';
-      } else if (!relationshipChanged &&
-          (oldStatus != 'normal' || oldKeptStatus != 'normal')) {
-        keptStatusUpdates[keptId] = oldKeptStatus != 'normal'
-            ? oldKeptStatus
-            : oldStatus;
-      } else if (restrictedChecks[keptId] == 'temporarily_restricted') {
+      if (currentStatus == 'temporarily_restricted') {
         changeType = 'temporarily_restricted';
-      } else if (!wasFollower &&
-          wasFollowing &&
-          isNowFollower &&
-          isNowFollowing) {
-        changeType = 'be_followed_back';
+      } else if ((oldStatus == 'suspended' ||
+              oldStatus == 'deactivated' ||
+              oldStatus == 'temporarily_restricted' ||
+              oldKeptStatus == 'suspended' ||
+              oldKeptStatus == 'deactivated' ||
+              oldKeptStatus == 'temporarily_restricted') &&
+          currentStatus == 'normal') {
+        // [关键修改]：确保当前是正常状态才触发 recovered
+        changeType = 'recovered';
       } else if (relationshipChanged &&
           wasFollower &&
           wasFollowing &&

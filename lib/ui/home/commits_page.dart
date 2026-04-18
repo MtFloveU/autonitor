@@ -202,11 +202,12 @@ class CommitsPage extends ConsumerWidget {
       icon: Icon(Icons.more_vert_rounded, color: colorScheme.onSurfaceVariant),
       onSelected: (value) => _handleRollback(context, ref, runId),
       itemBuilder: (context) => [
-        const PopupMenuItem(
+        PopupMenuItem(
           value: 'rollback',
+          enabled: false,
           child: ListTile(
-            leading: Icon(Icons.settings_backup_restore_rounded),
-            title: Text('Rollback to here'),
+            leading: const Icon(Icons.settings_backup_restore_rounded),
+            title: Text(AppLocalizations.of(context)!.rollback_to_here),
             contentPadding: EdgeInsets.zero,
             dense: true,
           ),
