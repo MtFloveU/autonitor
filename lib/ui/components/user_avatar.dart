@@ -1,6 +1,5 @@
 // lib/ui/components/user_avatar.dart
 import 'dart:io';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 
@@ -24,8 +23,6 @@ class UserAvatar extends StatelessWidget {
     this.onTap,
   });
 
-  static final RegExp _avatarSizeRegex = RegExp(r'_(normal|bigger|400x400)');
-
   String? _getAbsoluteLocalPath() {
     if (mediaDir != null &&
         avatarLocalPath != null &&
@@ -35,24 +32,10 @@ class UserAvatar extends StatelessWidget {
     return null;
   }
 
-  String _getEffectiveUrl() {
-    final url = avatarUrl ?? '';
-    if (url.isEmpty) return '';
-
-    // Replace size suffix if high quality is requested
-    if (isHighQuality) {
-      return url.replaceFirst(_avatarSizeRegex, '_400x400');
-    }
-    // Default usually is _normal or _bigger depending on API,
-    // keep as is or force _bigger for list views if needed.
-    return url;
-  }
-
   @override
   Widget build(BuildContext context) {
     final double diameter = radius * 2;
     final absolutePath = _getAbsoluteLocalPath();
-    final effectiveUrl = _getEffectiveUrl();
 
     // Placeholder widget
     final placeholder = SizedBox(
@@ -73,29 +56,8 @@ class UserAvatar extends StatelessWidget {
         height: diameter,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          // Fallback to network if local file is corrupted
-          if (effectiveUrl.isNotEmpty) {
-            return CachedNetworkImage(
-              imageUrl: effectiveUrl,
-              width: diameter,
-              height: diameter,
-              fit: BoxFit.cover,
-              placeholder: (_, _) => placeholder,
-              errorWidget: (_, _, _) => placeholder,
-            );
-          }
           return placeholder;
         },
-      );
-    } else if (effectiveUrl.isNotEmpty) {
-      imageContent = CachedNetworkImage(
-        imageUrl: effectiveUrl,
-        width: diameter,
-        height: diameter,
-        fit: BoxFit.cover,
-        placeholder: (_, _) => placeholder,
-        errorWidget: (_, _, _) => placeholder,
-        fadeInDuration: const Duration(milliseconds: 200),
       );
     } else {
       imageContent = placeholder;

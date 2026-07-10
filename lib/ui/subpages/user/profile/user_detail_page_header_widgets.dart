@@ -23,16 +23,11 @@ extension _UserDetailPageHeaderWidgets on _UserDetailPageState {
     ImageProvider? avatarProvider;
     if (avatarLocalPath != null) {
       avatarProvider = FileImage(File(avatarLocalPath));
-    } else if (highQualityAvatarUrl.isNotEmpty) {
-      avatarProvider = CachedNetworkImageProvider(highQualityAvatarUrl);
     }
 
     ImageProvider? bannerProvider;
     if (bannerLocalPath != null) {
       bannerProvider = FileImage(File(bannerLocalPath));
-    } else if (widget.user.bannerUrl != null &&
-        widget.user.bannerUrl!.isNotEmpty) {
-      bannerProvider = CachedNetworkImageProvider(widget.user.bannerUrl!);
     }
 
     final avatarHeroTag = widget.heroTag ?? 'avatar_${widget.user.restId}';
@@ -176,7 +171,8 @@ extension _UserDetailPageHeaderWidgets on _UserDetailPageState {
         SizedBox(
           height: buttonHeight,
           child: FilledButton.tonalIcon(
-            onPressed: () => _openExternalProfile(context, l10n, restId: widget.user.restId),
+            onPressed: () =>
+                _openExternalProfile(context, l10n, restId: widget.user.restId),
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.primaryContainer,
               foregroundColor: Theme.of(context).colorScheme.primary,

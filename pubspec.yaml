@@ -15,7 +15,6 @@ dependencies:
   flutter_secure_storage: any
   flutter_inappwebview: ^6.0.0
   dio: ^5.9.0
-  cached_network_image: ^3.4.1
   url_launcher: ^6.3.2
   shared_preferences: ^2.5.3
   flutter_localizations:
