@@ -8,7 +8,13 @@
     <application
         android:label="Autonitor"
         android:name="${applicationName}"
-        android:icon="@mipmap/launcher_icon">
+        android:icon="@mipmap/ic_launcher">
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_icon_nobg" />
+        <meta-data
+            android:name="app.autonitor.NOTIFICATION_ICON"
+            android:resource="@drawable/ic_stat_icon_nobg" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

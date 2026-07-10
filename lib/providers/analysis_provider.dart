@@ -73,7 +73,7 @@ class AnalysisService extends StateNotifier<AnalysisState> {
 
   void _initLocalNotifications() {
     if (!Platform.isAndroid) return;
-    const androidInit = AndroidInitializationSettings('@mipmap/launcher_icon');
+    const androidInit = AndroidInitializationSettings('ic_launcher_foreground');
     const initSettings = InitializationSettings(android: androidInit);
     _localNotifications.initialize(initSettings);
   }
@@ -115,6 +115,7 @@ class AnalysisService extends StateNotifier<AnalysisState> {
         eventAction: ForegroundTaskEventAction.once(),
       ),
     );
+    ;
   }
 
   // --- 控制逻辑 ---
@@ -188,6 +189,9 @@ class AnalysisService extends StateNotifier<AnalysisState> {
         notificationTitle: l10n.sync_notification_title,
         notificationText: l10n.sync_notification_text(
           accountToProcess.screenName ?? 'Unknown',
+        ),
+        notificationIcon: const NotificationIcon(
+          metaDataName: 'app.autonitor.NOTIFICATION_ICON',
         ),
       );
     }
