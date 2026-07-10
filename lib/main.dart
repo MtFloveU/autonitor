@@ -52,9 +52,9 @@ class MyApp extends ConsumerWidget {
           darkDynamic: darkDynamic,
         );
 
-        const pageTransitionsTheme = PageTransitionsTheme(
+        final pageTransitionsTheme = PageTransitionsTheme(
           builders: <TargetPlatform, PageTransitionsBuilder>{
-            TargetPlatform.android: ZoomPageTransitionsBuilder(),
+            TargetPlatform.android: const ZoomPageTransitionsBuilder(),
             TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
             TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
           },

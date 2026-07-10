@@ -263,9 +263,9 @@ extension _UserDetailPageLogic on _UserDetailPageState {
     BuildContext context,
     AppLocalizations l10n, {
     String? screenName,
+    String? restId,
   }) async {
     final name = screenName ?? widget.user.screenName;
-    final restId = widget.user.restId;
 
     if (name == null || name.isEmpty) return;
 
@@ -290,7 +290,7 @@ extension _UserDetailPageLogic on _UserDetailPageState {
                 },
               ),
             ListTile(
-              leading: const Icon(Icons.language),
+              leading: const Icon(Icons.alternate_email),
               title: Text(l10n.browser_via_screen_name),
               subtitle: Text('@$name'),
               onTap: () {
@@ -301,7 +301,7 @@ extension _UserDetailPageLogic on _UserDetailPageState {
                 );
               },
             ),
-            if (restId.isNotEmpty)
+            if (restId != null && restId.isNotEmpty)
               ListTile(
                 leading: const Icon(Icons.fingerprint),
                 title: Text(l10n.browser_via_rest_id),

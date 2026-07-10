@@ -176,7 +176,7 @@ extension _UserDetailPageHeaderWidgets on _UserDetailPageState {
         SizedBox(
           height: buttonHeight,
           child: FilledButton.tonalIcon(
-            onPressed: () => _openExternalProfile(context, l10n),
+            onPressed: () => _openExternalProfile(context, l10n, restId: widget.user.restId),
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.primaryContainer,
               foregroundColor: Theme.of(context).colorScheme.primary,
