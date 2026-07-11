@@ -505,127 +505,244 @@ class _SearchFiltersPageState extends State<SearchFiltersPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    // Use Scaffold for full-screen layout
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: Text(l10n.filter),
-        // MD3: "Reset" as an action button in AppBar
-        actions: [TextButton(onPressed: _onReset, child: Text(l10n.reset))],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // [新增] 独立的 RestId 开关
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            secondary: Icon(
-              Icons.fingerprint_outlined,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            title: Text(l10n.enable_restid_searching),
-            subtitle: Text(l10n.enable_restid_searching_subtitle),
-            // 判断 restId 是否在当前的筛选集合中
-            value: _tempSearchFields.contains(SearchField.restId),
-            onChanged: (bool value) {
-              setState(() {
-                if (value) {
-                  _tempSearchFields.add(SearchField.restId);
-                } else {
-                  _tempSearchFields.remove(SearchField.restId);
-                }
-              });
-            },
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        actions: [
+          IconButton(
+            tooltip: l10n.reset,
+            onPressed: _onReset,
+            icon: const Icon(Icons.restart_alt_rounded),
           ),
-          Text(
-            l10n.search_fields,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children: SearchField.values
-                .where((f) => f != SearchField.restId)
-                .map((field) {
-                  return FilterChip(
-                    label: Text(field.name.toUpperCase()),
-                    selected: _tempSearchFields.contains(field),
-                    onSelected: (selected) {
-                      setState(() {
-                        selected
-                            ? _tempSearchFields.add(field)
-                            : _tempSearchFields.remove(field);
-                      });
-                    },
-                  );
-                })
-                .toList(),
-          ),
-          const Divider(height: 32),
-          _buildTriStateFilter(
-            context,
-            l10n.followers,
-            _tempIsFollower,
-            (val) => setState(() => _tempIsFollower = val),
-            Icons.person_outline_outlined,
-          ),
-          const SizedBox(height: 12),
-          _buildTriStateFilter(
-            context,
-            l10n.following,
-            _tempIsFollowing,
-            (val) => setState(() => _tempIsFollowing = val),
-            Icons.person,
-          ),
-          const Divider(height: 32),
-          Text(l10n.attributes, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 12),
-          _buildTriStateFilter(
-            context,
-            l10n.protected,
-            _tempIsProtected,
-            (val) => setState(() => _tempIsProtected = val),
-            Icons.lock_outline,
-          ),
-          const SizedBox(height: 12),
-          _buildTriStateFilter(
-            context,
-            l10n.verified,
-            _tempIsVerified,
-            (val) => setState(() => _tempIsVerified = val),
-            Icons.verified_outlined,
-          ),
-          const Divider(height: 32),
-          Text(
-            l10n.account_status,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children: AccountStatus.values.map((s) {
-              return FilterChip(
-                label: Text(s.name),
-                selected: _tempStatuses.contains(s),
-                onSelected: (selected) {
-                  setState(() {
-                    selected ? _tempStatuses.add(s) : _tempStatuses.remove(s);
-                  });
-                },
-              );
-            }).toList(),
-          ),
-          // Add extra padding at bottom to avoid FAB overlap if needed
-          const SizedBox(height: 80),
+          const SizedBox(width: 4),
         ],
       ),
-      // MD3: Primary action (Apply) in a Bottom Bar or FAB
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
+        children: [
+          _buildSection(
+            context,
+            title: l10n.search_fields,
+            icon: Icons.manage_search_rounded,
+            child: Column(
+              children: [
+                SwitchListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                  secondary: Icon(
+                    Icons.fingerprint_rounded,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  title: Text(l10n.enable_restid_searching),
+                  subtitle: Text(l10n.enable_restid_searching_subtitle),
+                  value: _tempSearchFields.contains(SearchField.restId),
+                  onChanged: (bool value) {
+                    setState(() {
+                      if (value) {
+                        _tempSearchFields.add(SearchField.restId);
+                      } else {
+                        _tempSearchFields.remove(SearchField.restId);
+                      }
+                    });
+                  },
+                ),
+                const Divider(height: 24, indent: 4, endIndent: 4),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 0, 4, 4),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: SearchField.values
+                          .where((field) => field != SearchField.restId)
+                          .map(
+                            (field) => FilterChip(
+                              label: Text(_formatEnumLabel(field.name)),
+                              selected: _tempSearchFields.contains(field),
+                              onSelected: (selected) {
+                                setState(() {
+                                  selected
+                                      ? _tempSearchFields.add(field)
+                                      : _tempSearchFields.remove(field);
+                                });
+                              },
+                              showCheckmark: false,
+                              avatar: _tempSearchFields.contains(field)
+                                  ? Icon(
+                                      Icons.check_rounded,
+                                      size: 18,
+                                      color: colorScheme.onSecondaryContainer,
+                                    )
+                                  : null,
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildSection(
+            context,
+            title: l10n.followers,
+            icon: Icons.people_outline_rounded,
+            child: Column(
+              children: [
+                _buildTriStateFilter(
+                  context,
+                  l10n.followers,
+                  _tempIsFollower,
+                  (val) => setState(() => _tempIsFollower = val),
+                  Icons.person_outline_rounded,
+                ),
+                const Divider(height: 24, indent: 44),
+                _buildTriStateFilter(
+                  context,
+                  l10n.following,
+                  _tempIsFollowing,
+                  (val) => setState(() => _tempIsFollowing = val),
+                  Icons.person_rounded,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildSection(
+            context,
+            title: l10n.attributes,
+            icon: Icons.verified_user_outlined,
+            child: Column(
+              children: [
+                _buildTriStateFilter(
+                  context,
+                  l10n.protected,
+                  _tempIsProtected,
+                  (val) => setState(() => _tempIsProtected = val),
+                  Icons.lock_outline_rounded,
+                ),
+                const Divider(height: 24, indent: 44),
+                _buildTriStateFilter(
+                  context,
+                  l10n.verified,
+                  _tempIsVerified,
+                  (val) => setState(() => _tempIsVerified = val),
+                  Icons.verified_outlined,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildSection(
+            context,
+            title: l10n.account_status,
+            icon: Icons.account_circle_outlined,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(4, 0, 4, 4),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: AccountStatus.values
+                      .map(
+                        (status) => FilterChip(
+                          label: Text(_formatEnumLabel(status.name)),
+                          selected: _tempStatuses.contains(status),
+                          onSelected: (selected) {
+                            setState(() {
+                              selected
+                                  ? _tempStatuses.add(status)
+                                  : _tempStatuses.remove(status);
+                            });
+                          },
+                          showCheckmark: false,
+                          avatar: _tempStatuses.contains(status)
+                              ? Icon(
+                                  Icons.check_rounded,
+                                  size: 18,
+                                  color: colorScheme.onSecondaryContainer,
+                                )
+                              : null,
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
       bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: FilledButton(onPressed: _onApply, child: Text(l10n.apply)),
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainer,
+            border: Border(top: BorderSide(color: colorScheme.outlineVariant)),
+          ),
+          child: FilledButton.icon(
+            onPressed: _onApply,
+            icon: const Icon(Icons.done_rounded),
+            label: Text(l10n.apply),
+          ),
         ),
       ),
     );
+  }
+
+  Widget _buildSection(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required Widget child,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 20, color: colorScheme.primary),
+              const SizedBox(width: 10),
+              Text(
+                title,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          child,
+        ],
+      ),
+    );
+  }
+
+  String _formatEnumLabel(String value) {
+    return value
+        .replaceAllMapped(RegExp(r'(?<=[a-z])(?=[A-Z])'), (_) => ' ')
+        .replaceFirstMapped(
+          RegExp(r'^[a-z]'),
+          (match) => match[0]!.toUpperCase(),
+        );
   }
 
   Widget _buildTriStateFilter(
@@ -637,25 +754,10 @@ class _SearchFiltersPageState extends State<SearchFiltersPage> {
   ) {
     final theme = Theme.of(context);
 
-    return Wrap(
-      alignment: WrapAlignment.spaceBetween,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      runSpacing: 8,
-      children: [
-        // 左侧：icon + label
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant),
-              const SizedBox(width: 8),
-            ],
-            Text(label, style: theme.textTheme.bodyLarge),
-          ],
-        ),
-
-        // 右侧：三段选择
-        SegmentedButton<FilterState>(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 420;
+        final selector = SegmentedButton<FilterState>(
           segments: [
             ButtonSegment(
               value: FilterState.all,
@@ -673,12 +775,39 @@ class _SearchFiltersPageState extends State<SearchFiltersPage> {
           selected: {current},
           onSelectionChanged: (newSet) => onChanged(newSet.first),
           showSelectedIcon: false,
-          style: const ButtonStyle(
+          style: ButtonStyle(
             visualDensity: VisualDensity.compact,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            padding: const WidgetStatePropertyAll(
+              EdgeInsets.symmetric(horizontal: 12),
+            ),
+            textStyle: WidgetStatePropertyAll(theme.textTheme.labelLarge),
           ),
-        ),
-      ],
+        );
+
+        final labelWidget = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant),
+              const SizedBox(width: 12),
+            ],
+            Text(label, style: theme.textTheme.bodyLarge),
+          ],
+        );
+
+        if (isCompact) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [labelWidget, const SizedBox(height: 12), selector],
+          );
+        }
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [labelWidget, selector],
+        );
+      },
     );
   }
 }
