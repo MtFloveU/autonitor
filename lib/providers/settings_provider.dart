@@ -31,7 +31,7 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
       state = AsyncValue.data(settings);
     } catch (e, s) {
       state = AsyncValue.error(e, s);
-      _log.e('加载设置失败', error: e, stackTrace: s);
+      _log.e('Loading settings failed', error: e, stackTrace: s);
     }
   }
 

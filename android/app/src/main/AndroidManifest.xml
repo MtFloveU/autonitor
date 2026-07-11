@@ -58,4 +58,10 @@
             <data android:mimeType="text/plain" />
         </intent>
     </queries>
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="twitter" />
+        </intent>
+    </queries>
 </manifest>
