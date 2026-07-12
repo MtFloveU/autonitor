@@ -207,9 +207,18 @@ class AccountRepository {
         method: "GET",
         url: 'https://api.x.com/graphql/$queryId/UserByRestId',
       );
+      final settings = _ref.read(settingsProvider).valueOrNull ?? AppSettings();
+
       // 1. 获取原始 API 数据
       final Map<String, dynamic> userProfileJson = await _apiService
-          .getUserByRestId(id, cookie, queryId);
+          .getUserByRestId(
+            id,
+            cookie,
+            queryId,
+            apiRequestMode: settings.apiRequestMode,
+            cffiUrl: settings.remoteFastApiUrl,
+            cffiApiKey: settings.fastApiApiKey,
+          );
       final userData = userProfileJson['data']?['user'];
       if (userData == null) {
         throw Exception("Invalid API response: 'data.user' not found");

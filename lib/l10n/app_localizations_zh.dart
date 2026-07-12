@@ -623,6 +623,21 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get browser_via_rest_id => '浏览器（通过 Rest ID）';
+
+  @override
+  String get api_request_mode => 'HTTP 请求实现';
+
+  @override
+  String get remote_fastapi_service_url => '远程 FastAPI 服务地址';
+
+  @override
+  String get fastapi_api_key => 'FastAPI API Key';
+
+  @override
+  String get fastapi_api_key_optional => '可留空';
+
+  @override
+  String get invalid_fastapi_url => '请输入以 http:// 或 https:// 开头的有效 URL';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -1244,4 +1259,19 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get browser_via_rest_id => '瀏覽器（透過 Rest ID）';
+
+  @override
+  String get api_request_mode => 'HTTP 請求實現';
+
+  @override
+  String get remote_fastapi_service_url => '遠端 FastAPI 服務地址';
+
+  @override
+  String get fastapi_api_key => 'FastAPI API Key';
+
+  @override
+  String get fastapi_api_key_optional => '可留空';
+
+  @override
+  String get invalid_fastapi_url => '請輸入以 http:// 或 https:// 開頭的有效 URL';
 }

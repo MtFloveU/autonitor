@@ -115,7 +115,6 @@ class AnalysisService extends StateNotifier<AnalysisState> {
         eventAction: ForegroundTaskEventAction.once(),
       ),
     );
-    ;
   }
 
   // --- 控制逻辑 ---

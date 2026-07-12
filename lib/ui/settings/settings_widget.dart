@@ -25,6 +25,7 @@ class _SettingsDropdownTile<T> extends StatefulWidget {
   final T currentValue;
   final Map<T, String> options;
   final ValueChanged<T?> onChanged;
+  final String? helpText;
 
   const _SettingsDropdownTile({
     required this.title,
@@ -32,6 +33,7 @@ class _SettingsDropdownTile<T> extends StatefulWidget {
     required this.currentValue,
     required this.options,
     required this.onChanged,
+    this.helpText,
   });
 
   @override
@@ -90,7 +92,30 @@ class _SettingsDropdownTileState<T> extends State<_SettingsDropdownTile<T>>
 
     return ListTile(
       leading: Icon(widget.icon, color: colorScheme.onSurfaceVariant),
-      title: Text(widget.title, style: textTheme.bodyLarge),
+      title: Row(
+        children: [
+          Expanded(child: Text(widget.title, style: textTheme.bodyLarge)),
+          if (widget.helpText != null) ...[
+            const SizedBox(width: 4),
+            IconButton(
+              onPressed: () async {
+                await launchUrl(
+                  Uri.parse(
+                    'https://github.com/MtFloveU/autonitor/wiki/HTTP-Request-Implementation',
+                  ),
+                );
+              },
+              icon: Icon(Icons.help_outline, size: 20),
+              color: colorScheme.primary,
+              tooltip: widget.helpText,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              visualDensity: VisualDensity.compact,
+              splashRadius: 20,
+            ),
+          ],
+        ],
+      ),
       onTap: _triggerDropdown,
       subtitle: Align(
         alignment: Alignment.centerLeft,

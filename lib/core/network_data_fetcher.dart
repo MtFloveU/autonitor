@@ -28,6 +28,9 @@ class NetworkDataFetcher {
   final String _ownerId;
   final String _ownerCookie;
   final LogCallback _log;
+  final String _apiRequestMode;
+  final String? _cffiUrl;
+  final String? _cffiApiKey;
   // [新增] 暂停回调
   final Future<void> Function() _checkPauseCallback;
 
@@ -37,6 +40,9 @@ class NetworkDataFetcher {
     required Ref ref,
     required String ownerId,
     required String ownerCookie,
+    required String apiRequestMode,
+    String? cffiUrl,
+    String? cffiApiKey,
     required LogCallback log,
     required Future<void> Function() checkPauseCallback, // [Init]
   }) : _apiServiceGql = apiServiceGql,
@@ -45,6 +51,9 @@ class NetworkDataFetcher {
        _ownerId = ownerId,
        _ownerCookie = ownerCookie,
        _log = log,
+       _apiRequestMode = apiRequestMode,
+       _cffiUrl = cffiUrl,
+       _cffiApiKey = cffiApiKey,
        _checkPauseCallback = checkPauseCallback;
 
   Future<NetworkFetchResult> fetchAllNetworkData() async {
@@ -64,6 +73,9 @@ class NetworkDataFetcher {
         _ownerId,
         _ownerCookie,
         cursor: nextFollowerCursor,
+        apiRequestMode: _apiRequestMode,
+        cffiUrl: _cffiUrl,
+        cffiApiKey: _cffiApiKey,
       );
       for (var userJson in followerResult.users) {
         final userId =
@@ -109,6 +121,9 @@ class NetworkDataFetcher {
         transactionId!,
         nextFollowingCursor!, // cursor
         followingQueryId,
+        apiRequestMode: _apiRequestMode,
+        cffiUrl: _cffiUrl,
+        cffiApiKey: _cffiApiKey,
       ));
       for (var userJson in followingResult.users) {
         final userId =

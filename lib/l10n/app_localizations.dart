@@ -1286,6 +1286,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Browser (via Rest ID)'**
   String get browser_via_rest_id;
+
+  /// No description provided for @api_request_mode.
+  ///
+  /// In en, this message translates to:
+  /// **'HTTP Request Implementation'**
+  String get api_request_mode;
+
+  /// No description provided for @remote_fastapi_service_url.
+  ///
+  /// In en, this message translates to:
+  /// **'Remote FastAPI Service URL'**
+  String get remote_fastapi_service_url;
+
+  /// No description provided for @fastapi_api_key.
+  ///
+  /// In en, this message translates to:
+  /// **'FastAPI API Key'**
+  String get fastapi_api_key;
+
+  /// No description provided for @fastapi_api_key_optional.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional'**
+  String get fastapi_api_key_optional;
+
+  /// No description provided for @invalid_fastapi_url.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid URL starting with http:// or https://'**
+  String get invalid_fastapi_url;
 }
 
 class _AppLocalizationsDelegate

@@ -38,6 +38,9 @@ class RelationshipAnalyzer {
   final LogCallback _log;
   final Future<void> Function() _checkPauseCallback;
   final XClientTransactionService _xctService;
+  final String _apiRequestMode;
+  final String? _cffiUrl;
+  final String? _cffiApiKey;
 
   RelationshipAnalyzer({
     required TwitterApiService apiServiceGql,
@@ -47,13 +50,19 @@ class RelationshipAnalyzer {
     required LogCallback log,
     required Future<void> Function() checkPauseCallback,
     required XClientTransactionService xctService,
+    required String apiRequestMode,
+    String? cffiUrl,
+    String? cffiApiKey,
   }) : _apiServiceGql = apiServiceGql,
        _accountRepository = accountRepository,
        _ownerId = ownerId,
        _ownerCookie = ownerCookie,
        _log = log,
        _checkPauseCallback = checkPauseCallback,
-       _xctService = xctService;
+       _xctService = xctService,
+       _apiRequestMode = apiRequestMode,
+       _cffiUrl = cffiUrl,
+       _cffiApiKey = cffiApiKey;
 
   Future<RelationshipAnalysisResult> analyze({
     required Map<String, FollowUser> oldRelationsMap,
@@ -114,7 +123,14 @@ class RelationshipAnalyzer {
       try {
         final queryId = _accountRepository.getCurrentQueryId('UserByRestId');
         final Map<String, dynamic> gqlJson = await _apiServiceGql
-            .getUserByRestId(removedId, _ownerCookie, queryId);
+            .getUserByRestId(
+              removedId,
+              _ownerCookie,
+              queryId,
+              apiRequestMode: _apiRequestMode,
+              cffiUrl: _cffiUrl,
+              cffiApiKey: _cffiApiKey,
+            );
         final result = gqlJson['data']?['user']?['result'];
         final typename = result?['__typename'];
         final message = result?['message'] as String?;
@@ -157,7 +173,15 @@ class RelationshipAnalyzer {
       );
       final List<String> idList = ids.toList();
       final Map<String, dynamic> gqlJson = await _apiServiceGql
-          .getUsersByRestIds(idList, _ownerCookie, queryId, transactionId);
+          .getUsersByRestIds(
+            idList,
+            _ownerCookie,
+            queryId,
+            transactionId,
+            apiRequestMode: _apiRequestMode,
+            cffiUrl: _cffiUrl,
+            cffiApiKey: _cffiApiKey,
+          );
       final List<dynamic>? usersData = gqlJson['data']?['users'];
 
       for (int i = 0; i < idList.length; i++) {

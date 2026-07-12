@@ -197,5 +197,10 @@
   "rollback_to_here": "回滚到此",
   "open_in_app": "在App中打开",
   "browser_via_screen_name": "浏览器（通过用户名）",
-  "browser_via_rest_id": "浏览器（通过 Rest ID）"
+  "browser_via_rest_id": "浏览器（通过 Rest ID）",
+  "api_request_mode": "HTTP 请求实现",
+  "remote_fastapi_service_url": "远程 FastAPI 服务地址",
+  "fastapi_api_key": "FastAPI API Key",
+  "fastapi_api_key_optional": "可留空",
+  "invalid_fastapi_url": "请输入以 http:// 或 https:// 开头的有效 URL"
 }

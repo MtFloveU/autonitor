@@ -33,11 +33,75 @@ class TwitterApiService {
     return null;
   }
 
+  // --- 核心改造：网络请求分发器 ---
+  Future<Response<dynamic>> _executeRequest({
+    required String endpoint,
+    required Map<String, dynamic> queryParameters,
+    required Map<String, String> headers,
+    required String apiRequestMode,
+    String? cffiUrl,
+    String? cffiApiKey,
+  }) async {
+    if (apiRequestMode == 'curl_cffi') {
+      if (cffiUrl == null || cffiApiKey == null || cffiUrl.isEmpty || cffiApiKey.isEmpty) {
+        throw Exception("cffiUrl and cffiApiKey must be provided when using curl_cffi mode");
+      }
+
+      // 保证所有的 value 都是字符串以避免 Uri.replace 抛出异常
+      final safeQueryParams = queryParameters.map((k, v) => MapEntry(k, v.toString()));
+      final targetUrl = Uri.parse(endpoint).replace(queryParameters: safeQueryParams).toString();
+
+      final proxyQueryParams = {
+        'target_url': targetUrl,
+        'req_headers': jsonEncode(headers),
+        'apikey': cffiApiKey,
+      };
+
+      final response = await _dio.get(cffiUrl, queryParameters: proxyQueryParams);
+
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        if (data['proxy_status'] == 'success') {
+          final b64Str = data['raw_response_base64'] ?? '';
+          final decodedBytes = base64Decode(b64Str);
+          final decodedStr = utf8.decode(decodedBytes);
+
+          dynamic responseData;
+          try {
+            responseData = jsonDecode(decodedStr);
+          } catch (_) {
+            responseData = decodedStr;
+          }
+
+          return Response(
+            requestOptions: RequestOptions(path: endpoint),
+            statusCode: data['target_status_code'],
+            data: responseData,
+          );
+        } else {
+          throw Exception("FastAPI Proxy returned error: ${data['detail']}");
+        }
+      } else {
+        throw Exception("Failed to connect to FastAPI proxy. Status: ${response.statusCode}");
+      }
+    } else {
+      // Dio default logic
+      return await _dio.get(
+        endpoint,
+        queryParameters: queryParameters,
+        options: Options(headers: headers),
+      );
+    }
+  }
+
   Future<Map<String, dynamic>> getUserByRestId(
     String userId,
     String cookie,
-    String queryId,
-  ) async {
+    String queryId, {
+    String apiRequestMode = 'dio',
+    String? cffiUrl,
+    String? cffiApiKey,
+  }) async {
     final csrfToken = _parseCsrfToken(cookie);
     if (csrfToken == null) {
       throw Exception("Unable to parse x-csrf-token (ct0) from Cookie");
@@ -45,11 +109,10 @@ class TwitterApiService {
 
     final variables = {
       "userId": userId,
-      "withGrokTranslatedBio": true, // [Updated] From your URL
-      "withSafetyModeUserFields": true, // Usually recommended
+      "withGrokTranslatedBio": true,
+      "withSafetyModeUserFields": true,
     };
 
-    // [Updated] Features matching your URL
     final features = {
       "hidden_profile_subscriptions_enabled": true,
       "profile_label_improvements_pcf_label_in_post_enabled": true,
@@ -68,7 +131,6 @@ class TwitterApiService {
       "responsive_web_graphql_exclude_directive_enabled": true,
     };
 
-    // [New] FieldToggles from your URL
     final fieldToggles = {
       "withPayments": true,
       "withAuxiliaryUserLabels": true,
@@ -77,11 +139,10 @@ class TwitterApiService {
     final queryParameters = {
       'variables': jsonEncode(variables),
       'features': jsonEncode(features),
-      'fieldToggles': jsonEncode(fieldToggles), // [New] Added fieldToggles
+      'fieldToggles': jsonEncode(fieldToggles),
     };
 
     final headers = {
-      // ... (headers maintain existing logic)
       'authorization':
           'Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA',
       'x-csrf-token': csrfToken,
@@ -96,14 +157,16 @@ class TwitterApiService {
 
     final String url = 'https://api.x.com/graphql/$queryId/UserByRestId';
 
-    // ... (request logic maintains existing logic)
     try {
-      final response = await _dio.get(
-        url,
+      final response = await _executeRequest(
+        endpoint: url,
         queryParameters: queryParameters,
-        options: Options(headers: headers),
+        headers: headers,
+        apiRequestMode: apiRequestMode,
+        cffiUrl: cffiUrl,
+        cffiApiKey: cffiApiKey,
       );
-      // ...
+
       if (response.statusCode == 200 && response.data != null) {
         logger.d("Response data: ${response.data}");
         return response.data as Map<String, dynamic>;
@@ -113,7 +176,6 @@ class TwitterApiService {
         );
       }
     } on DioException catch (e, s) {
-      // ... (error handling)
       logger.e(
         "Dio Error on getUserByRestId: ${e.response?.data}",
         error: e,
@@ -121,7 +183,6 @@ class TwitterApiService {
       );
       throw Exception('Network request failed: ${e.message}');
     } catch (e, s) {
-      // ...
       logger.e("Unknown error on getUserByRestId", error: e, stackTrace: s);
       throw Exception('An unknown error occurred.');
     }
@@ -131,8 +192,11 @@ class TwitterApiService {
     List<String> userIds,
     String cookie,
     String queryId,
-    String transactionId,
-  ) async {
+    String transactionId, {
+    String apiRequestMode = 'dio',
+    String? cffiUrl,
+    String? cffiApiKey,
+  }) async {
     final csrfToken = _parseCsrfToken(cookie);
     if (csrfToken == null) {
       throw Exception("Unable to parse x-csrf-token (ct0) from Cookie");
@@ -144,7 +208,6 @@ class TwitterApiService {
       "withSafetyModeUserFields": true,
     };
 
-    // [Updated] Features matching your URL
     final features = {
       "hidden_profile_subscriptions_enabled": true,
       "profile_label_improvements_pcf_label_in_post_enabled": true,
@@ -155,14 +218,12 @@ class TwitterApiService {
       "responsive_web_twitter_article_notes_tab_enabled": true,
       "subscriptions_feature_can_gift_premium": true,
       "creator_subscriptions_tweet_preview_api_enabled": true,
-      "responsive_web_graphql_skip_user_profile_image_extensions_enabled":
-          false,
+      "responsive_web_graphql_skip_user_profile_image_extensions_enabled": false,
       "responsive_web_graphql_timeline_navigation_enabled": true,
       "responsive_web_grok_annotations_enabled": false,
       "post_ctas_fetch_enabled": false,
     };
 
-    // [New] FieldToggles from your URL
     final fieldToggles = {
       "withPayments": true,
       "withAuxiliaryUserLabels": true,
@@ -171,11 +232,10 @@ class TwitterApiService {
     final queryParameters = {
       'variables': jsonEncode(variables),
       'features': jsonEncode(features),
-      'fieldToggles': jsonEncode(fieldToggles), // [New] Added fieldToggles
+      'fieldToggles': jsonEncode(fieldToggles),
     };
 
     final headers = {
-      // ... (headers maintain existing logic)
       'authorization':
           'Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA',
       'x-csrf-token': csrfToken,
@@ -191,14 +251,16 @@ class TwitterApiService {
 
     final String url = 'https://api.x.com/graphql/$queryId/UsersByRestIds';
 
-    // ... (request logic maintains existing logic)
     try {
-      final response = await _dio.get(
-        url,
+      final response = await _executeRequest(
+        endpoint: url,
         queryParameters: queryParameters,
-        options: Options(headers: headers),
+        headers: headers,
+        apiRequestMode: apiRequestMode,
+        cffiUrl: cffiUrl,
+        cffiApiKey: cffiApiKey,
       );
-      // ...
+
       if (response.statusCode == 200 && response.data != null) {
         logger.d("Response data: ${response.data}");
         return response.data as Map<String, dynamic>;
@@ -208,7 +270,6 @@ class TwitterApiService {
         );
       }
     } on DioException catch (e, s) {
-      // ... (error handling)
       logger.e(
         "Dio Error on getUsersByRestIds: ${e.response?.data}",
         error: e,
@@ -216,7 +277,6 @@ class TwitterApiService {
       );
       throw Exception('Network request failed: ${e.message}');
     } catch (e, s) {
-      // ...
       logger.e("Unknown error on getUsersByRestIds", error: e, stackTrace: s);
       throw Exception('An unknown error occurred.');
     }
@@ -227,8 +287,11 @@ class TwitterApiService {
     String cookie,
     String transactionId,
     String cursor,
-    String queryId,
-  ) async {
+    String queryId, {
+    String apiRequestMode = 'dio',
+    String? cffiUrl,
+    String? cffiApiKey,
+  }) async {
     final csrfToken = _parseCsrfToken(cookie);
     if (csrfToken == null) {
       throw Exception("Unable to parse x-csrf-token (ct0) from Cookie");
@@ -248,8 +311,7 @@ class TwitterApiService {
       "verified_phone_label_enabled": false,
       "highlights_tweets_tab_ui_enabled": true,
       "creator_subscriptions_tweet_preview_api_enabled": true,
-      "responsive_web_graphql_skip_user_profile_image_extensions_enabled":
-          false,
+      "responsive_web_graphql_skip_user_profile_image_extensions_enabled": false,
       "responsive_web_graphql_timeline_navigation_enabled": true,
       "rweb_tipjar_consumption_enabled": false,
       "subscriptions_feature_can_gift_premium": false,
@@ -283,10 +345,13 @@ class TwitterApiService {
     final String url = 'https://api.x.com/graphql/$queryId/Followers';
 
     try {
-      final response = await _dio.get(
-        url,
+      final response = await _executeRequest(
+        endpoint: url,
         queryParameters: queryParameters,
-        options: Options(headers: headers),
+        headers: headers,
+        apiRequestMode: apiRequestMode,
+        cffiUrl: cffiUrl,
+        cffiApiKey: cffiApiKey,
       );
 
       if (response.statusCode == 200 && response.data != null) {
@@ -315,8 +380,11 @@ class TwitterApiService {
     String cookie,
     String transactionId,
     String cursor,
-    String queryId,
-  ) async {
+    String queryId, {
+    String apiRequestMode = 'dio',
+    String? cffiUrl,
+    String? cffiApiKey,
+  }) async {
     final csrfToken = _parseCsrfToken(cookie);
     if (csrfToken == null) {
       throw Exception("Unable to parse x-csrf-token (ct0) from Cookie");
@@ -351,8 +419,7 @@ class TwitterApiService {
       "responsive_web_grok_community_note_auto_translation_is_enabled": true,
       "responsive_web_edit_tweet_api_enabled": true,
       "tweet_awards_web_tipping_enabled": true,
-      "tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":
-          true,
+      "tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled": true,
       "responsive_web_grok_share_attachment_enabled": true,
       "responsive_web_grok_analyze_button_fetch_trends_enabled": true,
       "premium_content_api_read_enabled": true,
@@ -398,19 +465,19 @@ class TwitterApiService {
     final String url = 'https://api.x.com/graphql/$queryId/Following';
 
     try {
-      final response = await _dio.get(
-        url,
+      final response = await _executeRequest(
+        endpoint: url,
         queryParameters: queryParameters,
-        options: Options(headers: headers),
+        headers: headers,
+        apiRequestMode: apiRequestMode,
+        cffiUrl: cffiUrl,
+        cffiApiKey: cffiApiKey,
       );
 
       if (response.statusCode == 200 && response.data != null) {
         logger.d("Response data: ${response.data}");
         final Map<String, dynamic> data = response.data;
 
-        // --- START OF MODIFICATION ---
-
-        // 1. Get the instructions list
         final List<dynamic>? instructions =
             data['data']?['user']?['result']?['timeline']?['timeline']?['instructions']
                 as List<dynamic>?;
@@ -422,7 +489,6 @@ class TwitterApiService {
           return UserListResultGql(users: [], nextCursor: null);
         }
 
-        // 2. Find the correct instruction object ('TimelineAddEntries')
         final Map<String, dynamic>? addEntriesInstruction = instructions
             .firstWhere(
               (inst) =>
@@ -438,7 +504,6 @@ class TwitterApiService {
           return UserListResultGql(users: [], nextCursor: null);
         }
 
-        // 3. Get entries from *that* instruction
         final List<dynamic>? entries =
             addEntriesInstruction['entries'] as List<dynamic>?;
 
@@ -449,7 +514,6 @@ class TwitterApiService {
           return UserListResultGql(users: [], nextCursor: null);
         }
 
-        // 4. Find the cursor within these entries
         final dynamic nextCursorValue = (entries.lastWhere(
           (e) =>
               e is Map<String, dynamic> &&
@@ -458,7 +522,6 @@ class TwitterApiService {
           orElse: () => null,
         ))?['content']?['value'];
 
-        // 5. Filter for users within these entries
         final List<Map<String, dynamic>> usersMapList = entries
             .where(
               (e) =>
@@ -473,8 +536,6 @@ class TwitterApiService {
                       as Map<String, dynamic>,
             )
             .toList();
-
-        // --- END OF MODIFICATION ---
 
         final String? nextCursor = nextCursorValue?.toString();
         logger.d(

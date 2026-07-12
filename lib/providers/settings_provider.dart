@@ -79,6 +79,9 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
       historyLimitN: currentSettings.historyLimitN,
       customGqlQueryIds: currentSettings.customGqlQueryIds,
       gqlQueryIdSource: currentSettings.gqlQueryIdSource,
+      apiRequestMode: currentSettings.apiRequestMode,
+      remoteFastApiUrl: currentSettings.remoteFastApiUrl,
+      fastApiApiKey: currentSettings.fastApiApiKey,
     );
 
     state = AsyncValue.data(newState);
@@ -158,6 +161,36 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
       state = AsyncValue.error('Failed to save theme: $e', s);
       _log.e('Failed to save themeMode setting', error: e, stackTrace: s);
     }
+  }
+
+  Future<void> updateApiRequestMode(String newMode) async {
+    final currentState = state;
+    if (currentState is! AsyncData<AppSettings>) return;
+
+    final currentSettings = currentState.value;
+    final newState = currentSettings.copyWith(apiRequestMode: newMode);
+    state = AsyncValue.data(newState);
+    await _settingsService.saveSettings(newState);
+  }
+
+  Future<void> updateRemoteFastApiUrl(String newUrl) async {
+    final currentState = state;
+    if (currentState is! AsyncData<AppSettings>) return;
+
+    final currentSettings = currentState.value;
+    final newState = currentSettings.copyWith(remoteFastApiUrl: newUrl);
+    state = AsyncValue.data(newState);
+    await _settingsService.saveSettings(newState);
+  }
+
+  Future<void> updateFastApiApiKey(String newApiKey) async {
+    final currentState = state;
+    if (currentState is! AsyncData<AppSettings>) return;
+
+    final currentSettings = currentState.value;
+    final newState = currentSettings.copyWith(fastApiApiKey: newApiKey);
+    state = AsyncValue.data(newState);
+    await _settingsService.saveSettings(newState);
   }
 
   // [新增] 更新主题颜色

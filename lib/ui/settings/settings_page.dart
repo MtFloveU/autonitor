@@ -32,11 +32,23 @@ class SettingsPage extends ConsumerStatefulWidget {
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
   late TextEditingController _historyLimitController;
+  late TextEditingController _remoteFastApiUrlController;
+  late TextEditingController _fastApiApiKeyController;
 
   @override
   void initState() {
     super.initState();
     _historyLimitController = TextEditingController();
+    _remoteFastApiUrlController = TextEditingController();
+    _fastApiApiKeyController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _historyLimitController.dispose();
+    _remoteFastApiUrlController.dispose();
+    _fastApiApiKeyController.dispose();
+    super.dispose();
   }
 
   // 页面跳转逻辑保持在主 State 中，或者也可以传参给子组件
@@ -104,6 +116,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 l10n,
                 _openGqlPathPage,
                 _openGeneratePage,
+                ref,
+                settings,
+                _remoteFastApiUrlController,
+                _fastApiApiKeyController,
               ),
 
               // 3. Storage Section

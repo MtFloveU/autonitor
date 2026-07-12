@@ -68,6 +68,9 @@ class DataProcessor {
       ownerCookie: _ownerCookie,
       log: _log,
       checkPauseCallback: _checkPauseCallback,
+      apiRequestMode: _settings.apiRequestMode,
+      cffiUrl: _settings.remoteFastApiUrl,
+      cffiApiKey: _settings.fastApiApiKey,
     );
 
     _mediaProcessor = MediaProcessor(
@@ -99,6 +102,9 @@ class DataProcessor {
       log: _log,
       checkPauseCallback: _checkPauseCallback,
       xctService: xctService,
+      apiRequestMode: _settings.apiRequestMode,
+      cffiUrl: _settings.remoteFastApiUrl,
+      cffiApiKey: _settings.fastApiApiKey,
     );
   }
 

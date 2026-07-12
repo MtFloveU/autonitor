@@ -43,6 +43,9 @@ class AppSettings {
   final Locale? locale;
   final ThemeMode themeMode;
   final ThemeColor theme;
+  final String apiRequestMode;
+  final String remoteFastApiUrl;
+  final String fastApiApiKey;
   final bool saveAvatarHistory;
   final bool saveBannerHistory;
   final AvatarQuality avatarQuality;
@@ -62,6 +65,9 @@ class AppSettings {
     this.customGqlQueryIds = const {},
     this.gqlQueryIdSource = QueryIdSource.apiDocument,
     this.theme = ThemeColor.defaultThemeColor,
+    this.apiRequestMode = 'dio',
+    this.remoteFastApiUrl = '',
+    this.fastApiApiKey = '',
   });
 
   AppSettings copyWith({
@@ -74,6 +80,9 @@ class AppSettings {
     int? historyLimitN,
     Map<String, String>? customGqlQueryIds,
     QueryIdSource? gqlQueryIdSource,
+    String? apiRequestMode,
+    String? remoteFastApiUrl,
+    String? fastApiApiKey,
   }) {
     return AppSettings(
       locale: locale,
@@ -86,6 +95,9 @@ class AppSettings {
       historyLimitN: historyLimitN ?? this.historyLimitN,
       customGqlQueryIds: customGqlQueryIds ?? this.customGqlQueryIds,
       gqlQueryIdSource: gqlQueryIdSource ?? this.gqlQueryIdSource,
+      apiRequestMode: apiRequestMode ?? this.apiRequestMode,
+      remoteFastApiUrl: remoteFastApiUrl ?? this.remoteFastApiUrl,
+      fastApiApiKey: fastApiApiKey ?? this.fastApiApiKey,
     );
   }
 
@@ -101,6 +113,9 @@ class AppSettings {
     'historyLimitN': historyLimitN,
     'customGqlQueryIds': customGqlQueryIds,
     'gqlQueryIdSource': gqlQueryIdSource.name,
+    'apiRequestMode': apiRequestMode,
+    'remoteFastApiUrl': remoteFastApiUrl,
+    'fastApiApiKey': fastApiApiKey,
   };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) {
@@ -146,6 +161,12 @@ class AppSettings {
         QueryIdSource.values,
         defaultSettings.gqlQueryIdSource,
       ),
+      apiRequestMode:
+          json['apiRequestMode'] as String? ?? defaultSettings.apiRequestMode,
+      remoteFastApiUrl:
+          json['remoteFastApiUrl'] as String? ?? defaultSettings.remoteFastApiUrl,
+      fastApiApiKey:
+          json['fastApiApiKey'] as String? ?? defaultSettings.fastApiApiKey,
     );
   }
 }

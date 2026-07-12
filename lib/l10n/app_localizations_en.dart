@@ -633,4 +633,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get browser_via_rest_id => 'Browser (via Rest ID)';
+
+  @override
+  String get api_request_mode => 'HTTP Request Implementation';
+
+  @override
+  String get remote_fastapi_service_url => 'Remote FastAPI Service URL';
+
+  @override
+  String get fastapi_api_key => 'FastAPI API Key';
+
+  @override
+  String get fastapi_api_key_optional => 'Optional';
+
+  @override
+  String get invalid_fastapi_url =>
+      'Please enter a valid URL starting with http:// or https://';
 }

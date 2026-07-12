@@ -506,5 +506,15 @@
   "browser_via_screen_name": "Browser (via Screen Name)",
   "@browser_via_screen_name": {},
   "browser_via_rest_id": "Browser (via Rest ID)",
-  "@browser_via_rest_id": {}
+  "@browser_via_rest_id": {},
+  "api_request_mode": "HTTP Request Implementation",
+  "@api_request_mode": {},
+  "remote_fastapi_service_url": "Remote FastAPI Service URL",
+  "@remote_fastapi_service_url": {},
+  "fastapi_api_key": "FastAPI API Key",
+  "@fastapi_api_key": {},
+  "fastapi_api_key_optional": "Optional",
+  "@fastapi_api_key_optional": {},
+  "invalid_fastapi_url": "Please enter a valid URL starting with http:// or https://",
+  "@invalid_fastapi_url": {}
 }

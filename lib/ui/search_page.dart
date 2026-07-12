@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:autonitor/providers/search_provider.dart';
 import 'package:autonitor/providers/search_history_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
@@ -348,10 +349,9 @@ class SearchPageState extends ConsumerState<SearchPage>
         final int itemCount = users.length + (hasMore ? 1 : 0);
 
         return ListView.builder(
-          controller: _scrollController,
+          scrollCacheExtent: ScrollCacheExtent.pixels(8000.0), controller: _scrollController,
           itemCount: itemCount,
           padding: const EdgeInsets.only(bottom: 16),
-          cacheExtent: 8000.0,
           itemBuilder: (context, index) {
             if (index == users.length) {
               return const Center(
