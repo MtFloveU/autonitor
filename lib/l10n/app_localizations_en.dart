@@ -200,6 +200,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get no_users_in_this_category => 'Empty list';
 
   @override
+  String user_not_found(String screenName) {
+    return 'User @$screenName was not found in this account\'s data.';
+  }
+
+  @override
+  String get open_in_autonitor => 'Open in Autonitor';
+
+  @override
   String get analysis_log => 'Analysis Log';
 
   @override
@@ -655,4 +663,8 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get invalid_fastapi_url =>
       'Please enter a valid URL starting with http:// or https://';
+
+  @override
+  String get enable_new_data_fetching_strategy =>
+      'Enable new data fetching strategy';
 }

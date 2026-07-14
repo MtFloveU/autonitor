@@ -281,12 +281,29 @@ extension _UserDetailPageLogic on _UserDetailPageState {
               ListTile(
                 leading: const Icon(Icons.android),
                 title: Text(l10n.open_in_app),
+                subtitle: Text('twitter://user?screen_name=$name'),
                 onTap: () async {
                   Navigator.pop(context);
                   final appUrl = Uri.parse('twitter://user?screen_name=$name');
                   if (await canLaunchUrl(appUrl)) {
                     await launchUrl(appUrl);
                   }
+                },
+              ),
+            if (restId == null || restId.isEmpty)
+              ListTile(
+                leading: Image.asset(
+                  'assets/icon/icon_nobg.png',
+                  width: 24,
+                  height: 24,
+                  color: IconTheme.of(context).color,
+                  colorBlendMode: BlendMode.srcIn,
+                ),
+                title: Text(l10n.open_in_autonitor),
+                subtitle: Text('@$name'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _openLocalUserProfile(name, l10n);
                 },
               ),
             ListTile(
@@ -322,6 +339,57 @@ extension _UserDetailPageLogic on _UserDetailPageState {
             child: Text(l10n.cancel),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _openLocalUserProfile(
+    String screenName,
+    AppLocalizations l10n,
+  ) async {
+    TwitterUser? user;
+    try {
+      user = await ref.read(
+        localUserByScreenNameProvider(
+          UserLookupParam(ownerId: widget.ownerId, screenName: screenName),
+        ).future,
+      );
+    } catch (e, s) {
+      logger.e(
+        'Unable to find local user @$screenName',
+        error: e,
+        stackTrace: s,
+      );
+    }
+
+    if (!mounted) return;
+
+    if (user == null) {
+      final colorScheme = Theme.of(context).colorScheme;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              l10n.user_not_found(screenName),
+              style: TextStyle(color: colorScheme.onError),
+            ),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: colorScheme.error,
+          ),
+        );
+      return;
+    }
+
+    final targetUser = user;
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => UserDetailPage(
+          user: targetUser,
+          ownerId: widget.ownerId,
+          heroTag: 'profile_${targetUser.restId}',
+        ),
       ),
     );
   }

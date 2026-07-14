@@ -60,6 +60,8 @@
   "recovered": "回歸",
   "failed_to_load_user_list": "載入用戶列表失敗",
   "no_users_in_this_category": "空列表",
+  "user_not_found": "未在目前帳戶的資料中找到使用者 @{screenName}。",
+  "open_in_autonitor": "在 Autonitor 中開啟",
   "analysis_log": "分析日誌",
   "no_active_account_error": "無法運行分析：沒有活動的賬戶。",
   "analysis_failed_error": "分析失敗",
@@ -200,9 +202,10 @@
   "browser_via_rest_id": "瀏覽器（透過 Rest ID）",
   "api_request_mode": "HTTP 請求實現",
   "advanced_mode": "資料取得策略",
-  "advanced_mode_description": "選擇帳號資料的取得方式flutte",
+  "advanced_mode_description": "選擇帳號資料的取得方式",
   "remote_fastapi_service_url": "遠端 FastAPI 服務地址",
   "fastapi_api_key": "FastAPI API Key",
   "fastapi_api_key_optional": "可留空",
-  "invalid_fastapi_url": "請輸入以 http:// 或 https:// 開頭的有效 URL"
+  "invalid_fastapi_url": "請輸入以 http:// 或 https:// 開頭的有效 URL",
+  "enable_new_data_fetching_strategy": "啟用新的資料取得策略"
 }

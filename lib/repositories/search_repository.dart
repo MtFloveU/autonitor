@@ -9,6 +9,25 @@ class SearchRepository {
 
   SearchRepository(this._database);
 
+  /// Finds one locally stored relationship by screen name for an owner.
+  Future<TwitterUser?> findUserByScreenName(
+    String ownerId,
+    String screenName,
+  ) async {
+    final normalizedScreenName = screenName.trim().replaceFirst('@', '');
+    if (normalizedScreenName.isEmpty) return null;
+
+    final match = await (_database.select(_database.followUsers)
+          ..where(
+            (t) =>
+                t.ownerId.equals(ownerId) &
+                t.screenName.lower().equals(normalizedScreenName.toLowerCase()),
+          ))
+        .getSingleOrNull();
+
+    return match == null ? null : _toTwitterUser(match);
+  }
+
   /// Search users with complex filters down-pushed to SQL
   Future<List<TwitterUser>> searchUsersInContext(
     String ownerId,
@@ -158,33 +177,35 @@ class SearchRepository {
 
     final List<TwitterUser> users = [];
     for (final match in results) {
-      TwitterUser? user;
-      if (match.latestRawJson != null) {
-        try {
-          user = TwitterUser.fromJson(jsonDecode(match.latestRawJson!));
-          user = user.copyWith(
-            avatarLocalPath: match.avatarLocalPath,
-            bannerLocalPath: match.bannerLocalPath,
-          );
-        } catch (_) {}
-      }
-
-      user ??= TwitterUser(
-        restId: match.userId,
-        screenName: match.screenName,
-        name: match.name,
-        avatarUrl: match.avatarUrl,
-        avatarLocalPath: match.avatarLocalPath,
-        bannerLocalPath: match.bannerLocalPath,
-        bio: match.bio,
-        isFollower: match.isFollower,
-        isFollowing: match.isFollowing,
-        isVerified: false,
-      );
-
-      users.add(user);
+      users.add(_toTwitterUser(match));
     }
 
     return users;
+  }
+
+  TwitterUser _toTwitterUser(FollowUser match) {
+    if (match.latestRawJson != null) {
+      try {
+        return TwitterUser.fromJson(jsonDecode(match.latestRawJson!)).copyWith(
+          avatarLocalPath: match.avatarLocalPath,
+          bannerLocalPath: match.bannerLocalPath,
+        );
+      } catch (_) {
+        // Fall back to the columns retained for entries with malformed snapshots.
+      }
+    }
+
+    return TwitterUser(
+      restId: match.userId,
+      screenName: match.screenName,
+      name: match.name,
+      avatarUrl: match.avatarUrl,
+      avatarLocalPath: match.avatarLocalPath,
+      bannerLocalPath: match.bannerLocalPath,
+      bio: match.bio,
+      isFollower: match.isFollower,
+      isFollowing: match.isFollowing,
+      isVerified: false,
+    );
   }
 }

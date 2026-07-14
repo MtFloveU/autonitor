@@ -140,6 +140,16 @@
   "@failed_to_load_user_list": {},
   "no_users_in_this_category": "Empty list",
   "@no_users_in_this_category": {},
+  "user_not_found": "User @{screenName} was not found in this account's data.",
+  "@user_not_found": {
+    "placeholders": {
+      "screenName": {
+        "type": "String"
+      }
+    }
+  },
+  "open_in_autonitor": "Open in Autonitor",
+  "@open_in_autonitor": {},
   "analysis_log": "Analysis Log",
   "@analysis_log": {},
   "no_active_account_error": "Cannot run analysis: No account is active.",
@@ -520,5 +530,7 @@
   "fastapi_api_key_optional": "Optional",
   "@fastapi_api_key_optional": {},
   "invalid_fastapi_url": "Please enter a valid URL starting with http:// or https://",
-  "@invalid_fastapi_url": {}
+  "@invalid_fastapi_url": {},
+  "enable_new_data_fetching_strategy": "Enable new data fetching strategy",
+  "@enable_new_data_fetching_strategy": {}
 }

@@ -199,6 +199,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get no_users_in_this_category => '列表为空';
 
   @override
+  String user_not_found(String screenName) {
+    return '未在当前账号的数据中找到用户 @$screenName。';
+  }
+
+  @override
+  String get open_in_autonitor => '在 Autonitor 中打开';
+
+  @override
   String get analysis_log => '分析日志';
 
   @override
@@ -644,6 +652,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get invalid_fastapi_url => '请输入以 http:// 或 https:// 开头的有效 URL';
+
+  @override
+  String get enable_new_data_fetching_strategy => '启用新的数据获取策略';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -839,6 +850,14 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get no_users_in_this_category => '空列表';
+
+  @override
+  String user_not_found(String screenName) {
+    return '未在目前帳戶的資料中找到使用者 @$screenName。';
+  }
+
+  @override
+  String get open_in_autonitor => '在 Autonitor 中開啟';
 
   @override
   String get analysis_log => '分析日誌';
@@ -1273,7 +1292,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get advanced_mode => '資料取得策略';
 
   @override
-  String get advanced_mode_description => '選擇帳號資料的取得方式flutte';
+  String get advanced_mode_description => '選擇帳號資料的取得方式';
 
   @override
   String get remote_fastapi_service_url => '遠端 FastAPI 服務地址';
@@ -1286,4 +1305,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get invalid_fastapi_url => '請輸入以 http:// 或 https:// 開頭的有效 URL';
+
+  @override
+  String get enable_new_data_fetching_strategy => '啟用新的資料取得策略';
 }

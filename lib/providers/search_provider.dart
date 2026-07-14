@@ -17,6 +17,31 @@ enum FilterState { all, yes, no }
 enum AccountStatus { normal, suspended, deactivated, temporarilyRestricted }
 
 @immutable
+class UserLookupParam {
+  final String ownerId;
+  final String screenName;
+
+  const UserLookupParam({required this.ownerId, required this.screenName});
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is UserLookupParam &&
+          ownerId == other.ownerId &&
+          screenName == other.screenName;
+
+  @override
+  int get hashCode => Object.hash(ownerId, screenName);
+}
+
+final localUserByScreenNameProvider =
+    FutureProvider.autoDispose.family<TwitterUser?, UserLookupParam>(
+      (ref, param) => ref
+          .read(searchRepositoryProvider)
+          .findUserByScreenName(param.ownerId, param.screenName),
+    );
+
+@immutable
 class SearchParam {
   final String ownerId;
   final String query;

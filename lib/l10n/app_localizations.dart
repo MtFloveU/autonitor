@@ -471,6 +471,18 @@ abstract class AppLocalizations {
   /// **'Empty list'**
   String get no_users_in_this_category;
 
+  /// No description provided for @user_not_found.
+  ///
+  /// In en, this message translates to:
+  /// **'User @{screenName} was not found in this account\'s data.'**
+  String user_not_found(String screenName);
+
+  /// No description provided for @open_in_autonitor.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in Autonitor'**
+  String get open_in_autonitor;
+
   /// No description provided for @analysis_log.
   ///
   /// In en, this message translates to:
@@ -1328,6 +1340,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please enter a valid URL starting with http:// or https://'**
   String get invalid_fastapi_url;
+
+  /// No description provided for @enable_new_data_fetching_strategy.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable new data fetching strategy'**
+  String get enable_new_data_fetching_strategy;
 }
 
 class _AppLocalizationsDelegate

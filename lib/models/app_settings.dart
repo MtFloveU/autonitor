@@ -40,6 +40,8 @@ extension _EnumParser on String? {
 }
 
 class AppSettings {
+  static const Object _localeNotProvided = Object();
+
   final Locale? locale;
   final ThemeMode themeMode;
   final ThemeColor theme;
@@ -73,6 +75,7 @@ class AppSettings {
   });
 
   AppSettings copyWith({
+    Object? locale = _localeNotProvided,
     ThemeMode? themeMode,
     ThemeColor? theme,
     bool? saveAvatarHistory,
@@ -88,7 +91,9 @@ class AppSettings {
     String? fastApiApiKey,
   }) {
     return AppSettings(
-      locale: locale,
+      locale: identical(locale, _localeNotProvided)
+          ? this.locale
+          : locale as Locale?,
       themeMode: themeMode ?? this.themeMode,
       theme: theme ?? this.theme,
       saveAvatarHistory: saveAvatarHistory ?? this.saveAvatarHistory,

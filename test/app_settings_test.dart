@@ -18,6 +18,18 @@ void main() {
       expect(updated.theme, ThemeColor.defaultThemeColor);
     });
 
+    test('copyWith updates locale while preserving data fetching strategy', () {
+      final original = AppSettings(
+        locale: const Locale('en'),
+        enableDataFetchingStrategy: true,
+      );
+
+      final updated = original.copyWith(locale: const Locale('zh', 'CN'));
+
+      expect(updated.locale, const Locale('zh', 'CN'));
+      expect(updated.enableDataFetchingStrategy, isTrue);
+    });
+
     test('round-trips FastAPI settings through JSON', () {
       final settings = AppSettings(
         apiRequestMode: 'curl_cffi',

@@ -67,22 +67,10 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
 
   // In: class SettingsNotifier ...
   Future<void> updateLocale(Locale? newLocale) async {
-    final currentSettings = state.value ?? AppSettings();
-    final newState = AppSettings(
-      locale: newLocale,
-      themeMode: currentSettings.themeMode,
-      theme: currentSettings.theme, // 保持当前的主题颜色
-      saveAvatarHistory: currentSettings.saveAvatarHistory,
-      saveBannerHistory: currentSettings.saveBannerHistory,
-      avatarQuality: currentSettings.avatarQuality,
-      historyStrategy: currentSettings.historyStrategy,
-      historyLimitN: currentSettings.historyLimitN,
-      customGqlQueryIds: currentSettings.customGqlQueryIds,
-      gqlQueryIdSource: currentSettings.gqlQueryIdSource,
-      apiRequestMode: currentSettings.apiRequestMode,
-      remoteFastApiUrl: currentSettings.remoteFastApiUrl,
-      fastApiApiKey: currentSettings.fastApiApiKey,
-    );
+    final currentState = state;
+    if (currentState is! AsyncData<AppSettings>) return;
+
+    final newState = currentState.value.copyWith(locale: newLocale);
 
     state = AsyncValue.data(newState);
 

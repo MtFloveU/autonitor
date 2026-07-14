@@ -19,6 +19,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:autonitor/providers/history_provider.dart';
+import 'package:autonitor/providers/search_provider.dart';
 part 'user_detail_page_utils.dart';
 part 'user_detail_page_logic.dart';
 part 'user_detail_page_header_widgets.dart';

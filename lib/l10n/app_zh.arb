@@ -60,6 +60,8 @@
   "recovered": "回归",
   "failed_to_load_user_list": "加载用户列表失败",
   "no_users_in_this_category": "列表为空",
+  "user_not_found": "未在当前账号的数据中找到用户 @{screenName}。",
+  "open_in_autonitor": "在 Autonitor 中打开",
   "analysis_log": "分析日志",
   "no_active_account_error": "无法运行分析：没有活动的账号。",
   "analysis_failed_error": "分析失败",
@@ -204,5 +206,6 @@
   "remote_fastapi_service_url": "远程 FastAPI 服务地址",
   "fastapi_api_key": "FastAPI API Key",
   "fastapi_api_key_optional": "可留空",
-  "invalid_fastapi_url": "请输入以 http:// 或 https:// 开头的有效 URL"
+  "invalid_fastapi_url": "请输入以 http:// 或 https:// 开头的有效 URL",
+  "enable_new_data_fetching_strategy": "启用新的数据获取策略"
 }

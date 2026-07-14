@@ -41,7 +41,7 @@ class AdvancedModePage extends ConsumerWidget {
                       Icons.insights_outlined,
                       color: colorScheme.onSurfaceVariant,
                     ),
-                    title: Text("Enable new data fetching strategy"),
+                    title: Text(l10n.enable_new_data_fetching_strategy),
                     value: settings.enableDataFetchingStrategy,
                     onChanged: (bool newValue) {
                       ref

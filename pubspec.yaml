@@ -55,6 +55,7 @@ flutter:
     - assets/icon/bot.svg
     - assets/icon/mask.svg
     - assets/icon/icon.png
+    - assets/icon/icon_nobg.png
 
 flutter_launcher_icons:
   android: true
