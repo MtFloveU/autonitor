@@ -9,6 +9,7 @@ Widget _buildNetworkSection(
   AppSettings settings,
   TextEditingController remoteFastApiUrlController,
   TextEditingController fastApiApiKeyController,
+  VoidCallback onAdvancedModeTap,
 ) {
   final colorScheme = Theme.of(context).colorScheme;
   final textTheme = Theme.of(context).textTheme;
@@ -18,7 +19,8 @@ Widget _buildNetworkSection(
     if (trimmed.isEmpty) return null;
 
     final uri = Uri.tryParse(trimmed);
-    final isValid = uri != null &&
+    final isValid =
+        uri != null &&
         (uri.scheme == 'http' || uri.scheme == 'https') &&
         uri.host.isNotEmpty;
 
@@ -63,10 +65,7 @@ Widget _buildNetworkSection(
         icon: Icons.code_outlined,
         currentValue: settings.apiRequestMode,
         helpText: "",
-        options: {
-          "dio": "dio",
-          "curl_cffi": "curl_cffi",
-        },
+        options: {"dio": "dio", "curl_cffi": "curl_cffi"},
         onChanged: (newValue) {
           if (newValue == null) return;
           ref.read(settingsProvider.notifier).updateApiRequestMode(newValue);
@@ -100,7 +99,7 @@ Widget _buildNetworkSection(
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   decoration: InputDecoration(
                     labelText: l10n.remote_fastapi_service_url,
-                    hintText: 'https://example.com',
+                    hintText: 'http://127.0.0.1:8000/fetch',
                     filled: true,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -142,6 +141,18 @@ Widget _buildNetworkSection(
                         .read(settingsProvider.notifier)
                         .updateFastApiApiKey(value.trim());
                   },
+                ),
+                const SizedBox(height: 8),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    Icons.tune_outlined,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  title: Text(l10n.advanced_mode),
+                  subtitle: Text(l10n.advanced_mode_description),
+                  trailing: Icon(Icons.chevron_right),
+                  onTap: onAdvancedModeTap,
                 ),
               ],
             ),

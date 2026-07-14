@@ -25,6 +25,7 @@ class ProfileSnapshotUser extends TwitterUser {
          bannerLocalPath: original.bannerLocalPath,
          bio: original.bio,
          bioLinks: original.bioLinks,
+         professionalCategory: original.professionalCategory,
          location: original.location,
          pinnedTweetIdStr: original.pinnedTweetIdStr,
          parodyCommentaryFanLabel: original.parodyCommentaryFanLabel,

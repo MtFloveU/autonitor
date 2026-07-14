@@ -300,6 +300,28 @@ class TwitterApiV1Service {
     );
   }
 
+  Future<UserListResult> getFollowerIds(
+    String userId,
+    String cookie, {
+    String? cursor,
+    int count = 5000,
+    String apiRequestMode = 'dio',
+    String? cffiUrl,
+    String? cffiApiKey,
+  }) async {
+    return _fetchList(
+      'https://api.x.com/1.1/followers/ids.json',
+      userId,
+      cookie,
+      cursor,
+      count,
+      'followers',
+      apiRequestMode,
+      cffiUrl,
+      cffiApiKey,
+    );
+  }
+
   Future<UserListResult> getFollowing(
     String userId,
     String cookie, {
@@ -311,6 +333,28 @@ class TwitterApiV1Service {
   }) async {
     return _fetchList(
       'https://api.x.com/1.1/friends/list.json',
+      userId,
+      cookie,
+      cursor,
+      count,
+      'following',
+      apiRequestMode,
+      cffiUrl,
+      cffiApiKey,
+    );
+  }
+
+  Future<UserListResult> getFollowingIds(
+    String userId,
+    String cookie, {
+    String? cursor,
+    int count = 5000,
+    String apiRequestMode = 'dio',
+    String? cffiUrl,
+    String? cffiApiKey,
+  }) async {
+    return _fetchList(
+      'https://api.x.com/1.1/friends/ids.json',
       userId,
       cookie,
       cursor,

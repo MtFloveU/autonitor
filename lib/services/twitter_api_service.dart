@@ -282,6 +282,90 @@ class TwitterApiService {
     }
   }
 
+  Future<Map<String, dynamic>> getUsersByScreenNames(
+    List<String> screenNames,
+    String cookie,
+    String queryId,
+    String transactionId, {
+    String apiRequestMode = 'curl_cffi',
+    String? cffiUrl,
+    String? cffiApiKey,
+  }) async {
+    final csrfToken = _parseCsrfToken(cookie);
+    if (csrfToken == null) {
+      throw Exception("Unable to parse x-csrf-token (ct0) from Cookie");
+    }
+
+    final variables = {
+      "screen_names": screenNames,
+      "withSafetyModeUserFields": true,
+    };
+
+    final features = {
+      "responsive_web_graphql_exclude_directive_enabled": true,
+      "verified_phone_label_enabled": false,
+      "responsive_web_graphql_skip_user_profile_image_extensions_enabled": false,
+      "responsive_web_graphql_timeline_navigation_enabled": true,
+    };
+
+    final fieldToggles = {
+      "withAuxiliaryUserLabels": false,
+    };
+
+    final queryParameters = {
+      'variables': jsonEncode(variables),
+      'features': jsonEncode(features),
+      'fieldToggles': jsonEncode(fieldToggles),
+    };
+
+    final headers = {
+      'authorization':
+          'Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA',
+      'x-csrf-token': csrfToken,
+      'Cookie': cookie,
+      'x-twitter-active-user': 'yes',
+      'x-twitter-auth-type': 'OAuth2Session',
+      'x-twitter-client-language': 'en',
+      'x-client-transaction-id': transactionId,
+      'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+      'Referer': 'https://api.x.com/',
+    };
+
+    final String url = 'https://api.x.com/graphql/$queryId/UsersByScreenNames';
+
+    try {
+      final response = await _executeRequest(
+        endpoint: url,
+        queryParameters: queryParameters,
+        headers: headers,
+        apiRequestMode: apiRequestMode,
+        cffiUrl: cffiUrl,
+        cffiApiKey: cffiApiKey,
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        logger.d("Response data: ${response.data}");
+        return response.data as Map<String, dynamic>;
+      } else {
+        throw Exception(
+          'UsersByScreenNames request failed: status ${response.statusCode}; '
+          'response: ${response.data}',
+        );
+      }
+    } on DioException catch (e, s) {
+      logger.e(
+        "Dio Error on getUsersByScreenNames: ${e.response?.data}",
+        error: e,
+        stackTrace: s,
+      );
+      throw Exception('Network request failed: ${e.message}');
+    } catch (e, s) {
+      logger.e("Unknown error on getUsersByScreenNames", error: e, stackTrace: s);
+      rethrow;
+    }
+  }
+
   Future<Map<String, dynamic>> getFollowers(
     String userId,
     String cookie,

@@ -199,6 +199,8 @@
   "browser_via_screen_name": "浏览器（通过用户名）",
   "browser_via_rest_id": "浏览器（通过 Rest ID）",
   "api_request_mode": "HTTP 请求实现",
+  "advanced_mode": "数据获取策略",
+  "advanced_mode_description": "选择账号数据的获取方式",
   "remote_fastapi_service_url": "远程 FastAPI 服务地址",
   "fastapi_api_key": "FastAPI API Key",
   "fastapi_api_key_optional": "可留空",

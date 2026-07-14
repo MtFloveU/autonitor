@@ -3,6 +3,7 @@ import 'package:autonitor/providers/runid_provider.dart';
 import 'database_updater.dart';
 import 'media_processor.dart';
 import 'network_data_fetcher.dart';
+import 'new_network_data_fetcher.dart' as new_network;
 import 'relationship_analyzer.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/account.dart';
@@ -34,6 +35,7 @@ class DataProcessor {
   final CheckPauseCallback _checkPauseCallback;
 
   late final NetworkDataFetcher _networkFetcher;
+  late final new_network.NewNetworkDataFetcher _newNetworkFetcher;
   late final RelationshipAnalyzer _relationshipAnalyzer;
   late final MediaProcessor _mediaProcessor;
   late final DatabaseUpdater _databaseUpdater;
@@ -61,6 +63,19 @@ class DataProcessor {
        _imageService = imageService,
        _checkPauseCallback = checkPauseCallback {
     _networkFetcher = NetworkDataFetcher(
+      apiServiceGql: _apiServiceGql,
+      apiServiceV1: _apiServiceV1,
+      ref: _ref,
+      ownerId: _ownerId,
+      ownerCookie: _ownerCookie,
+      log: _log,
+      checkPauseCallback: _checkPauseCallback,
+      apiRequestMode: _settings.apiRequestMode,
+      cffiUrl: _settings.remoteFastApiUrl,
+      cffiApiKey: _settings.fastApiApiKey,
+    );
+
+    _newNetworkFetcher = new_network.NewNetworkDataFetcher(
       apiServiceGql: _apiServiceGql,
       apiServiceV1: _apiServiceV1,
       ref: _ref,
@@ -167,8 +182,19 @@ class DataProcessor {
       _log("Found ${oldRelationsMap.length} existing relationships.");
 
       await _checkPauseCallback();
-
-      final networkData = await _networkFetcher.fetchAllNetworkData();
+      late final NetworkFetchResult networkData;
+      if (_settings.apiRequestMode == 'curl_cffi' &&
+          _settings.remoteFastApiUrl.isNotEmpty &&
+          _settings.enableDataFetchingStrategy) {
+        final fetchedData = await _newNetworkFetcher.fetchAllNetworkData();
+        networkData = NetworkFetchResult(
+          uniqueUsers: fetchedData.uniqueUsers,
+          followerIds: fetchedData.followerIds,
+          followingIds: fetchedData.followingIds,
+        );
+      } else {
+        networkData = await _networkFetcher.fetchAllNetworkData();
+      }
       _log(
         "Finished fetching. Total unique users: ${networkData.uniqueUsers.length}",
       );

@@ -116,6 +116,19 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
     await _settingsService.saveSettings(newState);
   }
 
+  Future<void> updateEnableDataFetchingStrategy(bool enabled) async {
+    final currentState = state;
+    if (currentState is! AsyncData<AppSettings>) {
+      return;
+    }
+    final currentSettings = currentState.value;
+    final newState = currentSettings.copyWith(
+      enableDataFetchingStrategy: enabled,
+    );
+    state = AsyncValue.data(newState);
+    await _settingsService.saveSettings(newState);
+  }
+
   Future<void> updateAvatarQuality(AvatarQuality avatarQuality) async {
     final currentState = state;
     if (currentState is! AsyncData<AppSettings>) {

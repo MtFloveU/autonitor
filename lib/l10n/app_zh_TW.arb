@@ -199,6 +199,8 @@
   "browser_via_screen_name": "瀏覽器（透過用戶名）",
   "browser_via_rest_id": "瀏覽器（透過 Rest ID）",
   "api_request_mode": "HTTP 請求實現",
+  "advanced_mode": "資料取得策略",
+  "advanced_mode_description": "選擇帳號資料的取得方式flutte",
   "remote_fastapi_service_url": "遠端 FastAPI 服務地址",
   "fastapi_api_key": "FastAPI API Key",
   "fastapi_api_key_optional": "可留空",

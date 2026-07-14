@@ -1293,6 +1293,18 @@ abstract class AppLocalizations {
   /// **'HTTP Request Implementation'**
   String get api_request_mode;
 
+  /// No description provided for @advanced_mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Data Fetching Strategy'**
+  String get advanced_mode;
+
+  /// No description provided for @advanced_mode_description.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how account data is fetched'**
+  String get advanced_mode_description;
+
   /// No description provided for @remote_fastapi_service_url.
   ///
   /// In en, this message translates to:

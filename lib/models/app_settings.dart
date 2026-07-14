@@ -48,6 +48,7 @@ class AppSettings {
   final String fastApiApiKey;
   final bool saveAvatarHistory;
   final bool saveBannerHistory;
+  final bool enableDataFetchingStrategy;
   final AvatarQuality avatarQuality;
   final HistoryStrategy historyStrategy;
   final int historyLimitN;
@@ -59,6 +60,7 @@ class AppSettings {
     this.themeMode = ThemeMode.system,
     this.saveAvatarHistory = true,
     this.saveBannerHistory = false,
+    this.enableDataFetchingStrategy = false,
     this.avatarQuality = AvatarQuality.low,
     this.historyStrategy = HistoryStrategy.saveAll,
     this.historyLimitN = 5,
@@ -75,6 +77,7 @@ class AppSettings {
     ThemeColor? theme,
     bool? saveAvatarHistory,
     bool? saveBannerHistory,
+    bool? enableDataFetchingStrategy,
     AvatarQuality? avatarQuality,
     HistoryStrategy? historyStrategy,
     int? historyLimitN,
@@ -90,6 +93,8 @@ class AppSettings {
       theme: theme ?? this.theme,
       saveAvatarHistory: saveAvatarHistory ?? this.saveAvatarHistory,
       saveBannerHistory: saveBannerHistory ?? this.saveBannerHistory,
+      enableDataFetchingStrategy:
+          enableDataFetchingStrategy ?? this.enableDataFetchingStrategy,
       avatarQuality: avatarQuality ?? this.avatarQuality,
       historyStrategy: historyStrategy ?? this.historyStrategy,
       historyLimitN: historyLimitN ?? this.historyLimitN,
@@ -108,6 +113,7 @@ class AppSettings {
     'theme': theme.name,
     'saveAvatarHistory': saveAvatarHistory,
     'saveBannerHistory': saveBannerHistory,
+    'enableDataFetchingStrategy': enableDataFetchingStrategy,
     'avatarQuality': avatarQuality.toString().split('.').last,
     'historyStrategy': historyStrategy.toString().split('.').last,
     'historyLimitN': historyLimitN,
@@ -146,6 +152,9 @@ class AppSettings {
       saveBannerHistory:
           json['saveBannerHistory'] as bool? ??
           defaultSettings.saveBannerHistory,
+      enableDataFetchingStrategy:
+          json['enableDataFetchingStrategy'] as bool? ??
+          defaultSettings.enableDataFetchingStrategy,
       avatarQuality: (json['avatarQuality'] as String?).toEnum(
         AvatarQuality.values,
         defaultSettings.avatarQuality,

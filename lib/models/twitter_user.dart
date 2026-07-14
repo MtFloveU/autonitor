@@ -8,6 +8,7 @@ class TwitterUser {
   final String? bannerLocalPath;
   final String? bio;
   final List<Map<String, String>> bioLinks;
+  final String? professionalCategory;
   final String? location;
   final String? pinnedTweetIdStr;
   final String? parodyCommentaryFanLabel;
@@ -42,6 +43,7 @@ class TwitterUser {
     this.bannerLocalPath,
     this.bio,
     this.bioLinks = const [],
+    this.professionalCategory,
     this.location,
     this.pinnedTweetIdStr,
     this.parodyCommentaryFanLabel,
@@ -77,6 +79,7 @@ class TwitterUser {
       bannerUrl: json['banner_url'] as String?,
       bannerLocalPath: json['banner_local_path'] as String?,
       bio: json['bio'] as String?,
+      professionalCategory: json['professional_category'] as String?,
       location: json['location'] as String?,
       pinnedTweetIdStr: json['pinned_tweet_id_str'] as String?,
       parodyCommentaryFanLabel: json['parody_commentary_fan_label'] as String?,
@@ -150,6 +153,42 @@ class TwitterUser {
     return TwitterUser.fromGraphQL(result as Map<String, dynamic>, '');
   }
 
+  factory TwitterUser.fromGraphQLUsersByScreenNames(
+    Map<String, dynamic> raw,
+    String runId,
+  ) {
+    dynamic result = raw['result'];
+    result ??= raw;
+
+    if (result == null || result is! Map) {
+      return const TwitterUser(
+        restId: '',
+        screenName: 'Unknown',
+        name: 'Unknown',
+      );
+    }
+
+    if (result['__typename'] == 'UserUnavailable') {
+      final String? message = result['message']?.toString();
+      String status = 'unavailable';
+
+      if (message == 'User is suspended') {
+        status = 'suspended';
+      } else if (message == 'User is deactivated') {
+        status = 'deactivated';
+      }
+
+      return TwitterUser(
+        restId: '',
+        screenName: 'Unavailable',
+        name: 'User Unavailable',
+        status: status,
+      );
+    }
+
+    return TwitterUser.fromGraphQL(result as Map<String, dynamic>, runId);
+  }
+
   // [修改] 增强版 fromGraphQL：集成了 bioLinks 和 生日解析
   factory TwitterUser.fromGraphQL(Map<String, dynamic> raw, String runId) {
     // 兼容逻辑：如果 raw 本身就是 result 层，则直接使用；否则尝试查找 result 字段
@@ -160,6 +199,21 @@ class TwitterUser {
     final relationship = (result['relationship_perspectives'] ?? {});
     final dm = (result['dm_permissions'] ?? {});
     final media = (result['media_permissions'] ?? {});
+
+    String? professionalCategory;
+    final professionalCategories = result['professional']?['category'];
+    if (professionalCategories is List) {
+      for (final category in professionalCategories) {
+        if (category is! Map || category['display'] == false) {
+          continue;
+        }
+        final name = category['name']?.toString();
+        if (name != null && name.isNotEmpty) {
+          professionalCategory = name;
+          break;
+        }
+      }
+    }
 
     int getInt(String key) => int.tryParse(legacy[key]?.toString() ?? '0') ?? 0;
     String? getString(String key) => legacy[key] as String?;
@@ -237,6 +291,7 @@ class TwitterUser {
       bannerLocalPath: null,
       bio: description,
       bioLinks: extractedLinks, // 传入提取的链接
+      professionalCategory: professionalCategory,
       location: result['location']?['location'] as String?,
       pinnedTweetIdStr:
           (legacy['pinned_tweet_ids_str'] as List?)?.isNotEmpty == true
@@ -356,6 +411,7 @@ class TwitterUser {
       'banner_local_path': bannerLocalPath,
       'bio': bio,
       'bio_links': bioLinks,
+      'professional_category': professionalCategory,
       'location': location,
       'pinned_tweet_id_str': pinnedTweetIdStr,
       'parody_commentary_fan_label': parodyCommentaryFanLabel,
@@ -391,6 +447,7 @@ class TwitterUser {
     String? bannerUrl,
     String? bannerLocalPath,
     String? bio,
+    String? professionalCategory,
     String? location,
     String? pinnedTweetIdStr,
     String? parodyCommentaryFanLabel,
@@ -426,6 +483,7 @@ class TwitterUser {
       bannerLocalPath: bannerLocalPath ?? this.bannerLocalPath,
       bio: bio ?? this.bio,
       bioLinks: bioLinks ?? this.bioLinks,
+      professionalCategory: professionalCategory ?? this.professionalCategory,
       location: location ?? this.location,
       pinnedTweetIdStr: pinnedTweetIdStr ?? this.pinnedTweetIdStr,
       parodyCommentaryFanLabel:

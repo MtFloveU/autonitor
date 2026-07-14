@@ -22,6 +22,7 @@ part 'subpages/graphql_path_page.dart';
 part 'subpages/log_viewer.dart';
 part 'subpages/xct_generator_page.dart';
 part 'subpages/settings_about_page.dart';
+part 'subpages/advanced_mode_page.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -73,6 +74,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
+  void _openAdvancedModePage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AdvancedModePage()),
+    );
+  }
+
   void _handleLimitUpdate(WidgetRef ref, int currentLimit) {
     final n = int.tryParse(_historyLimitController.text) ?? 1;
     final clampedN = n.clamp(1, 500);
@@ -120,6 +128,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 settings,
                 _remoteFastApiUrlController,
                 _fastApiApiKeyController,
+                _openAdvancedModePage,
               ),
 
               // 3. Storage Section

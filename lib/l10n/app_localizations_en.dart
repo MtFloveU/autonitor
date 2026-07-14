@@ -638,6 +638,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get api_request_mode => 'HTTP Request Implementation';
 
   @override
+  String get advanced_mode => 'Data Fetching Strategy';
+
+  @override
+  String get advanced_mode_description => 'Choose how account data is fetched';
+
+  @override
   String get remote_fastapi_service_url => 'Remote FastAPI Service URL';
 
   @override

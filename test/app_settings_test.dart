@@ -32,5 +32,14 @@ void main() {
       expect(restored.remoteFastApiUrl, 'https://example.com/api');
       expect(restored.fastApiApiKey, 'secret-token');
     });
+
+    test('round-trips data fetching strategy setting through JSON', () {
+      final settings = AppSettings(enableDataFetchingStrategy: true);
+
+      final json = settings.toJson();
+      final restored = AppSettings.fromJson(json);
+
+      expect(restored.enableDataFetchingStrategy, isTrue);
+    });
   });
 }

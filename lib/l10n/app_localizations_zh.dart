@@ -628,6 +628,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get api_request_mode => 'HTTP 请求实现';
 
   @override
+  String get advanced_mode => '数据获取策略';
+
+  @override
+  String get advanced_mode_description => '选择账号数据的获取方式';
+
+  @override
   String get remote_fastapi_service_url => '远程 FastAPI 服务地址';
 
   @override
@@ -1262,6 +1268,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get api_request_mode => 'HTTP 請求實現';
+
+  @override
+  String get advanced_mode => '資料取得策略';
+
+  @override
+  String get advanced_mode_description => '選擇帳號資料的取得方式flutte';
 
   @override
   String get remote_fastapi_service_url => '遠端 FastAPI 服務地址';

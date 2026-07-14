@@ -227,6 +227,16 @@ extension _UserDetailPageInfoWidgets on _UserDetailPageState {
     final theme = Theme.of(context);
     final List<Widget> items = [];
 
+    if (widget.user.professionalCategory != null &&
+        widget.user.professionalCategory!.isNotEmpty) {
+      items.add(
+        _buildIconText(
+          context,
+          Icons.business_center_outlined,
+          widget.user.professionalCategory!,
+        ),
+      );
+    }
     if (widget.user.location != null && widget.user.location!.isNotEmpty) {
       items.add(
         _buildIconText(
@@ -238,6 +248,34 @@ extension _UserDetailPageInfoWidgets on _UserDetailPageState {
     }
     if (widget.user.link != null && widget.user.link!.isNotEmpty) {
       items.add(_buildLinkItem(context, widget.user.link!));
+    }
+    int? parseDatePart(dynamic part) {
+      if (part == null || part.toString().isEmpty) return null;
+      return int.tryParse(part.toString());
+    }
+
+    final int? y = parseDatePart(widget.user.birthdateYear);
+    final int? m = parseDatePart(widget.user.birthdateMonth);
+    final int? d = parseDatePart(widget.user.birthdateDay);
+
+    if (y != null || (m != null && d != null)) {
+      DateTime dummyDate = DateTime(y ?? 2000, m ?? 1, d ?? 1);
+      String locale = Localizations.localeOf(context).toString();
+      String formattedBirthday = '';
+
+      if (y != null && m != null && d != null) {
+        formattedBirthday = DateFormat.yMd(locale).format(dummyDate);
+      } else if (m != null && d != null) {
+        formattedBirthday = DateFormat.Md(locale).format(dummyDate);
+      } else if (y != null) {
+        formattedBirthday = DateFormat.y(locale).format(dummyDate);
+      }
+
+      if (formattedBirthday.isNotEmpty) {
+        items.add(
+          _buildIconText(context, Icons.cake_outlined, formattedBirthday),
+        );
+      }
     }
     items.add(
       _buildIconText(
