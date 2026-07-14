@@ -10,6 +10,61 @@ import '../repositories/account_repository.dart';
 const String kChangeTypeProfileUpdate = 'profile_update';
 typedef LogCallback = void Function(String message);
 
+String? classifyKeptRelationshipChange({
+  required bool wasFollower,
+  required bool wasFollowing,
+  required bool isNowFollower,
+  required bool isNowFollowing,
+  required String oldStatus,
+  required String oldKeptStatus,
+  required String currentStatus,
+}) {
+  if (currentStatus == 'temporarily_restricted') {
+    return 'temporarily_restricted';
+  }
+
+  final wasPreviouslyUnavailable =
+      oldStatus == 'suspended' ||
+      oldStatus == 'deactivated' ||
+      oldStatus == 'temporarily_restricted' ||
+      oldKeptStatus == 'suspended' ||
+      oldKeptStatus == 'deactivated' ||
+      oldKeptStatus == 'temporarily_restricted';
+  if (wasPreviouslyUnavailable && currentStatus == 'normal') {
+    return 'recovered';
+  }
+
+  final wasPreviouslyUnfollowed =
+      oldStatus == 'normal_unfollowed' ||
+      oldStatus == 'mutual_unfollowed' ||
+      oldStatus == 'oneway_unfollowed' ||
+      oldKeptStatus == 'normal_unfollowed' ||
+      oldKeptStatus == 'mutual_unfollowed' ||
+      oldKeptStatus == 'oneway_unfollowed';
+  if (wasPreviouslyUnfollowed && !wasFollowing && isNowFollowing) {
+    return 'recovered';
+  }
+
+  final becameMutual =
+      isNowFollower &&
+      isNowFollowing &&
+      ((wasFollower && !wasFollowing) || (!wasFollower && wasFollowing));
+  if (becameMutual) {
+    return 'be_followed_back';
+  }
+
+  final relationshipChanged =
+      wasFollower != isNowFollower || wasFollowing != isNowFollowing;
+  if (relationshipChanged &&
+      wasFollower &&
+      wasFollowing &&
+      isNowFollower != isNowFollowing) {
+    return 'oneway_unfollowed';
+  }
+
+  return null;
+}
+
 class RelationshipAnalysisResult {
   final Set<String> addedIds;
   final Set<String> removedIds;
@@ -357,8 +412,6 @@ class RelationshipAnalyzer {
       final wasFollowing = oldRel?.isFollowing ?? false;
       final isNowFollower = networkData.followerIds.contains(keptId);
       final isNowFollowing = networkData.followingIds.contains(keptId);
-      final bool relationshipChanged =
-          (wasFollower != isNowFollower) || (wasFollowing != isNowFollowing);
 
       String oldStatus = 'normal';
       String oldKeptStatus = 'normal';
@@ -370,24 +423,15 @@ class RelationshipAnalyzer {
         } catch (_) {}
       }
       final String currentStatus = restrictedChecks[keptId] ?? 'normal';
-      String? changeType;
-      if (currentStatus == 'temporarily_restricted') {
-        changeType = 'temporarily_restricted';
-      } else if ((oldStatus == 'suspended' ||
-              oldStatus == 'deactivated' ||
-              oldStatus == 'temporarily_restricted' ||
-              oldKeptStatus == 'suspended' ||
-              oldKeptStatus == 'deactivated' ||
-              oldKeptStatus == 'temporarily_restricted') &&
-          currentStatus == 'normal') {
-        // [关键修改]：确保当前是正常状态才触发 recovered
-        changeType = 'recovered';
-      } else if (relationshipChanged &&
-          wasFollower &&
-          wasFollowing &&
-          (isNowFollower != isNowFollowing)) {
-        changeType = 'oneway_unfollowed';
-      }
+      final changeType = classifyKeptRelationshipChange(
+        wasFollower: wasFollower,
+        wasFollowing: wasFollowing,
+        isNowFollower: isNowFollower,
+        isNowFollowing: isNowFollowing,
+        oldStatus: oldStatus,
+        oldKeptStatus: oldKeptStatus,
+        currentStatus: currentStatus,
+      );
 
       if (changeType != null) {
         reportCompanions.add(
