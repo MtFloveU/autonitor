@@ -17,6 +17,17 @@ class SearchRepository {
     final normalizedScreenName = screenName.trim().replaceFirst('@', '');
     if (normalizedScreenName.isEmpty) return null;
 
+    final owner = await (_database.select(_database.loggedAccounts)
+          ..where(
+            (t) =>
+                t.id.equals(ownerId) &
+                t.screenName.lower().equals(normalizedScreenName.toLowerCase()),
+          ))
+        .getSingleOrNull();
+    if (owner != null) {
+      return _toTwitterUserFromAccount(owner);
+    }
+
     final match = await (_database.select(_database.followUsers)
           ..where(
             (t) =>
@@ -206,6 +217,43 @@ class SearchRepository {
       isFollower: match.isFollower,
       isFollowing: match.isFollowing,
       isVerified: false,
+    );
+  }
+
+  TwitterUser _toTwitterUserFromAccount(LoggedAccount account) {
+    if (account.latestRawJson != null) {
+      try {
+        return TwitterUser.fromJson(
+          jsonDecode(account.latestRawJson!),
+        ).copyWith(
+          avatarLocalPath: account.avatarLocalPath,
+          bannerLocalPath: account.bannerLocalPath,
+        );
+      } catch (_) {
+        // Fall back to account columns when the stored snapshot is malformed.
+      }
+    }
+
+    return TwitterUser(
+      restId: account.id,
+      screenName: account.screenName,
+      name: account.name,
+      avatarUrl: account.avatarUrl,
+      avatarLocalPath: account.avatarLocalPath,
+      bannerUrl: account.bannerUrl,
+      bannerLocalPath: account.bannerLocalPath,
+      bio: account.bio,
+      location: account.location,
+      joinedTime: account.joinTime,
+      link: account.link,
+      isVerified: account.isVerified ?? false,
+      isProtected: account.isProtected ?? false,
+      followersCount: account.followersCount,
+      followingCount: account.followingCount,
+      statusesCount: account.statusesCount,
+      mediaCount: account.mediaCount,
+      favouritesCount: account.favouritesCount,
+      listedCount: account.listedCount,
     );
   }
 }

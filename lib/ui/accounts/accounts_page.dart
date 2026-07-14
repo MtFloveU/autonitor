@@ -86,51 +86,44 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
   Future<String?> _showLoginOptions(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final iconColor = theme.colorScheme.onSurface;
+    final iconColor = theme.colorScheme.onSurfaceVariant;
 
-    return showDialog<String>(
+    return showModalBottomSheet<String>(
       context: context,
-      builder: (context) => SimpleDialog(
-        title: Text(l10n.choose_login_method),
-        children: [
-          if (Platform.isAndroid || Platform.isIOS)
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(context, 'browser'),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12.0),
-                child: Row(
-                  children: [
-                    Icon(Icons.web, color: iconColor),
-                    const SizedBox(width: 16),
-                    Flexible(
-                      child: Text(
-                        l10n.browser_login,
-                        style: theme.textTheme.bodyLarge,
-                      ),
-                    ),
-                  ],
+      useSafeArea: true,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.35,
+        minChildSize: 0.2,
+        maxChildSize: 0.65,
+        builder: (context, scrollController) => ListView(
+          controller: scrollController,
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          children: [
+            Text(
+              l10n.choose_login_method,
+              style: theme.textTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            if (Platform.isAndroid || Platform.isIOS)
+              ListTile(
+                leading: Icon(Icons.web, color: iconColor),
+                title: Text(
+                  l10n.browser_login,
+                  style: theme.textTheme.bodyLarge,
                 ),
+                onTap: () => Navigator.pop(sheetContext, 'browser'),
               ),
+            ListTile(
+              leading: Icon(Icons.edit_note, color: iconColor),
+              title: Text(l10n.manual_cookie, style: theme.textTheme.bodyLarge),
+              onTap: () => Navigator.pop(sheetContext, 'manual'),
             ),
-          SimpleDialogOption(
-            onPressed: () => Navigator.pop(context, 'manual'),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12.0),
-              child: Row(
-                children: [
-                  Icon(Icons.edit_note, color: iconColor),
-                  const SizedBox(width: 16),
-                  Flexible(
-                    child: Text(
-                      l10n.manual_cookie,
-                      style: theme.textTheme.bodyLarge,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

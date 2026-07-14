@@ -120,9 +120,15 @@ extension _UserDetailPageLogic on _UserDetailPageState {
       if (!context.mounted) return;
 
       if (result == null) {
+        final colorScheme = Theme.of(context).colorScheme;
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.no_history_found),
+            backgroundColor: colorScheme.inverseSurface,
+            content: Text(
+              AppLocalizations.of(context)!.no_history_found,
+              style: TextStyle(color: colorScheme.onInverseSurface),
+            ),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -188,7 +194,7 @@ extension _UserDetailPageLogic on _UserDetailPageState {
     }
   }
 
-  void _showJsonDialog(BuildContext context, AppLocalizations l10n) {
+  void _showJsonDialog(BuildContext pageContext, AppLocalizations l10n) {
     String rawJson = widget.snapshotJson ?? jsonEncode(widget.user.toJson());
     if (rawJson.isEmpty) return;
 
@@ -199,62 +205,87 @@ extension _UserDetailPageLogic on _UserDetailPageState {
       formattedJson = encoder.convert(jsonObj);
     } catch (_) {}
 
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('JSON'),
-        content: Container(
-          width: double.maxFinite,
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.6,
-          ),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(8.0),
-          ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: TextEditingController(text: formattedJson),
-              readOnly: true,
-              maxLines: null,
-              decoration: const InputDecoration.collapsed(hintText: null),
-              style: TextStyle(
-                fontFamily: 'monospace',
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+    showModalBottomSheet(
+      context: pageContext,
+      useSafeArea: true,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.7,
+        minChildSize: 0.35,
+        maxChildSize: 0.95,
+        builder: (sheetBodyContext, scrollController) => Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Column(
+            children: [
+              Text(
+                'JSON',
+                style: Theme.of(sheetBodyContext).textTheme.titleLarge,
+                textAlign: TextAlign.center,
               ),
-            ),
-          ),
-        ),
-        actions: <Widget>[
-          TextButton.icon(
-            icon: const Icon(Icons.copy),
-            label: Text(l10n.copy),
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: formattedJson));
-              Navigator.pop(dialogContext);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  behavior: SnackBarBehavior.floating,
-                  content: Text(
-                    l10n.copied_to_clipboard,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+              const SizedBox(height: 16),
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      sheetBodyContext,
+                    ).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Scrollbar(
+                    controller: scrollController,
+                    child: SingleChildScrollView(
+                      controller: scrollController,
+                      padding: const EdgeInsets.all(12),
+                      child: SelectableText(
+                        formattedJson,
+                        style: TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 12,
+                          color: Theme.of(
+                            sheetBodyContext,
+                          ).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                     ),
                   ),
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.primaryContainer,
                 ),
-              );
-            },
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton.icon(
+                    icon: const Icon(Icons.copy),
+                    label: Text(l10n.copy),
+                    onPressed: () {
+                      Clipboard.setData(ClipboardData(text: formattedJson));
+                      Navigator.pop(sheetContext);
+                      ScaffoldMessenger.of(pageContext).showSnackBar(
+                        SnackBar(
+                          behavior: SnackBarBehavior.floating,
+                          content: Text(
+                            l10n.copied_to_clipboard,
+                            style: TextStyle(
+                              color: Theme.of(
+                                pageContext,
+                              ).colorScheme.onPrimaryContainer,
+                            ),
+                          ),
+                          backgroundColor: Theme.of(
+                            pageContext,
+                          ).colorScheme.primaryContainer,
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
           ),
-          ElevatedButton(
-            child: Text(l10n.ok),
-            onPressed: () => Navigator.pop(dialogContext),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -269,21 +300,37 @@ extension _UserDetailPageLogic on _UserDetailPageState {
 
     if (name == null || name.isEmpty) return;
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        icon: const Icon(Icons.open_in_new),
-        title: Text(l10n.visit),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
+      useSafeArea: true,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.45,
+        minChildSize: 0.25,
+        maxChildSize: 0.8,
+        builder: (sheetBodyContext, scrollController) => ListView(
+          controller: scrollController,
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           children: [
+            Text(
+              l10n.visit,
+              style: Theme.of(sheetBodyContext).textTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
             if (Platform.isAndroid)
               ListTile(
                 leading: const Icon(Icons.android),
                 title: Text(l10n.open_in_app),
-                subtitle: Text('twitter://user?screen_name=$name'),
+                subtitle: Text(
+                  'twitter://user?screen_name=$name',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 onTap: () async {
-                  Navigator.pop(context);
+                  Navigator.pop(sheetContext);
                   final appUrl = Uri.parse('twitter://user?screen_name=$name');
                   if (await canLaunchUrl(appUrl)) {
                     await launchUrl(appUrl);
@@ -296,22 +343,22 @@ extension _UserDetailPageLogic on _UserDetailPageState {
                   'assets/icon/icon_nobg.png',
                   width: 24,
                   height: 24,
-                  color: IconTheme.of(context).color,
+                  color: IconTheme.of(sheetBodyContext).color,
                   colorBlendMode: BlendMode.srcIn,
                 ),
                 title: Text(l10n.open_in_autonitor),
-                subtitle: Text('@$name'),
+                subtitle: Text('@$name', overflow: TextOverflow.ellipsis),
                 onTap: () {
-                  Navigator.pop(context);
+                  Navigator.pop(sheetContext);
                   _openLocalUserProfile(name, l10n);
                 },
               ),
             ListTile(
               leading: const Icon(Icons.alternate_email),
               title: Text(l10n.browser_via_screen_name),
-              subtitle: Text('@$name'),
+              subtitle: Text('@$name', overflow: TextOverflow.ellipsis),
               onTap: () {
-                Navigator.pop(context);
+                Navigator.pop(sheetContext);
                 launchUrl(
                   Uri.parse('https://x.com/$name'),
                   mode: LaunchMode.externalApplication,
@@ -322,9 +369,9 @@ extension _UserDetailPageLogic on _UserDetailPageState {
               ListTile(
                 leading: const Icon(Icons.fingerprint),
                 title: Text(l10n.browser_via_rest_id),
-                subtitle: Text('ID: $restId'),
+                subtitle: Text('ID: $restId', overflow: TextOverflow.ellipsis),
                 onTap: () {
-                  Navigator.pop(context);
+                  Navigator.pop(sheetContext);
                   launchUrl(
                     Uri.parse('https://x.com/intent/user?user_id=$restId'),
                     mode: LaunchMode.externalApplication,
@@ -333,12 +380,6 @@ extension _UserDetailPageLogic on _UserDetailPageState {
               ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.cancel),
-          ),
-        ],
       ),
     );
   }
