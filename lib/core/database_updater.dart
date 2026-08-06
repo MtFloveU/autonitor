@@ -251,10 +251,23 @@ _PrepareDataResult _prepareDatabaseData(_PrepareDataParams params) {
         ? calculateReverseDiff(newJson, oldRel.latestRawJson)
         : null;
 
+    // Write a recovered path even if the profile JSON did not change. Without
+    // this, a successful retry for a URL with a missing local path is lost.
+    final downloadedAvatar =
+        params.mediaResult.downloadedPaths[id]?[MediaType.avatar];
+    final downloadedBanner =
+        params.mediaResult.downloadedPaths[id]?[MediaType.banner];
+    final hasMediaPathUpdate =
+        (downloadedAvatar != null &&
+            downloadedAvatar != oldRel?.avatarLocalPath) ||
+        (downloadedBanner != null &&
+            downloadedBanner != oldRel?.bannerLocalPath);
+
     // dataChanged：显式只与语义变化相关（不包含 media/localPath）
     final bool dataChanged =
         oldRel == null ||
         (diff != null && diff.isNotEmpty) ||
+        hasMediaPathUpdate ||
         oldRel.isFollowing != newUser.isFollowing ||
         oldRel.isFollower != newUser.isFollower;
 
@@ -304,11 +317,6 @@ _PrepareDataResult _prepareDatabaseData(_PrepareDataParams params) {
       }
 
       // media（旧逻辑：路径复用）
-      final downloadedAvatar =
-          params.mediaResult.downloadedPaths[id]?[MediaType.avatar];
-      final downloadedBanner =
-          params.mediaResult.downloadedPaths[id]?[MediaType.banner];
-
       String? finalAvatarPath = downloadedAvatar;
       if (finalAvatarPath == null && oldRel?.avatarUrl == newUser.avatarUrl) {
         finalAvatarPath = oldRel?.avatarLocalPath;

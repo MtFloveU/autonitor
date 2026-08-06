@@ -989,7 +989,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get media_count => '媒體數量';
 
   @override
-  String get likes => '讚數';
+  String get likes => '喜歡數';
 
   @override
   String get listed_count => '被收錄列表';

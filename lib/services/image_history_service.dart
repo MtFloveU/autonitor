@@ -263,6 +263,13 @@ class ImageHistoryService {
         .getSingleOrNull();
   }
 
+  /// A media-history row alone is not enough to reuse an asset: storage may
+  /// have been cleared after the row was written.
+  Future<bool> localMediaExists(String relativePath) async {
+    final supportDir = await getApplicationSupportDirectory();
+    return File(p.join(supportDir.path, relativePath)).exists();
+  }
+
   Future<String?> downloadAndSave({
     required String remoteUrl,
     required MediaType mediaType,

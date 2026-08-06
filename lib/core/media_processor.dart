@@ -138,7 +138,8 @@ class MediaProcessor {
               candidate.remoteUrl,
             );
             if (existing != null &&
-                (existing.isHighQuality || !candidate.isHighQuality)) {
+                (existing.isHighQuality || !candidate.isHighQuality) &&
+                await _imageService.localMediaExists(existing.localFilePath)) {
               // 已有且无需升级画质，直接复用
               _addPathToResult(
                 finalPaths,
@@ -147,6 +148,11 @@ class MediaProcessor {
                 existing.localFilePath,
               );
             } else {
+              if (existing != null) {
+                _log(
+                  'Media cache record exists but its file is unavailable; retrying ${candidate.remoteUrl}.',
+                );
+              }
               toDownload.add(candidate);
             }
             checked++;

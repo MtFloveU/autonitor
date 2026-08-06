@@ -88,14 +88,14 @@ class StatChartViewState {
     );
   }
 
-  /// Filters relative to the most recent observation and retains one point
-  /// immediately before the range so the visible trend starts continuously.
+  /// Filters relative to the most recent observation. The window is strict:
+  /// an earlier sync is never pulled in just to extend the line.
   StatChartViewState forRecent(Duration? range) {
     if (range == null || spots.length < 2) return this;
     final cutoff = spots.last.x - range.inMilliseconds;
     final firstInRange = spots.indexWhere((spot) => spot.x >= cutoff);
     if (firstInRange <= 0) return this;
-    return StatChartViewState.fromSpots(spots.sublist(firstInRange - 1));
+    return StatChartViewState.fromSpots(spots.sublist(firstInRange));
   }
 }
 
