@@ -300,86 +300,90 @@ extension _UserDetailPageLogic on _UserDetailPageState {
 
     if (name == null || name.isEmpty) return;
 
-    showModalBottomSheet(
+    showDialog<void>(
       context: context,
-      useSafeArea: true,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (sheetContext) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.45,
-        minChildSize: 0.25,
-        maxChildSize: 0.8,
-        builder: (sheetBodyContext, scrollController) => ListView(
-          controller: scrollController,
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          children: [
-            Text(
-              l10n.visit,
-              style: Theme.of(sheetBodyContext).textTheme.titleLarge,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            if (Platform.isAndroid)
-              ListTile(
-                leading: const Icon(Icons.android),
-                title: Text(l10n.open_in_app),
-                subtitle: Text(
-                  'twitter://user?screen_name=$name',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+      builder: (dialogContext) => AlertDialog(
+        icon: const Icon(Icons.open_in_new),
+        title: Text(l10n.visit),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (Platform.isAndroid)
+                  ListTile(
+                    leading: const Icon(Icons.android),
+                    title: Text(l10n.open_in_app),
+                    subtitle: Text(
+                      'twitter://user?screen_name=$name',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    onTap: () async {
+                      Navigator.pop(dialogContext);
+                      final appUrl = Uri.parse(
+                        'twitter://user?screen_name=$name',
+                      );
+                      if (await canLaunchUrl(appUrl)) {
+                        await launchUrl(appUrl);
+                      }
+                    },
+                  ),
+                if (restId == null || restId.isEmpty)
+                  ListTile(
+                    leading: Image.asset(
+                      'assets/icon/icon_nobg.png',
+                      width: 24,
+                      height: 24,
+                      color: IconTheme.of(dialogContext).color,
+                      colorBlendMode: BlendMode.srcIn,
+                    ),
+                    title: Text(l10n.open_in_autonitor),
+                    subtitle: Text('@$name', overflow: TextOverflow.ellipsis),
+                    onTap: () {
+                      Navigator.pop(dialogContext);
+                      _openLocalUserProfile(name, l10n);
+                    },
+                  ),
+                ListTile(
+                  leading: const Icon(Icons.alternate_email),
+                  title: Text(l10n.browser_via_screen_name),
+                  subtitle: Text('@$name', overflow: TextOverflow.ellipsis),
+                  onTap: () {
+                    Navigator.pop(dialogContext);
+                    launchUrl(
+                      Uri.parse('https://x.com/$name'),
+                      mode: LaunchMode.externalApplication,
+                    );
+                  },
                 ),
-                onTap: () async {
-                  Navigator.pop(sheetContext);
-                  final appUrl = Uri.parse('twitter://user?screen_name=$name');
-                  if (await canLaunchUrl(appUrl)) {
-                    await launchUrl(appUrl);
-                  }
-                },
-              ),
-            if (restId == null || restId.isEmpty)
-              ListTile(
-                leading: Image.asset(
-                  'assets/icon/icon_nobg.png',
-                  width: 24,
-                  height: 24,
-                  color: IconTheme.of(sheetBodyContext).color,
-                  colorBlendMode: BlendMode.srcIn,
-                ),
-                title: Text(l10n.open_in_autonitor),
-                subtitle: Text('@$name', overflow: TextOverflow.ellipsis),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  _openLocalUserProfile(name, l10n);
-                },
-              ),
-            ListTile(
-              leading: const Icon(Icons.alternate_email),
-              title: Text(l10n.browser_via_screen_name),
-              subtitle: Text('@$name', overflow: TextOverflow.ellipsis),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                launchUrl(
-                  Uri.parse('https://x.com/$name'),
-                  mode: LaunchMode.externalApplication,
-                );
-              },
+                if (restId != null && restId.isNotEmpty)
+                  ListTile(
+                    leading: const Icon(Icons.fingerprint),
+                    title: Text(l10n.browser_via_rest_id),
+                    subtitle: Text(
+                      'ID: $restId',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    onTap: () {
+                      Navigator.pop(dialogContext);
+                      launchUrl(
+                        Uri.parse('https://x.com/intent/user?user_id=$restId'),
+                        mode: LaunchMode.externalApplication,
+                      );
+                    },
+                  ),
+              ],
             ),
-            if (restId != null && restId.isNotEmpty)
-              ListTile(
-                leading: const Icon(Icons.fingerprint),
-                title: Text(l10n.browser_via_rest_id),
-                subtitle: Text('ID: $restId', overflow: TextOverflow.ellipsis),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  launchUrl(
-                    Uri.parse('https://x.com/intent/user?user_id=$restId'),
-                    mode: LaunchMode.externalApplication,
-                  );
-                },
-              ),
-          ],
+          ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l10n.cancel),
+          ),
+        ],
       ),
     );
   }

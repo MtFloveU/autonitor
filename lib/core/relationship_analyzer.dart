@@ -6,6 +6,7 @@ import 'network_data_fetcher.dart';
 import '../services/database.dart';
 import '../services/twitter_api_service.dart';
 import '../repositories/account_repository.dart';
+import '../models/sync_progress.dart';
 
 const String kChangeTypeProfileUpdate = 'profile_update';
 typedef LogCallback = void Function(String message);
@@ -92,10 +93,11 @@ class RelationshipAnalyzer {
   final String _ownerCookie;
   final LogCallback _log;
   final Future<void> Function() _checkPauseCallback;
-  final XClientTransactionService _xctService;
+  final XClientTransactionService? _xctService;
   final String _apiRequestMode;
   final String? _cffiUrl;
   final String? _cffiApiKey;
+  final SyncProgressCallback? _onProgress;
 
   RelationshipAnalyzer({
     required TwitterApiService apiServiceGql,
@@ -104,10 +106,11 @@ class RelationshipAnalyzer {
     required String ownerCookie,
     required LogCallback log,
     required Future<void> Function() checkPauseCallback,
-    required XClientTransactionService xctService,
+    XClientTransactionService? xctService,
     required String apiRequestMode,
     String? cffiUrl,
     String? cffiApiKey,
+    SyncProgressCallback? onProgress,
   }) : _apiServiceGql = apiServiceGql,
        _accountRepository = accountRepository,
        _ownerId = ownerId,
@@ -117,7 +120,8 @@ class RelationshipAnalyzer {
        _xctService = xctService,
        _apiRequestMode = apiRequestMode,
        _cffiUrl = cffiUrl,
-       _cffiApiKey = cffiApiKey;
+       _cffiApiKey = cffiApiKey,
+       _onProgress = onProgress;
 
   Future<RelationshipAnalysisResult> analyze({
     required Map<String, FollowUser> oldRelationsMap,
@@ -132,9 +136,17 @@ class RelationshipAnalyzer {
     final Set<String> keptIds = newIds.intersection(oldIds);
     final Set<String> realRemovedIds = {};
 
-    int processedCount = 0;
+    var processedCount = 0;
+    _onProgress?.call(
+      SyncProgress(
+        stage: SyncStage.analyzingChanges,
+        step: SyncStep.checkingRemovedRelations,
+        completedItems: 0,
+        totalItems: rawRemovedIds.length,
+      ),
+    );
     for (final id in rawRemovedIds) {
-      if (processedCount++ % 50 == 0) await _checkPauseCallback();
+      if (processedCount % 50 == 0) await _checkPauseCallback();
       final oldUser = oldRelationsMap[id];
       bool skip =
           (oldUser != null && !oldUser.isFollower && !oldUser.isFollowing);
@@ -148,9 +160,21 @@ class RelationshipAnalyzer {
           if (status == 'suspended' || status == 'deactivated') skip = true;
         } catch (e) {
           _log("Error parsing JSON for user $id: $e");
+          throw FormatException('Invalid stored JSON for user $id: $e');
         }
       }
       if (!skip) realRemovedIds.add(id);
+      processedCount++;
+      if (processedCount == rawRemovedIds.length || processedCount % 50 == 0) {
+        _onProgress?.call(
+          SyncProgress(
+            stage: SyncStage.analyzingChanges,
+            step: SyncStep.checkingRemovedRelations,
+            completedItems: processedCount,
+            totalItems: rawRemovedIds.length,
+          ),
+        );
+      }
     }
 
     _log(
@@ -222,10 +246,13 @@ class RelationshipAnalyzer {
     await _checkPauseCallback();
     try {
       final queryId = _accountRepository.getCurrentQueryId('UsersByRestIds');
-      final transactionId = _xctService.generateTransactionId(
+      final transactionId = _xctService?.generateTransactionId(
         method: "GET",
         url: 'https://api.x.com/graphql/$queryId/UsersByRestIds',
       );
+      if (transactionId == null) {
+        _log('Transaction ID unavailable; using UsersByRestIds without it.');
+      }
       final List<String> idList = ids.toList();
       final Map<String, dynamic> gqlJson = await _apiServiceGql
           .getUsersByRestIds(
@@ -297,9 +324,18 @@ class RelationshipAnalyzer {
     }
 
     final Set<String> potentialRestrictedIds = {};
-    int loopCounter = 0;
+    var loopCounter = 0;
+    final comparisonTotal = keptIds.length * 2;
+    _onProgress?.call(
+      SyncProgress(
+        stage: SyncStage.analyzingChanges,
+        step: SyncStep.comparingProfiles,
+        completedItems: 0,
+        totalItems: comparisonTotal,
+      ),
+    );
     for (final keptId in keptIds) {
-      if (loopCounter++ % 100 == 0) await _checkPauseCallback();
+      if (loopCounter % 100 == 0) await _checkPauseCallback();
 
       final oldRel = oldRelationsMap[keptId];
       final newUser = networkData.uniqueUsers[keptId]!;
@@ -356,6 +392,7 @@ class RelationshipAnalyzer {
           }
         } catch (e) {
           _log("Profile compare error $keptId: $e");
+          throw FormatException('Invalid stored JSON for user $keptId: $e');
         }
       }
 
@@ -364,6 +401,17 @@ class RelationshipAnalyzer {
           newUser.followingCount == 0 &&
           newUser.followersCount > 0) {
         potentialRestrictedIds.add(keptId);
+      }
+      loopCounter++;
+      if (loopCounter == keptIds.length || loopCounter % 100 == 0) {
+        _onProgress?.call(
+          SyncProgress(
+            stage: SyncStage.analyzingChanges,
+            step: SyncStep.comparingProfiles,
+            completedItems: loopCounter,
+            totalItems: comparisonTotal,
+          ),
+        );
       }
     }
 
@@ -406,6 +454,7 @@ class RelationshipAnalyzer {
     });
 
     final Map<String, String> keptStatusUpdates = {};
+    var statusLoopCounter = 0;
     for (final keptId in keptIds) {
       final oldRel = oldRelationsMap[keptId];
       final wasFollower = oldRel?.isFollower ?? false;
@@ -420,7 +469,10 @@ class RelationshipAnalyzer {
           final Map<String, dynamic> j = jsonDecode(oldRel!.latestRawJson!);
           oldStatus = j['status'] ?? 'normal';
           oldKeptStatus = j['kept_ids_status'] ?? 'normal';
-        } catch (_) {}
+        } catch (e) {
+          _log('Error parsing JSON for user $keptId: $e');
+          throw FormatException('Invalid stored JSON for user $keptId: $e');
+        }
       }
       final String currentStatus = restrictedChecks[keptId] ?? 'normal';
       final changeType = classifyKeptRelationshipChange(
@@ -447,6 +499,17 @@ class RelationshipAnalyzer {
             changeType != 'new_followers_following') {
           keptStatusUpdates[keptId] = changeType;
         }
+      }
+      statusLoopCounter++;
+      if (statusLoopCounter == keptIds.length || statusLoopCounter % 100 == 0) {
+        _onProgress?.call(
+          SyncProgress(
+            stage: SyncStage.analyzingChanges,
+            step: SyncStep.comparingProfiles,
+            completedItems: keptIds.length + statusLoopCounter,
+            totalItems: comparisonTotal,
+          ),
+        );
       }
     }
 

@@ -15,7 +15,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get app_title => 'Autonitor';
 
   @override
-  String get app_description => '一个优于付费替代品的自由开源 Twitter 关注者分析应用。';
+  String get app_description => '一个干翻要钱软件的自由开源 Twitter 关注者分析应用喵。';
 
   @override
   String get settings => '设置';
@@ -105,13 +105,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get new_followers_following => '新增关注';
 
   @override
-  String get empty_list_message => '列表为空';
+  String get empty_list_message => '列表是空的呜呜';
 
   @override
   String get switch_account => '切换账号';
 
   @override
-  String get run => '同步';
+  String get run => '同步喵';
 
   @override
   String get choose_login_method => '选择登录方式';
@@ -128,7 +128,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get im_logged_in => '我已登录';
+  String get im_logged_in => '咱登录了';
 
   @override
   String get cancel => '取消';
@@ -137,7 +137,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get ok => '确定';
 
   @override
-  String get account_added_successfully => '账号添加成功！';
+  String get account_added_successfully => '账号添加成功耶！';
 
   @override
   String get saving_account => '正在保存账号...';
@@ -164,7 +164,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get no_accounts_added => '未添加账号';
 
   @override
-  String get login_first_description => '请至少添加一个账号以继续';
+  String get login_first_description => '至少添加一个账号以继续哦';
 
   @override
   String get log_in => '登录';
@@ -174,14 +174,14 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String confirm_delete_account(Object accountId) {
-    return '您确定要删除账号 $accountId 吗？此操作无法撤销。删除账号将永久移除其所有关联数据（历史记录、关注者/关注列表等）。如果您只想更新 Cookie，请直接重新添加该账号。';
+    return '泥确定要删除账号 $accountId 嘛？操作无法撤销的呢...删除账号将永久移除所有关联数据（历史记录、关注者/关注列表等）。如果泥只想更新 Cookie，直接直接重新添加账号就好啦。';
   }
 
   @override
   String get copy => '复制';
 
   @override
-  String get copied_to_clipboard => '已复制到剪贴板！';
+  String get copied_to_clipboard => '已复制到剪贴板了哦！';
 
   @override
   String get no_json_data_available => '无 JSON 数据';
@@ -193,10 +193,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get recovered => '回归';
 
   @override
-  String get failed_to_load_user_list => '加载用户列表失败';
+  String get failed_to_load_user_list => '加载用户列表失败呜呜';
 
   @override
-  String get no_users_in_this_category => '列表为空';
+  String get no_users_in_this_category => '列表是空的';
 
   @override
   String user_not_found(String screenName) {
@@ -237,6 +237,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get save_banner_history => '保存横幅';
+
+  @override
+  String get media_save_scope => '媒体保存范围';
+
+  @override
+  String get media_save_all => '全部账号';
+
+  @override
+  String get media_save_following_only => '仅我关注的账号';
+
+  @override
+  String get media_save_mutual_only => '仅互关账号';
 
   @override
   String get avatar_quality => '质量';
@@ -564,7 +576,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get account_suspended => '账号已冻结';
 
   @override
-  String get account_suspended_description => '此账号已被 Twitter 冻结。';
+  String get account_suspended_description => '好坏！此账号已被 Twitter 冻结。';
 
   @override
   String get account_deactivated => '账号已注销';
@@ -609,7 +621,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get comfirm_stop_sync_title => '确定要停止同步嘛？';
 
   @override
-  String get comfirm_stop_sync_text => '停止同步将取消所有正在进行的数据获取操作，本次同步不会保存任何数据。';
+  String get comfirm_stop_sync_text => '停止同步将取消所有正在进行的数据获取操作，本次同步不会保存任何数据的。';
 
   @override
   String get paused => '已暂停';
@@ -655,6 +667,264 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get enable_new_data_fetching_strategy => '启用新的数据获取策略';
+
+  @override
+  String get backup_and_restore => '备份与还原';
+
+  @override
+  String get backup => '备份';
+
+  @override
+  String get restore => '还原';
+
+  @override
+  String get backup_successful => '备份成功';
+
+  @override
+  String backup_failed(String error) {
+    return '备份失败: $error';
+  }
+
+  @override
+  String get restore_successful => '还原成功';
+
+  @override
+  String restore_failed(String error) {
+    return '还原失败: $error';
+  }
+
+  @override
+  String get backup_config => '备份配置文件 (.json)';
+
+  @override
+  String get backup_database => '备份数据库 (.db)';
+
+  @override
+  String get backup_medias => '备份媒体文件 (.zip)';
+
+  @override
+  String get backup_all => '备份所有数据 (.zip)';
+
+  @override
+  String get restore_config => '恢复配置';
+
+  @override
+  String get restore_database => '恢复数据库';
+
+  @override
+  String get restore_medias => '恢复媒体文件';
+
+  @override
+  String get restore_all => '恢复所有数据';
+
+  @override
+  String get backup_preparing => '正在准备备份…';
+
+  @override
+  String backup_processing_file(String fileName) {
+    return '正在处理：$fileName';
+  }
+
+  @override
+  String get backup_collecting_files => '正在收集文件…';
+
+  @override
+  String backup_progress(int completed, int total) {
+    return '$completed / $total';
+  }
+
+  @override
+  String get backup_cancelling => '正在取消备份…';
+
+  @override
+  String get backup_cancelled => '备份已取消';
+
+  @override
+  String get restored_account_cookie_required => '此恢复的账号需要重新填写 Cookie 才能使用。';
+
+  @override
+  String get restore_preparing => '正在准备恢复…';
+
+  @override
+  String restore_extracting_file(String fileName) {
+    return '正在解压：$fileName';
+  }
+
+  @override
+  String restore_progress(int completed, int total) {
+    return '$completed / $total';
+  }
+
+  @override
+  String get restore_validating_database => '正在校验数据库…';
+
+  @override
+  String get restore_importing_database => '正在导入数据库…';
+
+  @override
+  String get restore_replacing_media => '正在恢复媒体文件…';
+
+  @override
+  String get sync_overall_progress => '总体进度';
+
+  @override
+  String get sync_step_progress => '当前步骤';
+
+  @override
+  String get sync_show_logs => '展开诊断日志';
+
+  @override
+  String get sync_logs_empty => '暂时没有诊断日志';
+
+  @override
+  String get sync_stage_preparing => '正在准备同步';
+
+  @override
+  String get sync_stage_refreshing_profile => '正在刷新资料';
+
+  @override
+  String get sync_stage_initializing_services => '正在初始化服务';
+
+  @override
+  String get sync_stage_loading_existing_data => '正在加载已有数据';
+
+  @override
+  String get sync_stage_fetching_network => '正在获取关系数据';
+
+  @override
+  String get sync_stage_analyzing_changes => '正在分析变更';
+
+  @override
+  String get sync_stage_downloading_media => '正在下载媒体';
+
+  @override
+  String get sync_stage_saving_results => '正在保存结果';
+
+  @override
+  String get sync_stage_finalizing => '正在完成同步';
+
+  @override
+  String get sync_stage_completed => '同步完成';
+
+  @override
+  String get sync_stage_failed => '同步失败';
+
+  @override
+  String get sync_stage_stopped => '同步已停止';
+
+  @override
+  String sync_accounts_processed(int count, int page) {
+    return '已获取 $count 个账号 · 第 $page 页';
+  }
+
+  @override
+  String get sync_step_generating_run_id => '正在创建同步标识';
+
+  @override
+  String get sync_step_refreshing_owner_profile => '正在更新账号资料';
+
+  @override
+  String get sync_step_initializing_transaction_id => '正在准备请求认证';
+
+  @override
+  String get sync_step_loading_query_ids => '正在加载请求定义';
+
+  @override
+  String get sync_step_loading_existing_relations => '正在读取已保存关系';
+
+  @override
+  String get sync_step_fetching_followers => '正在获取关注者';
+
+  @override
+  String get sync_step_fetching_following => '正在获取正在关注';
+
+  @override
+  String get sync_step_enriching_profiles => '正在加载资料详情';
+
+  @override
+  String get sync_step_checking_removed_relations => '正在检查已移除关系';
+
+  @override
+  String get sync_step_comparing_profiles => '正在比较已保存资料';
+
+  @override
+  String get sync_step_checking_media => '正在检查已保存媒体';
+
+  @override
+  String get sync_step_downloading_media => '正在下载媒体文件';
+
+  @override
+  String get sync_step_preparing_database_changes => '正在准备数据库变更';
+
+  @override
+  String get sync_step_writing_database_changes => '正在写入数据库变更';
+
+  @override
+  String get sync_step_recording_sync_log => '正在记录同步结果';
+
+  @override
+  String sync_rate_limit_waiting(String time, String remaining) {
+    return '请求受限，将于 $time 重试（剩余 $remaining）。';
+  }
+
+  @override
+  String get sync_rate_limit_ready => '限流已解除，可以继续同步。';
+
+  @override
+  String get sync_mode_title => '同步模式';
+
+  @override
+  String get sync_mode_fast => 'Fast';
+
+  @override
+  String get sync_mode_fast_description => '关注者使用 V1，正在关注使用 GraphQL。';
+
+  @override
+  String get sync_mode_expert => 'Expert';
+
+  @override
+  String get sync_mode_expert_description => '两个列表均使用 V1，然后加载完整资料。';
+
+  @override
+  String get sync_mode_fastest => 'Fastest';
+
+  @override
+  String get sync_mode_fastest_description => '两个列表均使用 V1，不额外加载资料。';
+
+  @override
+  String get sync_mode_requires_curl_cffi => '需要在 API 请求设置中选择 curl_cffi。';
+
+  @override
+  String get chart_chronological => '由早到晚';
+
+  @override
+  String get chart_time_all => '全部';
+
+  @override
+  String get chart_time_7d => '7 天';
+
+  @override
+  String get chart_time_30d => '30 天';
+
+  @override
+  String get chart_time_90d => '90 天';
+
+  @override
+  String get chart_time_1y => '1 年';
+
+  @override
+  String get chart_start => '起始';
+
+  @override
+  String get chart_latest => '最新';
+
+  @override
+  String get chart_change => '变化';
+
+  @override
+  String chart_data_points(int count) {
+    return '$count 个观测点';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -890,6 +1160,18 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get save_banner_history => '儲存橫幅';
+
+  @override
+  String get media_save_scope => '媒體儲存範圍';
+
+  @override
+  String get media_save_all => '全部帳戶';
+
+  @override
+  String get media_save_following_only => '僅我跟隨的帳戶';
+
+  @override
+  String get media_save_mutual_only => '僅互相跟隨賬戶';
 
   @override
   String get avatar_quality => '品質';
@@ -1308,4 +1590,262 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get enable_new_data_fetching_strategy => '啟用新的資料取得策略';
+
+  @override
+  String get backup_and_restore => '備份與還原';
+
+  @override
+  String get backup => '備份';
+
+  @override
+  String get restore => '還原';
+
+  @override
+  String get backup_successful => '備份成功';
+
+  @override
+  String backup_failed(String error) {
+    return '備份失敗: $error';
+  }
+
+  @override
+  String get restore_successful => '還原成功';
+
+  @override
+  String restore_failed(String error) {
+    return '還原失敗: $error';
+  }
+
+  @override
+  String get backup_config => '備份設定檔 (.json)';
+
+  @override
+  String get backup_database => '備份資料庫 (.db)';
+
+  @override
+  String get backup_medias => '備份媒體檔案 (.zip)';
+
+  @override
+  String get backup_all => '備份所有資料 (.zip)';
+
+  @override
+  String get restore_config => '還原設定';
+
+  @override
+  String get restore_database => '還原資料庫';
+
+  @override
+  String get restore_medias => '還原媒體檔案';
+
+  @override
+  String get restore_all => '還原所有資料';
+
+  @override
+  String get backup_preparing => '正在準備備份…';
+
+  @override
+  String backup_processing_file(String fileName) {
+    return '正在處理：$fileName';
+  }
+
+  @override
+  String get backup_collecting_files => '正在收集檔案…';
+
+  @override
+  String backup_progress(int completed, int total) {
+    return '$completed / $total';
+  }
+
+  @override
+  String get backup_cancelling => '正在取消備份…';
+
+  @override
+  String get backup_cancelled => '備份已取消';
+
+  @override
+  String get restored_account_cookie_required => '此還原的帳戶需要重新填寫 Cookie 才能使用。';
+
+  @override
+  String get restore_preparing => '正在準備還原…';
+
+  @override
+  String restore_extracting_file(String fileName) {
+    return '正在解壓縮：$fileName';
+  }
+
+  @override
+  String restore_progress(int completed, int total) {
+    return '$completed / $total';
+  }
+
+  @override
+  String get restore_validating_database => '正在驗證資料庫…';
+
+  @override
+  String get restore_importing_database => '正在匯入資料庫…';
+
+  @override
+  String get restore_replacing_media => '正在還原媒體檔案…';
+
+  @override
+  String get sync_overall_progress => '整體進度';
+
+  @override
+  String get sync_step_progress => '目前步驟';
+
+  @override
+  String get sync_show_logs => '展開診斷日誌';
+
+  @override
+  String get sync_logs_empty => '暫無診斷日誌';
+
+  @override
+  String get sync_stage_preparing => '正在準備同步';
+
+  @override
+  String get sync_stage_refreshing_profile => '正在重新整理資料';
+
+  @override
+  String get sync_stage_initializing_services => '正在初始化服務';
+
+  @override
+  String get sync_stage_loading_existing_data => '正在載入既有資料';
+
+  @override
+  String get sync_stage_fetching_network => '正在取得關係資料';
+
+  @override
+  String get sync_stage_analyzing_changes => '正在分析變更';
+
+  @override
+  String get sync_stage_downloading_media => '正在下載媒體';
+
+  @override
+  String get sync_stage_saving_results => '正在儲存結果';
+
+  @override
+  String get sync_stage_finalizing => '正在完成同步';
+
+  @override
+  String get sync_stage_completed => '同步完成';
+
+  @override
+  String get sync_stage_failed => '同步失敗';
+
+  @override
+  String get sync_stage_stopped => '同步已停止';
+
+  @override
+  String sync_accounts_processed(int count, int page) {
+    return '已取得 $count 個帳戶 · 第 $page 頁';
+  }
+
+  @override
+  String get sync_step_generating_run_id => '正在建立同步識別碼';
+
+  @override
+  String get sync_step_refreshing_owner_profile => '正在更新帳戶資料';
+
+  @override
+  String get sync_step_initializing_transaction_id => '正在準備請求驗證';
+
+  @override
+  String get sync_step_loading_query_ids => '正在載入請求定義';
+
+  @override
+  String get sync_step_loading_existing_relations => '正在讀取已儲存關係';
+
+  @override
+  String get sync_step_fetching_followers => '正在取得跟隨者';
+
+  @override
+  String get sync_step_fetching_following => '正在取得正在跟隨';
+
+  @override
+  String get sync_step_enriching_profiles => '正在載入資料詳情';
+
+  @override
+  String get sync_step_checking_removed_relations => '正在檢查已移除關係';
+
+  @override
+  String get sync_step_comparing_profiles => '正在比較已儲存資料';
+
+  @override
+  String get sync_step_checking_media => '正在檢查已儲存媒體';
+
+  @override
+  String get sync_step_downloading_media => '正在下載媒體檔案';
+
+  @override
+  String get sync_step_preparing_database_changes => '正在準備資料庫變更';
+
+  @override
+  String get sync_step_writing_database_changes => '正在寫入資料庫變更';
+
+  @override
+  String get sync_step_recording_sync_log => '正在記錄同步結果';
+
+  @override
+  String sync_rate_limit_waiting(String time, String remaining) {
+    return '請求受限，將於 $time 重試（剩餘 $remaining）。';
+  }
+
+  @override
+  String get sync_rate_limit_ready => '限流已解除，可以繼續同步。';
+
+  @override
+  String get sync_mode_title => '同步模式';
+
+  @override
+  String get sync_mode_fast => 'Fast';
+
+  @override
+  String get sync_mode_fast_description => '跟隨者使用 V1，正在跟隨使用 GraphQL。';
+
+  @override
+  String get sync_mode_expert => 'Expert';
+
+  @override
+  String get sync_mode_expert_description => '兩個列表均使用 V1，然後載入完整資料。';
+
+  @override
+  String get sync_mode_fastest => 'Fastest';
+
+  @override
+  String get sync_mode_fastest_description => '兩個列表均使用 V1，不額外載入資料。';
+
+  @override
+  String get sync_mode_requires_curl_cffi => '需要在 API 請求設定中選擇 curl_cffi。';
+
+  @override
+  String get chart_chronological => '由早到晚';
+
+  @override
+  String get chart_time_all => '全部';
+
+  @override
+  String get chart_time_7d => '7 天';
+
+  @override
+  String get chart_time_30d => '30 天';
+
+  @override
+  String get chart_time_90d => '90 天';
+
+  @override
+  String get chart_time_1y => '1 年';
+
+  @override
+  String get chart_start => '起始';
+
+  @override
+  String get chart_latest => '最新';
+
+  @override
+  String get chart_change => '變化';
+
+  @override
+  String chart_data_points(int count) {
+    return '$count 個觀測點';
+  }
 }

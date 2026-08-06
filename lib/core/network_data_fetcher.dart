@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/twitter_api_service.dart';
 import '../services/twitter_api_v1_service.dart';
 import '../models/twitter_user.dart';
+import '../models/sync_progress.dart';
 import '../utils/runid_generator.dart';
 
 typedef LogCallback = void Function(String message);
@@ -33,6 +34,8 @@ class NetworkDataFetcher {
   final String? _cffiApiKey;
   // [新增] 暂停回调
   final Future<void> Function() _checkPauseCallback;
+  final SyncProgressCallback? _onProgress;
+  final Future<void> Function(DateTime resetAt)? _waitForRateLimit;
 
   NetworkDataFetcher({
     required TwitterApiService apiServiceGql,
@@ -45,6 +48,8 @@ class NetworkDataFetcher {
     String? cffiApiKey,
     required LogCallback log,
     required Future<void> Function() checkPauseCallback, // [Init]
+    SyncProgressCallback? onProgress,
+    Future<void> Function(DateTime resetAt)? waitForRateLimit,
   }) : _apiServiceGql = apiServiceGql,
        _apiServiceV1 = apiServiceV1,
        _ref = ref,
@@ -54,9 +59,14 @@ class NetworkDataFetcher {
        _apiRequestMode = apiRequestMode,
        _cffiUrl = cffiUrl,
        _cffiApiKey = cffiApiKey,
-       _checkPauseCallback = checkPauseCallback;
+       _checkPauseCallback = checkPauseCallback,
+       _onProgress = onProgress,
+       _waitForRateLimit = waitForRateLimit;
 
-  Future<NetworkFetchResult> fetchAllNetworkData() async {
+  Future<NetworkFetchResult> fetchAllNetworkData({
+    int? followersTotal,
+    int? followingTotal,
+  }) async {
     final Map<String, TwitterUser> newUsers = {};
     final Set<String> newFollowerIds = {};
     final Set<String> newFollowingIds = {};
@@ -65,6 +75,7 @@ class NetworkDataFetcher {
     // Fetch Followers (V1)
     _log("Fetching new followers from API (V1)...");
     String? nextFollowerCursor;
+    var followerPage = 0;
     do {
       // [Check] 每次分页前检查暂停
       await _checkPauseCallback();
@@ -86,6 +97,16 @@ class NetworkDataFetcher {
         }
       }
       nextFollowerCursor = followerResult.nextCursor;
+      followerPage++;
+      _onProgress?.call(
+        SyncProgress(
+          stage: SyncStage.fetchingNetwork,
+          step: SyncStep.fetchingFollowers,
+          completedItems: newFollowerIds.length,
+          totalItems: followersTotal,
+          currentBatch: followerPage,
+        ),
+      );
       _log(
         "Fetched ${followerResult.users.length} followers, next cursor: $nextFollowerCursor",
       );
@@ -99,6 +120,7 @@ class NetworkDataFetcher {
     // Fetch Following (GQL)
     _log("Fetching new following from API (GQL)...");
     String? nextFollowingCursor = "-1";
+    var followingPage = 0;
     final followingQueryId = _ref
         .read(gqlQueryIdProvider.notifier)
         .getCurrentQueryIdForDisplay('Following');
@@ -113,18 +135,24 @@ class NetworkDataFetcher {
             method: "GET",
             url: "https://api.x.com/graphql/$followingQueryId/Following",
           );
-      _log("Generated Transaction ID for Following: $transactionId");
+      _log(
+        transactionId == null
+            ? 'Transaction ID unavailable for Following; sending request without it.'
+            : 'Generated Transaction ID for Following: $transactionId',
+      );
 
-      followingResult = (await _apiServiceGql.getFollowing(
-        _ownerId, // userId
-        _ownerCookie, // cookie
-        transactionId!,
-        nextFollowingCursor!, // cursor
-        followingQueryId,
-        apiRequestMode: _apiRequestMode,
-        cffiUrl: _cffiUrl,
-        cffiApiKey: _cffiApiKey,
-      ));
+      followingResult = await _retryAfterRateLimit(
+        () => _apiServiceGql.getFollowing(
+          _ownerId,
+          _ownerCookie,
+          transactionId,
+          nextFollowingCursor!,
+          followingQueryId,
+          apiRequestMode: _apiRequestMode,
+          cffiUrl: _cffiUrl,
+          cffiApiKey: _cffiApiKey,
+        ),
+      );
       for (var userJson in followingResult.users) {
         final userId =
             userJson['result']?['rest_id']?.toString() ??
@@ -136,6 +164,16 @@ class NetworkDataFetcher {
         }
       }
       nextFollowingCursor = followingResult.nextCursor;
+      followingPage++;
+      _onProgress?.call(
+        SyncProgress(
+          stage: SyncStage.fetchingNetwork,
+          step: SyncStep.fetchingFollowing,
+          completedItems: newFollowingIds.length,
+          totalItems: followingTotal,
+          currentBatch: followingPage,
+        ),
+      );
       _log(
         "Fetched ${followingResult.users.length} following, next cursor: $nextFollowingCursor",
       );
@@ -151,5 +189,18 @@ class NetworkDataFetcher {
       followerIds: newFollowerIds,
       followingIds: newFollowingIds,
     );
+  }
+
+  Future<T> _retryAfterRateLimit<T>(Future<T> Function() request) async {
+    while (true) {
+      try {
+        return await request();
+      } on GraphQlRateLimitException catch (error) {
+        final resetAt = error.resetAt;
+        if (resetAt == null || _waitForRateLimit == null) rethrow;
+        _log('GQL rate limited. Waiting until $resetAt before retrying.');
+        await _waitForRateLimit(resetAt);
+      }
+    }
   }
 }

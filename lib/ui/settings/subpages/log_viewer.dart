@@ -18,23 +18,61 @@ class LogViewerPage extends ConsumerWidget {
           Expanded(
             child: Container(
               margin: const EdgeInsets.all(16),
-              width: double.maxFinite,
+              clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
               ),
-              child: SingleChildScrollView(
-                reverse: true,
-                padding: const EdgeInsets.all(12),
-                child: SelectableText(
-                  logText,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontFamily: 'monospace',
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
+              child: logs.isEmpty
+                  ? Center(
+                      child: Icon(
+                        Icons.article_outlined,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    )
+                  : Scrollbar(
+                      child: ListView.separated(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        itemCount: logs.length,
+                        separatorBuilder: (context, index) => Divider(
+                          height: 1,
+                          color: colorScheme.outlineVariant,
+                        ),
+                        itemBuilder: (context, index) => Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 9,
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                width: 34,
+                                child: Text(
+                                  '${index + 1}',
+                                  textAlign: TextAlign.right,
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: SelectableText(
+                                  logs[index],
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    height: 1.35,
+                                    fontFamily: 'monospace',
+                                    color: colorScheme.onSurface,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
             ),
           ),
           Padding(

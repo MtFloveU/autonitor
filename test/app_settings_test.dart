@@ -18,16 +18,16 @@ void main() {
       expect(updated.theme, ThemeColor.defaultThemeColor);
     });
 
-    test('copyWith updates locale while preserving data fetching strategy', () {
+    test('copyWith updates locale while preserving sync fetch mode', () {
       final original = AppSettings(
         locale: const Locale('en'),
-        enableDataFetchingStrategy: true,
+        syncFetchMode: SyncFetchMode.expert,
       );
 
       final updated = original.copyWith(locale: const Locale('zh', 'CN'));
 
       expect(updated.locale, const Locale('zh', 'CN'));
-      expect(updated.enableDataFetchingStrategy, isTrue);
+      expect(updated.syncFetchMode, SyncFetchMode.expert);
     });
 
     test('round-trips FastAPI settings through JSON', () {
@@ -45,13 +45,38 @@ void main() {
       expect(restored.fastApiApiKey, 'secret-token');
     });
 
-    test('round-trips data fetching strategy setting through JSON', () {
-      final settings = AppSettings(enableDataFetchingStrategy: true);
+    test('round-trips selected sync fetch mode through JSON', () {
+      final settings = AppSettings(syncFetchMode: SyncFetchMode.fastest);
 
       final json = settings.toJson();
       final restored = AppSettings.fromJson(json);
 
-      expect(restored.enableDataFetchingStrategy, isTrue);
+      expect(restored.syncFetchMode, SyncFetchMode.fastest);
+    });
+
+    test('falls back to Fast when curl_cffi is unavailable', () {
+      final settings = AppSettings(
+        apiRequestMode: 'dio',
+        syncFetchMode: SyncFetchMode.expert,
+      );
+
+      expect(settings.effectiveSyncFetchMode, SyncFetchMode.fast);
+    });
+
+    test('round-trips the media saving scope through JSON', () {
+      final settings = AppSettings(
+        mediaSaveScope: MediaSaveScope.followingOnly,
+      );
+
+      final restored = AppSettings.fromJson(settings.toJson());
+
+      expect(restored.mediaSaveScope, MediaSaveScope.followingOnly);
+    });
+
+    test('defaults an unknown media saving scope to all accounts', () {
+      final restored = AppSettings.fromJson({'mediaSaveScope': 'unknown'});
+
+      expect(restored.mediaSaveScope, MediaSaveScope.all);
     });
   });
 }

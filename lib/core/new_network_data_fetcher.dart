@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/twitter_api_service.dart';
 import '../services/twitter_api_v1_service.dart';
 import '../models/twitter_user.dart';
+import '../models/sync_progress.dart';
 import '../utils/runid_generator.dart';
 
 typedef LogCallback = void Function(String message);
@@ -34,6 +35,8 @@ class NewNetworkDataFetcher {
   final String? _cffiApiKey;
   // [新增] 暂停回调
   final Future<void> Function() _checkPauseCallback;
+  final SyncProgressCallback? _onProgress;
+  final Future<void> Function(DateTime resetAt)? _waitForRateLimit;
 
   NewNetworkDataFetcher({
     required TwitterApiService apiServiceGql,
@@ -46,6 +49,8 @@ class NewNetworkDataFetcher {
     String? cffiApiKey,
     required LogCallback log,
     required Future<void> Function() checkPauseCallback, // [Init]
+    SyncProgressCallback? onProgress,
+    Future<void> Function(DateTime resetAt)? waitForRateLimit,
   }) : _apiServiceGql = apiServiceGql,
        _apiServiceV1 = apiServiceV1,
        _ref = ref,
@@ -55,9 +60,15 @@ class NewNetworkDataFetcher {
        _apiRequestMode = apiRequestMode,
        _cffiUrl = cffiUrl,
        _cffiApiKey = cffiApiKey,
-       _checkPauseCallback = checkPauseCallback;
+       _checkPauseCallback = checkPauseCallback,
+       _onProgress = onProgress,
+       _waitForRateLimit = waitForRateLimit;
 
-  Future<NetworkFetchResult> fetchAllNetworkData() async {
+  Future<NetworkFetchResult> fetchAllNetworkData({
+    int? followersTotal,
+    int? followingTotal,
+    bool enrichProfiles = true,
+  }) async {
     final Map<String, TwitterUser> newUsers = {};
     final Set<String> newFollowerIds = {};
     final Set<String> newFollowingIds = {};
@@ -66,6 +77,7 @@ class NewNetworkDataFetcher {
     // Fetch Followers (V1)
     _log("Fetching new followers list from API (V1)...");
     String? nextFollowerCursor;
+    var followerPage = 0;
     do {
       // [Check] 每次分页前检查暂停
       await _checkPauseCallback();
@@ -87,6 +99,16 @@ class NewNetworkDataFetcher {
         }
       }
       nextFollowerCursor = followerResult.nextCursor;
+      followerPage++;
+      _onProgress?.call(
+        SyncProgress(
+          stage: SyncStage.fetchingNetwork,
+          step: SyncStep.fetchingFollowers,
+          completedItems: newFollowerIds.length,
+          totalItems: followersTotal,
+          currentBatch: followerPage,
+        ),
+      );
       _log(
         "Fetched ${followerResult.users.length} followers, next cursor: $nextFollowerCursor",
       );
@@ -100,6 +122,7 @@ class NewNetworkDataFetcher {
     // Fetch Following (GQL)
     _log("Fetching new following list from API (V1)...");
     String? nextFollowingCursor;
+    var followingPage = 0;
     do {
       // [Check] 每次分页前检查暂停
       await _checkPauseCallback();
@@ -121,6 +144,16 @@ class NewNetworkDataFetcher {
         }
       }
       nextFollowingCursor = followingResult.nextCursor;
+      followingPage++;
+      _onProgress?.call(
+        SyncProgress(
+          stage: SyncStage.fetchingNetwork,
+          step: SyncStep.fetchingFollowing,
+          completedItems: newFollowingIds.length,
+          totalItems: followingTotal,
+          currentBatch: followingPage,
+        ),
+      );
       _log(
         "Fetched ${followingResult.users.length} following, next cursor: $nextFollowingCursor",
       );
@@ -131,6 +164,14 @@ class NewNetworkDataFetcher {
       "Finished fetching following. Total unique users so far: ${newUsers.length}",
     );
 
+    if (!enrichProfiles) {
+      return NetworkFetchResult(
+        uniqueUsers: newUsers,
+        followerIds: newFollowerIds,
+        followingIds: newFollowingIds,
+      );
+    }
+
     List<String> allScreenNames = newUsers.values
         .map((user) => user.screenName ?? '')
         .where((name) => name.isNotEmpty)
@@ -139,6 +180,7 @@ class NewNetworkDataFetcher {
       "Fetched screen names. Starting to fetch profiles for ${allScreenNames.length} users...",
     );
     const int screenNamesChunkSize = 150;
+    var profileBatch = 0;
     for (int i = 0; i < allScreenNames.length; i += screenNamesChunkSize) {
       int end = min(i + screenNamesChunkSize, allScreenNames.length);
       List<String> batchNames = allScreenNames.sublist(i, end);
@@ -156,40 +198,50 @@ class NewNetworkDataFetcher {
             url:
                 "https://api.x.com/graphql/$usersByScreenNamesQueryId/UsersByScreenNames",
           );
-      _log("Generated Transaction ID for UsersByScreenNames: $transactionId");
-      Map<String, dynamic> userProfiles;
+      _log(
+        transactionId == null
+            ? 'Transaction ID unavailable for UsersByScreenNames; sending request without it.'
+            : 'Generated Transaction ID for UsersByScreenNames: $transactionId',
+      );
+      Map<String, dynamic>? userProfiles;
       try {
-        userProfiles = await _apiServiceGql.getUsersByScreenNames(
-          batchNames,
-          _ownerCookie,
-          usersByScreenNamesQueryId,
-          transactionId!,
-          apiRequestMode: _apiRequestMode,
-          cffiUrl: _cffiUrl,
-          cffiApiKey: _cffiApiKey,
+        userProfiles = await _retryAfterRateLimit(
+          () => _apiServiceGql.getUsersByScreenNames(
+            batchNames,
+            _ownerCookie,
+            usersByScreenNamesQueryId,
+            transactionId,
+            apiRequestMode: _apiRequestMode,
+            cffiUrl: _cffiUrl,
+            cffiApiKey: _cffiApiKey,
+          ),
         );
+      } on GraphQlRateLimitException {
+        // A rate limit must wait and retry the same GQL request, never fall
+        // back to V1 and risk parsing a different response shape.
+        rethrow;
       } catch (e) {
-        // 用户已在 V1 关系列表中解析；批量资料补全失败时保留该资料，
-        // 避免单个失败批次导致整个同步任务中断。
-        _log(
-          'Failed to fetch profile batch ${i ~/ screenNamesChunkSize + 1}: '
-          '$e. Keeping V1 user data for this batch.',
+        throw FormatException(
+          'GQL profile batch ${i ~/ screenNamesChunkSize + 1} failed: $e',
         );
-        continue;
-      }
-
-      // UsersByScreenNames 的响应结构为 data.users -> [{ result: ... }]。
-      // 使用完整的 GQL 用户资料覆盖前面从 V1 关系列表得到的简略资料。
-      final usersData = userProfiles['data']?['users'];
-      if (usersData is! List) {
-        _log('UsersByScreenNames returned no user list for this batch.');
-        continue;
       }
 
       int convertedCount = 0;
+      // UsersByScreenNames: data.users -> [{ result: ... }]. A malformed
+      // response is not replaced with placeholder values, because doing so
+      // silently erases profile fields from otherwise valid existing rows.
+      final usersData = userProfiles?['data']?['users'];
+      if (usersData is! List) {
+        throw const FormatException(
+          'UsersByScreenNames response does not contain a user list.',
+        );
+      }
+
       for (final profileJson in usersData) {
         if (profileJson is! Map) {
-          continue;
+          throw const FormatException(
+            'UsersByScreenNames contains an invalid user entry.',
+          );
         }
 
         final user = TwitterUser.fromGraphQLUsersByScreenNames(
@@ -197,7 +249,9 @@ class NewNetworkDataFetcher {
           currentRunId,
         );
         if (user.restId.isEmpty) {
-          continue;
+          throw const FormatException(
+            'UsersByScreenNames contains a user without a rest ID.',
+          );
         }
 
         newUsers[user.restId] = user;
@@ -207,6 +261,16 @@ class NewNetworkDataFetcher {
         'Converted $convertedCount user profiles in batch '
         '${i ~/ screenNamesChunkSize + 1}.',
       );
+      profileBatch++;
+      _onProgress?.call(
+        SyncProgress(
+          stage: SyncStage.fetchingNetwork,
+          step: SyncStep.enrichingProfiles,
+          completedItems: end,
+          totalItems: allScreenNames.length,
+          currentBatch: profileBatch,
+        ),
+      );
     }
 
     return NetworkFetchResult(
@@ -214,5 +278,18 @@ class NewNetworkDataFetcher {
       followerIds: newFollowerIds,
       followingIds: newFollowingIds,
     );
+  }
+
+  Future<T> _retryAfterRateLimit<T>(Future<T> Function() request) async {
+    while (true) {
+      try {
+        return await request();
+      } on GraphQlRateLimitException catch (error) {
+        final resetAt = error.resetAt;
+        if (resetAt == null || _waitForRateLimit == null) rethrow;
+        _log('GQL rate limited. Waiting until $resetAt before retrying.');
+        await _waitForRateLimit(resetAt);
+      }
+    }
   }
 }

@@ -241,6 +241,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get save_banner_history => 'Save Banner';
 
   @override
+  String get media_save_scope => 'Media Saving Scope';
+
+  @override
+  String get media_save_all => 'All Accounts';
+
+  @override
+  String get media_save_following_only => 'Accounts You Follow';
+
+  @override
+  String get media_save_mutual_only => 'Mutual Follows Only';
+
+  @override
   String get avatar_quality => 'Quality';
 
   @override
@@ -667,4 +679,272 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get enable_new_data_fetching_strategy =>
       'Enable new data fetching strategy';
+
+  @override
+  String get backup_and_restore => 'Backup & Restore';
+
+  @override
+  String get backup => 'Backup';
+
+  @override
+  String get restore => 'Restore';
+
+  @override
+  String get backup_successful => 'Backup successful';
+
+  @override
+  String backup_failed(String error) {
+    return 'Backup failed: $error';
+  }
+
+  @override
+  String get restore_successful => 'Restore successful';
+
+  @override
+  String restore_failed(String error) {
+    return 'Restore failed: $error';
+  }
+
+  @override
+  String get backup_config => 'Backup Configuration (.json)';
+
+  @override
+  String get backup_database => 'Backup Database (.db)';
+
+  @override
+  String get backup_medias => 'Backup Media Files (.zip)';
+
+  @override
+  String get backup_all => 'Backup All (.zip)';
+
+  @override
+  String get restore_config => 'Restore Configuration';
+
+  @override
+  String get restore_database => 'Restore Database';
+
+  @override
+  String get restore_medias => 'Restore Media Files';
+
+  @override
+  String get restore_all => 'Restore All';
+
+  @override
+  String get backup_preparing => 'Preparing backup...';
+
+  @override
+  String backup_processing_file(String fileName) {
+    return 'Processing: $fileName';
+  }
+
+  @override
+  String get backup_collecting_files => 'Collecting files...';
+
+  @override
+  String backup_progress(int completed, int total) {
+    return '$completed / $total';
+  }
+
+  @override
+  String get backup_cancelling => 'Cancelling backup...';
+
+  @override
+  String get backup_cancelled => 'Backup cancelled';
+
+  @override
+  String get restored_account_cookie_required =>
+      'This restored account needs a Cookie before it can be used.';
+
+  @override
+  String get restore_preparing => 'Preparing restore…';
+
+  @override
+  String restore_extracting_file(String fileName) {
+    return 'Extracting: $fileName';
+  }
+
+  @override
+  String restore_progress(int completed, int total) {
+    return '$completed / $total';
+  }
+
+  @override
+  String get restore_validating_database => 'Validating database…';
+
+  @override
+  String get restore_importing_database => 'Importing database…';
+
+  @override
+  String get restore_replacing_media => 'Restoring media files…';
+
+  @override
+  String get sync_overall_progress => 'Overall progress';
+
+  @override
+  String get sync_step_progress => 'Current step';
+
+  @override
+  String get sync_show_logs => 'Show diagnostic logs';
+
+  @override
+  String get sync_logs_empty => 'No diagnostic logs yet';
+
+  @override
+  String get sync_stage_preparing => 'Preparing sync';
+
+  @override
+  String get sync_stage_refreshing_profile => 'Refreshing profile';
+
+  @override
+  String get sync_stage_initializing_services => 'Initializing services';
+
+  @override
+  String get sync_stage_loading_existing_data => 'Loading existing data';
+
+  @override
+  String get sync_stage_fetching_network => 'Fetching network data';
+
+  @override
+  String get sync_stage_analyzing_changes => 'Analyzing changes';
+
+  @override
+  String get sync_stage_downloading_media => 'Downloading media';
+
+  @override
+  String get sync_stage_saving_results => 'Saving results';
+
+  @override
+  String get sync_stage_finalizing => 'Finalizing sync';
+
+  @override
+  String get sync_stage_completed => 'Sync complete';
+
+  @override
+  String get sync_stage_failed => 'Sync failed';
+
+  @override
+  String get sync_stage_stopped => 'Sync stopped';
+
+  @override
+  String sync_accounts_processed(int count, int page) {
+    return '$count accounts · page $page';
+  }
+
+  @override
+  String get sync_step_generating_run_id => 'Creating sync identifier';
+
+  @override
+  String get sync_step_refreshing_owner_profile => 'Updating account profile';
+
+  @override
+  String get sync_step_initializing_transaction_id =>
+      'Preparing request authentication';
+
+  @override
+  String get sync_step_loading_query_ids => 'Loading request definitions';
+
+  @override
+  String get sync_step_loading_existing_relations =>
+      'Reading saved relationships';
+
+  @override
+  String get sync_step_fetching_followers => 'Fetching followers';
+
+  @override
+  String get sync_step_fetching_following => 'Fetching following';
+
+  @override
+  String get sync_step_enriching_profiles => 'Loading profile details';
+
+  @override
+  String get sync_step_checking_removed_relations =>
+      'Checking removed relationships';
+
+  @override
+  String get sync_step_comparing_profiles => 'Comparing saved profiles';
+
+  @override
+  String get sync_step_checking_media => 'Checking saved media';
+
+  @override
+  String get sync_step_downloading_media => 'Downloading media files';
+
+  @override
+  String get sync_step_preparing_database_changes =>
+      'Preparing database changes';
+
+  @override
+  String get sync_step_writing_database_changes => 'Writing database changes';
+
+  @override
+  String get sync_step_recording_sync_log => 'Recording sync result';
+
+  @override
+  String sync_rate_limit_waiting(String time, String remaining) {
+    return 'Rate limited. Retrying at $time ($remaining remaining).';
+  }
+
+  @override
+  String get sync_rate_limit_ready =>
+      'Rate limit reset. Resume sync when ready.';
+
+  @override
+  String get sync_mode_title => 'Sync mode';
+
+  @override
+  String get sync_mode_fast => 'Fast';
+
+  @override
+  String get sync_mode_fast_description =>
+      'Followers via V1; following via GraphQL.';
+
+  @override
+  String get sync_mode_expert => 'Expert';
+
+  @override
+  String get sync_mode_expert_description =>
+      'Both lists via V1, then load complete profiles.';
+
+  @override
+  String get sync_mode_fastest => 'Fastest';
+
+  @override
+  String get sync_mode_fastest_description =>
+      'Both lists via V1 without profile enrichment.';
+
+  @override
+  String get sync_mode_requires_curl_cffi =>
+      'Requires curl_cffi in API request settings.';
+
+  @override
+  String get chart_chronological => 'Oldest to latest';
+
+  @override
+  String get chart_time_all => 'All';
+
+  @override
+  String get chart_time_7d => '7D';
+
+  @override
+  String get chart_time_30d => '30D';
+
+  @override
+  String get chart_time_90d => '90D';
+
+  @override
+  String get chart_time_1y => '1Y';
+
+  @override
+  String get chart_start => 'Start';
+
+  @override
+  String get chart_latest => 'Latest';
+
+  @override
+  String get chart_change => 'Change';
+
+  @override
+  String chart_data_points(int count) {
+    return '$count observations';
+  }
 }

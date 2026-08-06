@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:drift/drift.dart';
 
 import 'package:autonitor/models/twitter_user.dart';
+import 'package:autonitor/models/app_settings.dart';
 import 'package:autonitor/core/media_processor.dart';
 import 'package:autonitor/core/network_data_fetcher.dart';
 import 'package:autonitor/core/relationship_analyzer.dart';
@@ -43,6 +44,7 @@ class DatabaseUpdater {
     required MediaProcessingResult mediaResult,
     required Map<String, FollowUser> oldRelationsMap,
     required String currentRunId,
+    required SyncFetchMode syncFetchMode,
   }) async {
     // 在 isolate 中准备数据（包含 changedUserIds）
     final prepResult = await compute(
@@ -54,6 +56,7 @@ class DatabaseUpdater {
         mediaResult: mediaResult,
         oldRelationsMap: oldRelationsMap,
         currentRunId: currentRunId,
+        syncFetchMode: syncFetchMode,
       ),
     );
 
@@ -117,6 +120,7 @@ class _PrepareDataParams {
   final MediaProcessingResult mediaResult;
   final Map<String, FollowUser> oldRelationsMap;
   final String currentRunId;
+  final SyncFetchMode syncFetchMode;
 
   _PrepareDataParams({
     required this.ownerId,
@@ -125,6 +129,7 @@ class _PrepareDataParams {
     required this.mediaResult,
     required this.oldRelationsMap,
     required this.currentRunId,
+    required this.syncFetchMode,
   });
 }
 
@@ -225,6 +230,21 @@ _PrepareDataResult _prepareDatabaseData(_PrepareDataParams params) {
     }
 
     final oldRel = params.oldRelationsMap[id];
+
+    // Fast and Fastest do not guarantee expert-only profile metadata for
+    // every relationship. Keep previously collected values when absent; an
+    // Expert response may still deliberately clear or change them.
+    if (params.syncFetchMode != SyncFetchMode.expert &&
+        oldRel?.latestRawJson != null &&
+        params.networkData.uniqueUsers.containsKey(id)) {
+      try {
+        newUser = newUser.retainUnavailableExpertFieldsFrom(
+          TwitterUser.fromJson(jsonDecode(oldRel!.latestRawJson!)),
+        );
+      } catch (_) {
+        // A malformed historical snapshot must never block a sync.
+      }
+    }
 
     final newJson = jsonEncode(newUser.toJson());
     final diff = oldRel != null

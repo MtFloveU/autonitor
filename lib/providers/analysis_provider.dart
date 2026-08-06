@@ -16,6 +16,8 @@ import 'auth_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/image_history_service.dart';
 import '../repositories/account_repository.dart';
+import '../models/sync_progress.dart';
+import '../models/app_settings.dart';
 import 'package:autonitor/l10n/app_localizations.dart';
 
 // --- 1. Define Status Enum ---
@@ -34,8 +36,15 @@ enum AnalysisStatus {
 class AnalysisState {
   final AnalysisStatus status;
   final List<String> log;
+  final SyncProgress? progress;
+  final DateTime? rateLimitResetAt;
 
-  AnalysisState({this.status = AnalysisStatus.idle, this.log = const []});
+  AnalysisState({
+    this.status = AnalysisStatus.idle,
+    this.log = const [],
+    this.progress,
+    this.rateLimitResetAt,
+  });
 
   // 辅助 getter：是否处于“活跃”处理状态（不包含完成或失败）
   // 用于判断是否需要阻止返回、显示停止按钮等
@@ -45,8 +54,18 @@ class AnalysisState {
       status == AnalysisStatus.paused ||
       status == AnalysisStatus.stopping;
 
-  AnalysisState copyWith({AnalysisStatus? status, List<String>? log}) {
-    return AnalysisState(status: status ?? this.status, log: log ?? this.log);
+  AnalysisState copyWith({
+    AnalysisStatus? status,
+    List<String>? log,
+    SyncProgress? progress,
+    DateTime? rateLimitResetAt,
+  }) {
+    return AnalysisState(
+      status: status ?? this.status,
+      log: log ?? this.log,
+      progress: progress ?? this.progress,
+      rateLimitResetAt: rateLimitResetAt ?? this.rateLimitResetAt,
+    );
   }
 }
 
@@ -161,14 +180,49 @@ class AnalysisService extends StateNotifier<AnalysisState> {
     }
   }
 
+  Future<void> _waitForRateLimit(DateTime resetAt) async {
+    state = AnalysisState(
+      status: state.status,
+      log: state.log,
+      progress: state.progress,
+      rateLimitResetAt: resetAt,
+    );
+    while (true) {
+      await _workerCheckPoint();
+      final remaining = resetAt.difference(DateTime.now());
+      if (remaining <= Duration.zero) break;
+      await Future<void>.delayed(
+        remaining > const Duration(seconds: 1)
+            ? const Duration(seconds: 1)
+            : remaining,
+      );
+      // Trigger a UI refresh for the visible countdown without changing the
+      // active operation or resuming the blocked request early.
+      state = AnalysisState(
+        status: state.status,
+        log: state.log,
+        progress: state.progress,
+        rateLimitResetAt: resetAt,
+      );
+    }
+    state = AnalysisState(
+      status: state.status,
+      log: state.log,
+      progress: state.progress,
+    );
+  }
+
   // 重置状态（UI返回时调用）
   void resetState() {
     if (!state.isProcessing) {
-      state = state.copyWith(status: AnalysisStatus.idle, log: []);
+      state = AnalysisState();
     }
   }
 
-  Future<void> runAnalysis(Account accountToProcess) async {
+  Future<void> runAnalysis(
+    Account accountToProcess,
+    SyncFetchMode syncFetchMode,
+  ) async {
     final context = navigatorKey.currentContext;
     if (context == null) return;
     final l10n = AppLocalizations.of(context)!;
@@ -197,10 +251,20 @@ class AnalysisService extends StateNotifier<AnalysisState> {
 
     // --- Init ---
     _pauseLock = null;
-    state = state.copyWith(status: AnalysisStatus.running, log: []);
+    state = AnalysisState(
+      status: AnalysisStatus.running,
+      progress: const SyncProgress(stage: SyncStage.preparing),
+    );
 
     void logCallback(String message) {
-      state = state.copyWith(log: [...state.log, message]);
+      // Keep diagnostics available without allowing a long-running sync to
+      // repeatedly copy an unbounded list and stall the visual progress UI.
+      final log = [...state.log, message];
+      state = state.copyWith(log: log.length > 500 ? log.sublist(1) : log);
+    }
+
+    void progressCallback(SyncProgress progress) {
+      state = state.copyWith(progress: progress);
     }
 
     logCallback('Initializing DataProcessor...');
@@ -218,9 +282,12 @@ class AnalysisService extends StateNotifier<AnalysisState> {
         ownerAccount: accountToProcess,
         logCallback: logCallback,
         settings: settings,
+        syncFetchMode: syncFetchMode,
         imageService: imageService,
         accountRepository: accountRepository,
         checkPauseCallback: _workerCheckPoint,
+        onProgress: progressCallback,
+        waitForRateLimit: _waitForRateLimit,
       );
 
       await dataProcessor.runFullProcess();
@@ -229,7 +296,10 @@ class AnalysisService extends StateNotifier<AnalysisState> {
       logCallback('Process finished successfully.');
 
       // [Change] 成功完成，状态设为 completed
-      state = state.copyWith(status: AnalysisStatus.completed);
+      state = state.copyWith(
+        status: AnalysisStatus.completed,
+        progress: const SyncProgress(stage: SyncStage.completed),
+      );
 
       await _showStatusNotification(
         l10n.sync_notification_title,
@@ -240,7 +310,10 @@ class AnalysisService extends StateNotifier<AnalysisState> {
     } catch (e, s) {
       if (e.toString().contains("User stopped analysis")) {
         logCallback('Analysis stopped by user.');
-        state = state.copyWith(status: AnalysisStatus.stopped);
+        state = state.copyWith(
+          status: AnalysisStatus.stopped,
+          progress: const SyncProgress(stage: SyncStage.stopped),
+        );
       } else {
         logCallback(
           '!!! PROCESS FAILED for account ${accountToProcess.id}: $e',
@@ -248,7 +321,10 @@ class AnalysisService extends StateNotifier<AnalysisState> {
         logger.e("Analysis process failed", error: e, stackTrace: s);
 
         // [Change] 失败，状态设为 failed
-        state = state.copyWith(status: AnalysisStatus.failed);
+        state = state.copyWith(
+          status: AnalysisStatus.failed,
+          progress: const SyncProgress(stage: SyncStage.failed),
+        );
 
         await _showStatusNotification(
           l10n.sync_notification_title,
@@ -264,7 +340,10 @@ class AnalysisService extends StateNotifier<AnalysisState> {
       }
 
       if (state.status == AnalysisStatus.stopping) {
-        state = state.copyWith(status: AnalysisStatus.stopped);
+        state = state.copyWith(
+          status: AnalysisStatus.stopped,
+          progress: const SyncProgress(stage: SyncStage.stopped),
+        );
       }
 
       if (Platform.isAndroid) {

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:autonitor/models/app_settings.dart';
 import 'package:autonitor/models/graphql_operation.dart';
 import 'package:autonitor/providers/x_client_transaction_provider.dart';
@@ -6,11 +8,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../providers/log_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../services/x_client_transaction_service.dart';
+import '../../services/backup_restore_service.dart';
+import '../../services/log_service.dart';
+import '../../main.dart';
 import '../../providers/graphql_queryid_provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:path/path.dart' as p;
 
 // 引入拆分后的各个部分
 part 'settings_widget.dart';
@@ -22,7 +30,7 @@ part 'subpages/graphql_path_page.dart';
 part 'subpages/log_viewer.dart';
 part 'subpages/xct_generator_page.dart';
 part 'subpages/settings_about_page.dart';
-part 'subpages/advanced_mode_page.dart';
+part 'subpages/back_restore_page.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -74,10 +82,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
-  void _openAdvancedModePage() {
+  void _openBackupRestorePage() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const AdvancedModePage()),
+      MaterialPageRoute(builder: (context) => const BackupRestorePage()),
     );
   }
 
@@ -128,7 +136,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 settings,
                 _remoteFastApiUrlController,
                 _fastApiApiKeyController,
-                _openAdvancedModePage,
               ),
 
               // 3. Storage Section
@@ -145,6 +152,16 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               _buildLogsSection(context, l10n, _openLogPage),
               // 5. About Section
               _buildSectionHeader(context, l10n.others),
+              ListTile(
+                leading: Icon(
+                  Icons.settings_backup_restore_outlined,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                title: Text(l10n.backup_and_restore),
+                onTap: () {
+                  _openBackupRestorePage();
+                },
+              ),
               ListTile(
                 leading: Icon(
                   Icons.info_outline,

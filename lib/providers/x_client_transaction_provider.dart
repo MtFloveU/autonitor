@@ -49,18 +49,22 @@ class TransactionIdNotifier extends Notifier<AsyncValue<String?>> {
     }
   }
 
-  /// 按需生成 ID (必须先调用 init())
+  /// 按需生成 ID。X 的网页引导资源会变化，无法生成时允许请求继续。
   Future<String?> generate({
     required String method,
     required String url,
   }) async {
     if (_service == null) {
-      // This should not happen if init() is called correctly in DataProcessor.
-      final errorMsg =
-          "TransactionIdNotifier.init() must be called before generate().";
-      logger.e(errorMsg);
-      state = AsyncError(errorMsg, StackTrace.current);
-      throw StateError(errorMsg);
+      try {
+        await init();
+      } catch (e, s) {
+        logger.w(
+          'X transaction ID unavailable; continuing without it: $e',
+          error: e,
+          stackTrace: s,
+        );
+        return null;
+      }
     }
 
     try {
@@ -71,10 +75,12 @@ class TransactionIdNotifier extends Notifier<AsyncValue<String?>> {
       logger.i('[XCT] Generated id: $id');
       return id; // The async keyword will wrap this in a Future.
     } catch (e, s) {
-      final errorMsg = "Failed to generate ID: $e";
-      state = AsyncError(errorMsg, s);
-      logger.e(errorMsg, error: e, stackTrace: s);
-      rethrow;
+      logger.w(
+        'Failed to generate transaction ID; continuing without it: $e',
+        error: e,
+        stackTrace: s,
+      );
+      return null;
     }
   }
 }

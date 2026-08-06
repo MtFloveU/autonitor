@@ -71,18 +71,28 @@ class JsonParseWorker {
   }
 
   void _handleMessageFromWorker(dynamic message) {
-    // expected: [id, List<Map<String,dynamic>>]
+    // expected: [id, List<Map<String,dynamic>>] or [id, {error: ...}]
     if (message is List && message.length == 2) {
       final id = message[0] as int;
-      final payload = message[1] as List<dynamic>;
       final completer = _completers.remove(id);
-      if (completer != null) {
-        // ensure proper typing
-        final typed = payload
-            .map((e) => Map<String, dynamic>.from(e as Map))
-            .toList();
-        completer.complete(typed);
+      if (completer == null) return;
+
+      final payload = message[1];
+      if (payload is Map && payload['error'] != null) {
+        completer.completeError(FormatException(payload['error'].toString()));
+        return;
       }
+      if (payload is! List) {
+        completer.completeError(
+          const FormatException('Invalid JSON parser worker response.'),
+        );
+        return;
+      }
+
+      final typed = payload
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+      completer.complete(typed);
     }
   }
 
@@ -119,8 +129,9 @@ void _isolateEntry(_IsolateInitMessage initMsg) {
         final jsonString = utf8.decode(bytes);
         final list = jsonDecode(jsonString) as List<dynamic>;
 
-        // For each item, parse the nested jsonString if present, inject local paths,
-        // and return a simple Map representing the final user JSON (or fallback minimal fields)
+        // Parse each persisted user snapshot. A damaged or absent snapshot is
+        // not replaced with synthetic fields: doing so creates misleading zero
+        // counts in analysis results.
         final List<Map<String, dynamic>> results = [];
 
         for (final raw in list) {
@@ -128,41 +139,35 @@ void _isolateEntry(_IsolateInitMessage initMsg) {
             raw as Map,
           );
           final String? nestedJson = item['jsonString'] as String?;
-          if (nestedJson != null && nestedJson.isNotEmpty) {
-            try {
-              final Map<String, dynamic> jsonMap = Map<String, dynamic>.from(
-                jsonDecode(nestedJson) as Map,
-              );
-              // inject local paths using snake_case keys the rest of your code expects
-              if (item['dbAvatarLocalPath'] != null) {
-                jsonMap['avatar_local_path'] = item['dbAvatarLocalPath'];
-              }
-              if (item['dbBannerLocalPath'] != null) {
-                jsonMap['banner_local_path'] = item['dbBannerLocalPath'];
-              }
-              results.add(jsonMap);
-              continue;
-            } catch (e) {
-              // fallthrough to fallback minimal map
-            }
+          if (nestedJson == null || nestedJson.isEmpty) {
+            throw FormatException(
+              'Missing persisted JSON for user ${item['userId']}.',
+            );
           }
-          // fallback minimal map if json absent/corrupted
-          results.add({
-            'restId': item['userId'],
-            'screenName': item['dbScreenName'],
-            'name': item['dbName'],
-            'avatarUrl': item['dbAvatarUrl'],
-            'avatarLocalPath': item['dbAvatarLocalPath'],
-            'bannerLocalPath': item['dbBannerLocalPath'],
-            'bio': item['dbBio'],
-          });
+          final decoded = jsonDecode(nestedJson);
+          if (decoded is! Map) {
+            throw FormatException(
+              'Persisted JSON for user ${item['userId']} is not an object.',
+            );
+          }
+          final jsonMap = Map<String, dynamic>.from(decoded);
+          // Inject local paths using snake_case keys the rest of the app expects.
+          if (item['dbAvatarLocalPath'] != null) {
+            jsonMap['avatar_local_path'] = item['dbAvatarLocalPath'];
+          }
+          if (item['dbBannerLocalPath'] != null) {
+            jsonMap['banner_local_path'] = item['dbBannerLocalPath'];
+          }
+          results.add(jsonMap);
         }
 
         // send back [id, results]
         replyPort.send([id, results]);
       } catch (e) {
-        // on unexpected error send empty list to avoid deadlock (you may prefer to send error)
-        replyPort.send([id, <Map<String, dynamic>>[]]);
+        replyPort.send([
+          id,
+          {'error': e.toString()},
+        ]);
       }
     }
   });

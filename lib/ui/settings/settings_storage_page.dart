@@ -51,7 +51,21 @@ Widget _buildStorageSection(
           ref.read(settingsProvider.notifier).updateSaveBannerHistory(newValue);
         },
       ),
-
+      _SettingsDropdownTile<MediaSaveScope>(
+        title: l10n.media_save_scope,
+        icon: Icons.group_outlined,
+        currentValue: settings.mediaSaveScope,
+        options: {
+          MediaSaveScope.all: l10n.media_save_all,
+          MediaSaveScope.followingOnly: l10n.media_save_following_only,
+          MediaSaveScope.mutualOnly: l10n.media_save_mutual_only,
+        },
+        onChanged: (value) {
+          if (value != null) {
+            ref.read(settingsProvider.notifier).updateMediaSaveScope(value);
+          }
+        },
+      ),
     ],
   );
 }

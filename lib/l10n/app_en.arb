@@ -5,179 +5,337 @@
     "description": "Label for the language setting"
   },
   "app_title": "Autonitor",
-  "@app_title": {},
+  "@app_title": {
+    "description": "Localized text for the app_title message."
+  },
   "app_description": "A FOSS Twitter follower analysis app that outperforms paid alternatives.",
   "@app_description": {
     "description": "Description of the app"
   },
   "settings": "Settings",
-  "@settings": {},
+  "@settings": {
+    "description": "Localized text for the settings message."
+  },
   "home": "Home",
-  "@home": {},
+  "@home": {
+    "description": "Localized text for the home message."
+  },
   "data": "Data",
-  "@data": {},
+  "@data": {
+    "description": "Localized text for the data message."
+  },
   "accounts": "Accounts",
-  "@accounts": {},
+  "@accounts": {
+    "description": "Localized text for the accounts message."
+  },
   "switchAccount": "Switch Account",
-  "@switchAccount": {},
+  "@switchAccount": {
+    "description": "Localized text for the switchAccount message."
+  },
   "followers": "Followers",
-  "@followers": {},
+  "@followers": {
+    "description": "Localized text for the followers message."
+  },
   "following": "Following",
-  "@following": {},
+  "@following": {
+    "description": "Localized text for the following message."
+  },
   "new_account": "Add/Update an account",
-  "@new_account": {},
+  "@new_account": {
+    "description": "Localized text for the new_account message."
+  },
   "view_cookie": "View Cookie",
-  "@view_cookie": {},
+  "@view_cookie": {
+    "description": "Localized text for the view_cookie message."
+  },
   "close": "Close",
-  "@close": {},
+  "@close": {
+    "description": "Localized text for the close message."
+  },
   "view_on_twitter": "View on Twitter",
-  "@view_on_twitter": {},
+  "@view_on_twitter": {
+    "description": "Localized text for the view_on_twitter message."
+  },
   "metadata": "Statistics",
-  "@metadata": {},
+  "@metadata": {
+    "description": "Localized text for the metadata message."
+  },
   "user_content": "User Content",
-  "@user_content": {},
+  "@user_content": {
+    "description": "Localized text for the user_content message."
+  },
   "pinned_tweet_id": "Pinned Tweet ID",
-  "@pinned_tweet_id": {},
+  "@pinned_tweet_id": {
+    "description": "Localized text for the pinned_tweet_id message."
+  },
   "tweets": "Tweets",
-  "@tweets": {},
+  "@tweets": {
+    "description": "Localized text for the tweets message."
+  },
   "media_count": "Media Count",
-  "@media_count": {},
+  "@media_count": {
+    "description": "Localized text for the media_count message."
+  },
   "likes": "Likes",
-  "@likes": {},
+  "@likes": {
+    "description": "Localized text for the likes message."
+  },
   "listed_count": "Listed Count",
-  "@listed_count": {},
+  "@listed_count": {
+    "description": "Localized text for the listed_count message."
+  },
   "identity": "Identity-related",
-  "@identity": {},
+  "@identity": {
+    "description": "Localized text for the identity message."
+  },
   "back": "Back",
-  "@back": {},
+  "@back": {
+    "description": "Localized text for the back message."
+  },
   "history": "History",
-  "@history": {},
+  "@history": {
+    "description": "Localized text for the history message."
+  },
   "suspended": "Suspended",
-  "@suspended": {},
+  "@suspended": {
+    "description": "Localized text for the suspended message."
+  },
   "deactivated": "Deactivated",
-  "@deactivated": {},
+  "@deactivated": {
+    "description": "Localized text for the deactivated message."
+  },
   "profile_updates": "Profile Updates",
-  "@profile_updates": {},
+  "@profile_updates": {
+    "description": "Localized text for the profile_updates message."
+  },
   "normal_unfollowed": "Normal Unfollowed",
-  "@normal_unfollowed": {},
+  "@normal_unfollowed": {
+    "description": "Localized text for the normal_unfollowed message."
+  },
   "be_followed_back": "Be Followed Back",
-  "@be_followed_back": {},
+  "@be_followed_back": {
+    "description": "Localized text for the be_followed_back message."
+  },
   "mutual_unfollowed": "Mutual Unfollowed",
-  "@mutual_unfollowed": {},
+  "@mutual_unfollowed": {
+    "description": "Localized text for the mutual_unfollowed message."
+  },
   "oneway_unfollowed": "One-way Unfollowed",
-  "@oneway_unfollowed": {},
+  "@oneway_unfollowed": {
+    "description": "Localized text for the oneway_unfollowed message."
+  },
   "new_followers_following": "New Followers & Following",
-  "@new_followers_following": {},
+  "@new_followers_following": {
+    "description": "Localized text for the new_followers_following message."
+  },
   "empty_list_message": "The list is empty",
-  "@empty_list_message": {},
+  "@empty_list_message": {
+    "description": "Localized text for the empty_list_message message."
+  },
   "switch_account": "Switch Account",
-  "@switch_account": {},
+  "@switch_account": {
+    "description": "Localized text for the switch_account message."
+  },
   "run": "Sync",
-  "@run": {},
+  "@run": {
+    "description": "Localized text for the run message."
+  },
   "choose_login_method": "Choose Login Method",
-  "@choose_login_method": {},
+  "@choose_login_method": {
+    "description": "Localized text for the choose_login_method message."
+  },
   "browser_login": "Login via Browser",
-  "@browser_login": {},
+  "@browser_login": {
+    "description": "Localized text for the browser_login message."
+  },
   "manual_cookie": "Manual Cookie Input",
-  "@manual_cookie": {},
+  "@manual_cookie": {
+    "description": "Localized text for the manual_cookie message."
+  },
   "joined": "Joined {date}",
   "@joined": {
     "placeholders": {
       "date": {
         "type": "String"
       }
-    }
+    },
+    "description": "Localized text for the joined message."
   },
   "im_logged_in": "I've logged in",
-  "@im_logged_in": {},
+  "@im_logged_in": {
+    "description": "Localized text for the im_logged_in message."
+  },
   "cancel": "Cancel",
-  "@cancel": {},
+  "@cancel": {
+    "description": "Localized text for the cancel message."
+  },
   "ok": "OK",
-  "@ok": {},
+  "@ok": {
+    "description": "Localized text for the ok message."
+  },
   "account_added_successfully": "Account added successfully!",
-  "@account_added_successfully": {},
+  "@account_added_successfully": {
+    "description": "Localized text for the account_added_successfully message."
+  },
   "saving_account": "Saving account...",
-  "@saving_account": {},
+  "@saving_account": {
+    "description": "Localized text for the saving_account message."
+  },
   "cookie": "Cookie",
-  "@cookie": {},
+  "@cookie": {
+    "description": "Localized text for the cookie message."
+  },
   "no_cookie_found": "No cookie found",
-  "@no_cookie_found": {},
+  "@no_cookie_found": {
+    "description": "Localized text for the no_cookie_found message."
+  },
   "no_auth_token_found": "No auth_token found",
-  "@no_auth_token_found": {},
+  "@no_auth_token_found": {
+    "description": "Localized text for the no_auth_token_found message."
+  },
   "found_auth_token_last_check": "Auth Token found in last check",
-  "@found_auth_token_last_check": {},
+  "@found_auth_token_last_check": {
+    "description": "Localized text for the found_auth_token_last_check message."
+  },
   "general": "General",
-  "@general": {},
+  "@general": {
+    "description": "Localized text for the general message."
+  },
   "login_first": "Log in Needed",
-  "@login_first": {},
+  "@login_first": {
+    "description": "Localized text for the login_first message."
+  },
   "no_accounts_added": "No accounts added",
-  "@no_accounts_added": {},
+  "@no_accounts_added": {
+    "description": "Localized text for the no_accounts_added message."
+  },
   "login_first_description": "Add at least one account to continue",
-  "@login_first_description": {},
+  "@login_first_description": {
+    "description": "Localized text for the login_first_description message."
+  },
   "log_in": "Log In",
-  "@log_in": {},
+  "@log_in": {
+    "description": "Localized text for the log_in message."
+  },
   "delete": "Delete",
-  "@delete": {},
+  "@delete": {
+    "description": "Localized text for the delete message."
+  },
   "confirm_delete_account": "Are you sure you want to delete account {accountId}? This action cannot be undone. Deleting an account will permanently remove all its associated data (history, follower/following lists etc.). If you only want to update the cookie, simply add the account again.",
   "@confirm_delete_account": {
     "placeholders": {
       "accountId": {
         "description": "The ID of the account to be deleted"
       }
-    }
+    },
+    "description": "Localized text for the confirm_delete_account message."
   },
   "copy": "Copy",
-  "@copy": {},
+  "@copy": {
+    "description": "Localized text for the copy message."
+  },
   "copied_to_clipboard": "Copied to clipboard!",
-  "@copied_to_clipboard": {},
+  "@copied_to_clipboard": {
+    "description": "Localized text for the copied_to_clipboard message."
+  },
   "no_json_data_available": "No JSON data available",
-  "@no_json_data_available": {},
+  "@no_json_data_available": {
+    "description": "Localized text for the no_json_data_available message."
+  },
   "temporarily_restricted": "Temporarily Restricted",
-  "@temporarily_restricted": {},
+  "@temporarily_restricted": {
+    "description": "Localized text for the temporarily_restricted message."
+  },
   "recovered": "Recovered",
-  "@recovered": {},
+  "@recovered": {
+    "description": "Localized text for the recovered message."
+  },
   "failed_to_load_user_list": "Failed to load user list",
-  "@failed_to_load_user_list": {},
+  "@failed_to_load_user_list": {
+    "description": "Localized text for the failed_to_load_user_list message."
+  },
   "no_users_in_this_category": "Empty list",
-  "@no_users_in_this_category": {},
+  "@no_users_in_this_category": {
+    "description": "Localized text for the no_users_in_this_category message."
+  },
   "user_not_found": "User @{screenName} was not found in this account's data.",
   "@user_not_found": {
     "placeholders": {
       "screenName": {
         "type": "String"
       }
-    }
+    },
+    "description": "Localized text for the user_not_found message."
   },
   "open_in_autonitor": "Open in Autonitor",
-  "@open_in_autonitor": {},
+  "@open_in_autonitor": {
+    "description": "Localized text for the open_in_autonitor message."
+  },
   "analysis_log": "Analysis Log",
-  "@analysis_log": {},
+  "@analysis_log": {
+    "description": "Localized text for the analysis_log message."
+  },
   "no_active_account_error": "Cannot run analysis: No account is active.",
-  "@no_active_account_error": {},
+  "@no_active_account_error": {
+    "description": "Localized text for the no_active_account_error message."
+  },
   "analysis_failed_error": "Analysis failed",
-  "@analysis_failed_error": {},
+  "@analysis_failed_error": {
+    "description": "Localized text for the analysis_failed_error message."
+  },
   "no_analysis_data": "No analysis data found",
-  "@no_analysis_data": {},
+  "@no_analysis_data": {
+    "description": "Localized text for the no_analysis_data message."
+  },
   "run_analysis_now": "Run Analysis Now",
-  "@run_analysis_now": {},
+  "@run_analysis_now": {
+    "description": "Localized text for the run_analysis_now message."
+  },
   "last_updated_at": "Last updated: {date}",
   "@last_updated_at": {
     "placeholders": {
       "date": {
         "type": "String"
       }
-    }
+    },
+    "description": "Localized text for the last_updated_at message."
   },
   "user_history_page_title": "Profile History",
-  "@user_history_page_title": {},
+  "@user_history_page_title": {
+    "description": "Localized text for the user_history_page_title message."
+  },
   "storage_settings": "Storage Settings",
-  "@storage_settings": {},
+  "@storage_settings": {
+    "description": "Localized text for the storage_settings message."
+  },
   "save_avatar_history": "Save Avatar",
-  "@save_avatar_history": {},
+  "@save_avatar_history": {
+    "description": "Localized text for the save_avatar_history message."
+  },
   "save_banner_history": "Save Banner",
-  "@save_banner_history": {},
+  "@save_banner_history": {
+    "description": "Localized text for the save_banner_history message."
+  },
+  "media_save_scope": "Media Saving Scope",
+  "@media_save_scope": {
+    "description": "Localized text for the media_save_scope message."
+  },
+  "media_save_all": "All Accounts",
+  "@media_save_all": {
+    "description": "Localized text for the media_save_all message."
+  },
+  "media_save_following_only": "Accounts You Follow",
+  "@media_save_following_only": {
+    "description": "Option to save media only for accounts followed by the active account."
+  },
+  "media_save_mutual_only": "Mutual Follows Only",
+  "@media_save_mutual_only": {
+    "description": "Localized text for the media_save_mutual_only message."
+  },
   "avatar_quality": "Quality",
-  "@avatar_quality": {},
+  "@avatar_quality": {
+    "description": "Localized text for the avatar_quality message."
+  },
   "quality_low": "Low",
   "@quality_low": {
     "description": "e.g. 48x48, _normal suffix"
@@ -187,71 +345,137 @@
     "description": "e.g. 400x400, _400x400 suffix"
   },
   "history_strategy": "History Avatar/Banner Storage Strategy",
-  "@history_strategy": {},
+  "@history_strategy": {
+    "description": "Localized text for the history_strategy message."
+  },
   "strategy_save_all": "Never Delete",
-  "@strategy_save_all": {},
+  "@strategy_save_all": {
+    "description": "Localized text for the strategy_save_all message."
+  },
   "strategy_save_latest": "Keep Latest Only",
-  "@strategy_save_latest": {},
+  "@strategy_save_latest": {
+    "description": "Localized text for the strategy_save_latest message."
+  },
   "strategy_save_last_n": "Delete avatar/banner older than last",
-  "@strategy_save_last_n": {},
+  "@strategy_save_last_n": {
+    "description": "Localized text for the strategy_save_last_n message."
+  },
   "strategy_save_last_n_suffix": "changes",
-  "@strategy_save_last_n_suffix": {},
+  "@strategy_save_last_n_suffix": {
+    "description": "Localized text for the strategy_save_last_n_suffix message."
+  },
   "theme_mode": "Theme Mode",
-  "@theme_mode": {},
+  "@theme_mode": {
+    "description": "Localized text for the theme_mode message."
+  },
   "theme": "Theme",
-  "@theme": {},
+  "@theme": {
+    "description": "Localized text for the theme message."
+  },
   "follow_system": "Follow System",
-  "@follow_system": {},
+  "@follow_system": {
+    "description": "Localized text for the follow_system message."
+  },
   "theme_mode_light": "Light",
-  "@theme_mode_light": {},
+  "@theme_mode_light": {
+    "description": "Localized text for the theme_mode_light message."
+  },
   "theme_mode_dark": "Dark",
-  "@theme_mode_dark": {},
+  "@theme_mode_dark": {
+    "description": "Localized text for the theme_mode_dark message."
+  },
   "color_red": "Red",
-  "@color_red": {},
+  "@color_red": {
+    "description": "Localized text for the color_red message."
+  },
   "color_pink": "Pink",
-  "@color_pink": {},
+  "@color_pink": {
+    "description": "Localized text for the color_pink message."
+  },
   "color_purple": "Purple",
-  "@color_purple": {},
+  "@color_purple": {
+    "description": "Localized text for the color_purple message."
+  },
   "color_deepPurple": "Deep Purple",
-  "@color_deepPurple": {},
+  "@color_deepPurple": {
+    "description": "Localized text for the color_deepPurple message."
+  },
   "color_indigo": "Indigo",
-  "@color_indigo": {},
+  "@color_indigo": {
+    "description": "Localized text for the color_indigo message."
+  },
   "color_blue": "Blue",
-  "@color_blue": {},
+  "@color_blue": {
+    "description": "Localized text for the color_blue message."
+  },
   "color_lightBlue": "Light Blue",
-  "@color_lightBlue": {},
+  "@color_lightBlue": {
+    "description": "Localized text for the color_lightBlue message."
+  },
   "color_cyan": "Cyan",
-  "@color_cyan": {},
+  "@color_cyan": {
+    "description": "Localized text for the color_cyan message."
+  },
   "color_teal": "Teal",
-  "@color_teal": {},
+  "@color_teal": {
+    "description": "Localized text for the color_teal message."
+  },
   "color_green": "Green",
-  "@color_green": {},
+  "@color_green": {
+    "description": "Localized text for the color_green message."
+  },
   "color_lightGreen": "Light Green",
-  "@color_lightGreen": {},
+  "@color_lightGreen": {
+    "description": "Localized text for the color_lightGreen message."
+  },
   "color_lime": "Lime",
-  "@color_lime": {},
+  "@color_lime": {
+    "description": "Localized text for the color_lime message."
+  },
   "color_yellow": "Yellow",
-  "@color_yellow": {},
+  "@color_yellow": {
+    "description": "Localized text for the color_yellow message."
+  },
   "color_amber": "Amber",
-  "@color_amber": {},
+  "@color_amber": {
+    "description": "Localized text for the color_amber message."
+  },
   "color_orange": "Orange",
-  "@color_orange": {},
+  "@color_orange": {
+    "description": "Localized text for the color_orange message."
+  },
   "color_deepOrange": "Deep Orange",
-  "@color_deepOrange": {},
+  "@color_deepOrange": {
+    "description": "Localized text for the color_deepOrange message."
+  },
   "color_brown": "Brown",
-  "@color_brown": {},
+  "@color_brown": {
+    "description": "Localized text for the color_brown message."
+  },
   "color_grey": "Grey",
-  "@color_grey": {},
+  "@color_grey": {
+    "description": "Localized text for the color_grey message."
+  },
   "color_blueGrey": "Blue Grey",
-  "@color_blueGrey": {},
+  "@color_blueGrey": {
+    "description": "Localized text for the color_blueGrey message."
+  },
   "log": "Log",
-  "@log": {},
+  "@log": {
+    "description": "Localized text for the log message."
+  },
   "view_log": "View Logs",
-  "@view_log": {},
+  "@view_log": {
+    "description": "Localized text for the view_log message."
+  },
   "clear": "Clear",
-  "@clear": {},
+  "@clear": {
+    "description": "Localized text for the clear message."
+  },
   "api_request_settings": "API Request Settings",
-  "@api_request_settings": {},
+  "@api_request_settings": {
+    "description": "Localized text for the api_request_settings message."
+  },
   "xclient_generator_title": "XClientTransactionID Generator",
   "@xclient_generator_title": {
     "description": "Dialog title for XClientTransactionID Generator"
@@ -352,130 +576,242 @@
     }
   },
   "automated": "Automated",
-  "@automated": {},
+  "@automated": {
+    "description": "Localized text for the automated message."
+  },
   "visit": "Visit",
-  "@visit": {},
+  "@visit": {
+    "description": "Localized text for the visit message."
+  },
   "save": "Save",
-  "@save": {},
+  "@save": {
+    "description": "Localized text for the save message."
+  },
   "save_error": "Error while saving: ",
-  "@save_error": {},
+  "@save_error": {
+    "description": "Localized text for the save_error message."
+  },
   "image_saved": "Image Saved",
-  "@image_saved": {},
+  "@image_saved": {
+    "description": "Localized text for the image_saved message."
+  },
   "open_in_browser": "Open in Browser",
-  "@open_in_browser": {},
+  "@open_in_browser": {
+    "description": "Localized text for the open_in_browser message."
+  },
   "search": "Search",
-  "@search": {},
+  "@search": {
+    "description": "Localized text for the search message."
+  },
   "clear_search_history": "Clear Search History",
-  "@clear_search_history": {},
+  "@clear_search_history": {
+    "description": "Localized text for the clear_search_history message."
+  },
   "filter": "Search Settings & Filters",
-  "@filter": {},
+  "@filter": {
+    "description": "Localized text for the filter message."
+  },
   "verified_user_only": "Verified Users Only",
-  "@verified_user_only": {},
+  "@verified_user_only": {
+    "description": "Localized text for the verified_user_only message."
+  },
   "recent_searches": "Recent Searches",
-  "@recent_searches": {},
+  "@recent_searches": {
+    "description": "Localized text for the recent_searches message."
+  },
   "no_recent_searches": "No recent searches",
-  "@no_recent_searches": {},
+  "@no_recent_searches": {
+    "description": "Localized text for the no_recent_searches message."
+  },
   "enable_restid_searching": "Enable Rest Id Searching",
-  "@enable_restid_searching": {},
+  "@enable_restid_searching": {
+    "description": "Localized text for the enable_restid_searching message."
+  },
   "enable_restid_searching_subtitle": "Search by exact Rest Id match",
-  "@enable_restid_searching_subtitle": {},
+  "@enable_restid_searching_subtitle": {
+    "description": "Localized text for the enable_restid_searching_subtitle message."
+  },
   "search_fields": "Search Fields",
-  "@search_fields": {},
+  "@search_fields": {
+    "description": "Localized text for the search_fields message."
+  },
   "attributes": "Attributes",
-  "@attributes": {},
+  "@attributes": {
+    "description": "Localized text for the attributes message."
+  },
   "apply": "Apply",
-  "@apply": {},
+  "@apply": {
+    "description": "Localized text for the apply message."
+  },
   "filters_all": "All",
-  "@filters_all": {},
+  "@filters_all": {
+    "description": "Localized text for the filters_all message."
+  },
   "filters_no": "No",
-  "@filters_no": {},
+  "@filters_no": {
+    "description": "Localized text for the filters_no message."
+  },
   "filters_yes": "Yes",
-  "@filters_yes": {},
+  "@filters_yes": {
+    "description": "Localized text for the filters_yes message."
+  },
   "account_status": "Account Status",
-  "@account_status": {},
+  "@account_status": {
+    "description": "Localized text for the account_status message."
+  },
   "protected": "Protected",
-  "@protected": {},
+  "@protected": {
+    "description": "Localized text for the protected message."
+  },
   "verified": "Verified",
-  "@verified": {},
+  "@verified": {
+    "description": "Localized text for the verified message."
+  },
   "name": "Name",
-  "@name": {},
+  "@name": {
+    "description": "Localized text for the name message."
+  },
   "screen_name": "Screen Name",
-  "@screen_name": {},
+  "@screen_name": {
+    "description": "Localized text for the screen_name message."
+  },
   "bio": "Bio",
-  "@bio": {},
+  "@bio": {
+    "description": "Localized text for the bio message."
+  },
   "link": "Link",
-  "@link": {},
+  "@link": {
+    "description": "Localized text for the link message."
+  },
   "location": "Location",
-  "@location": {},
+  "@location": {
+    "description": "Localized text for the location message."
+  },
   "avatar": "Avatar",
-  "@avatar": {},
+  "@avatar": {
+    "description": "Localized text for the avatar message."
+  },
   "banner": "Banner",
-  "@banner": {},
+  "@banner": {
+    "description": "Localized text for the banner message."
+  },
   "updated": "Updated",
-  "@updated": {},
+  "@updated": {
+    "description": "Localized text for the updated message."
+  },
   "jump_to_page": "Jump to Page",
-  "@jump_to_page": {},
+  "@jump_to_page": {
+    "description": "Localized text for the jump_to_page message."
+  },
   "total": "Total: {total}",
   "@total": {
     "placeholders": {
       "total": {
         "type": "int"
       }
-    }
+    },
+    "description": "Localized text for the total message."
   },
   "changes_since_last_update": "Changes since last update",
-  "@changes_since_last_update": {},
+  "@changes_since_last_update": {
+    "description": "Localized text for the changes_since_last_update message."
+  },
   "compare": "Compare",
-  "@compare": {},
+  "@compare": {
+    "description": "Localized text for the compare message."
+  },
   "no_visible_changes": "No visible changes compared to last record.",
-  "@no_visible_changes": {},
+  "@no_visible_changes": {
+    "description": "Localized text for the no_visible_changes message."
+  },
   "no_history_found": "No History Found",
-  "@no_history_found": {},
+  "@no_history_found": {
+    "description": "Localized text for the no_history_found message."
+  },
   "about": "About",
-  "@about": {},
+  "@about": {
+    "description": "Localized text for the about message."
+  },
   "version": "Version",
-  "@version": {},
+  "@version": {
+    "description": "Localized text for the version message."
+  },
   "author_on_twitter": "Author on Twitter",
-  "@author_on_twitter": {},
+  "@author_on_twitter": {
+    "description": "Localized text for the author_on_twitter message."
+  },
   "source_code": "Source Code",
-  "@source_code": {},
+  "@source_code": {
+    "description": "Localized text for the source_code message."
+  },
   "view_on_github": "View on GitHub",
-  "@view_on_github": {},
+  "@view_on_github": {
+    "description": "Localized text for the view_on_github message."
+  },
   "report_an_issue": "Report an Issue",
-  "@report_an_issue": {},
+  "@report_an_issue": {
+    "description": "Localized text for the report_an_issue message."
+  },
   "feedback_and_suggestions": "Feedback and Suggestions",
-  "@feedback_and_suggestions": {},
+  "@feedback_and_suggestions": {
+    "description": "Localized text for the feedback_and_suggestions message."
+  },
   "license": "License",
-  "@license": {},
+  "@license": {
+    "description": "Localized text for the license message."
+  },
   "open_source_licenses": "Open Source Licenses",
-  "@open_source_licenses": {},
+  "@open_source_licenses": {
+    "description": "Localized text for the open_source_licenses message."
+  },
   "others": "Others",
-  "@others": {},
+  "@others": {
+    "description": "Localized text for the others message."
+  },
   "no_data": "No data",
-  "@no_data": {},
+  "@no_data": {
+    "description": "Localized text for the no_data message."
+  },
   "no_data_description": "No data available for this account. Run your first sync now!",
-  "@no_data_description": {},
+  "@no_data_description": {
+    "description": "Localized text for the no_data_description message."
+  },
   "account_suspended": "Account Suspended",
-  "@account_suspended": {},
+  "@account_suspended": {
+    "description": "Localized text for the account_suspended message."
+  },
   "account_suspended_description": "This account has been suspended by Twitter.",
-  "@account_suspended_description": {},
+  "@account_suspended_description": {
+    "description": "Localized text for the account_suspended_description message."
+  },
   "account_deactivated": "Account Deactivated",
-  "@account_deactivated": {},
+  "@account_deactivated": {
+    "description": "Localized text for the account_deactivated message."
+  },
   "account_deactivated_description": "This account has been deactivated.",
-  "@account_deactivated_description": {},
+  "@account_deactivated_description": {
+    "description": "Localized text for the account_deactivated_description message."
+  },
   "account_temporarily_restricted": "Account Temporarily Restricted",
-  "@account_temporarily_restricted": {},
+  "@account_temporarily_restricted": {
+    "description": "Localized text for the account_temporarily_restricted message."
+  },
   "account_temporarily_restricted_description": "This account has been temporarily restricted.",
-  "@account_temporarily_restricted_description": {},
+  "@account_temporarily_restricted_description": {
+    "description": "Localized text for the account_temporarily_restricted_description message."
+  },
   "sync_notification_title": "Autonitor Sync",
-  "@sync_notification_title": {},
+  "@sync_notification_title": {
+    "description": "Localized text for the sync_notification_title message."
+  },
   "sync_notification_text": "Syncing data for account @{screenName}",
   "@sync_notification_text": {
     "placeholders": {
       "screenName": {
         "type": "String"
       }
-    }
+    },
+    "description": "Localized text for the sync_notification_text message."
   },
   "sync_completed_notification_text": "Data sync for account @{screenName} completed successfully",
   "@sync_completed_notification_text": {
@@ -483,7 +819,8 @@
       "screenName": {
         "type": "String"
       }
-    }
+    },
+    "description": "Localized text for the sync_completed_notification_text message."
   },
   "sync_failed_notification_text": "Data sync for account @{screenName} failed",
   "@sync_failed_notification_text": {
@@ -491,46 +828,330 @@
       "screenName": {
         "type": "String"
       }
-    }
+    },
+    "description": "Localized text for the sync_failed_notification_text message."
   },
   "pause": "Pause",
-  "@pause": {},
+  "@pause": {
+    "description": "Localized text for the pause message."
+  },
   "resume": "Resume",
-  "@resume": {},
+  "@resume": {
+    "description": "Localized text for the resume message."
+  },
   "stop": "Stop",
-  "@stop": {},
+  "@stop": {
+    "description": "Localized text for the stop message."
+  },
   "comfirm_stop_sync_title": "Are you sure you want to stop the sync?",
-  "@comfirm_stop_sync_title": {},
+  "@comfirm_stop_sync_title": {
+    "description": "Localized text for the comfirm_stop_sync_title message."
+  },
   "comfirm_stop_sync_text": "Stopping the sync will cancel all ongoing data fetching operations. No data will be saved for this sync session.",
-  "@comfirm_stop_sync_text": {},
+  "@comfirm_stop_sync_text": {
+    "description": "Localized text for the comfirm_stop_sync_text message."
+  },
   "paused": "Paused",
-  "@paused": {},
+  "@paused": {
+    "description": "Localized text for the paused message."
+  },
   "stopped_by_user": "Stopped by User",
-  "@stopped_by_user": {},
+  "@stopped_by_user": {
+    "description": "Localized text for the stopped_by_user message."
+  },
   "other_reasons": "Other Reasons",
-  "@other_reasons": {},
+  "@other_reasons": {
+    "description": "Localized text for the other_reasons message."
+  },
   "rollback_to_here": "Rollback to here",
-  "@rollback_to_here": {},
+  "@rollback_to_here": {
+    "description": "Localized text for the rollback_to_here message."
+  },
   "open_in_app": "Open in App",
-  "@open_in_app": {},
+  "@open_in_app": {
+    "description": "Localized text for the open_in_app message."
+  },
   "browser_via_screen_name": "Browser (via Screen Name)",
-  "@browser_via_screen_name": {},
+  "@browser_via_screen_name": {
+    "description": "Localized text for the browser_via_screen_name message."
+  },
   "browser_via_rest_id": "Browser (via Rest ID)",
-  "@browser_via_rest_id": {},
+  "@browser_via_rest_id": {
+    "description": "Localized text for the browser_via_rest_id message."
+  },
   "api_request_mode": "HTTP Request Implementation",
-  "@api_request_mode": {},
+  "@api_request_mode": {
+    "description": "Localized text for the api_request_mode message."
+  },
   "advanced_mode": "Data Fetching Strategy",
-  "@advanced_mode": {},
+  "@advanced_mode": {
+    "description": "Localized text for the advanced_mode message."
+  },
   "advanced_mode_description": "Choose how account data is fetched",
-  "@advanced_mode_description": {},
+  "@advanced_mode_description": {
+    "description": "Localized text for the advanced_mode_description message."
+  },
   "remote_fastapi_service_url": "Remote FastAPI Service URL",
-  "@remote_fastapi_service_url": {},
+  "@remote_fastapi_service_url": {
+    "description": "Localized text for the remote_fastapi_service_url message."
+  },
   "fastapi_api_key": "FastAPI API Key",
-  "@fastapi_api_key": {},
+  "@fastapi_api_key": {
+    "description": "Localized text for the fastapi_api_key message."
+  },
   "fastapi_api_key_optional": "Optional",
-  "@fastapi_api_key_optional": {},
+  "@fastapi_api_key_optional": {
+    "description": "Localized text for the fastapi_api_key_optional message."
+  },
   "invalid_fastapi_url": "Please enter a valid URL starting with http:// or https://",
-  "@invalid_fastapi_url": {},
+  "@invalid_fastapi_url": {
+    "description": "Localized text for the invalid_fastapi_url message."
+  },
   "enable_new_data_fetching_strategy": "Enable new data fetching strategy",
-  "@enable_new_data_fetching_strategy": {}
+  "@enable_new_data_fetching_strategy": {
+    "description": "Localized text for the enable_new_data_fetching_strategy message."
+  },
+  "backup_and_restore": "Backup & Restore",
+  "@backup_and_restore": {
+    "description": "Localized text for the backup_and_restore message."
+  },
+  "backup": "Backup",
+  "@backup": {
+    "description": "Localized text for the backup message."
+  },
+  "restore": "Restore",
+  "@restore": {
+    "description": "Localized text for the restore message."
+  },
+  "backup_successful": "Backup successful",
+  "@backup_successful": {
+    "description": "Localized text for the backup_successful message."
+  },
+  "backup_failed": "Backup failed: {error}",
+  "@backup_failed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    },
+    "description": "Localized text for the backup_failed message."
+  },
+  "restore_successful": "Restore successful",
+  "@restore_successful": {
+    "description": "Localized text for the restore_successful message."
+  },
+  "restore_failed": "Restore failed: {error}",
+  "@restore_failed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    },
+    "description": "Localized text for the restore_failed message."
+  },
+  "backup_config": "Backup Configuration (.json)",
+  "@backup_config": {
+    "description": "Localized text for the backup_config message."
+  },
+  "backup_database": "Backup Database (.db)",
+  "@backup_database": {
+    "description": "Localized text for the backup_database message."
+  },
+  "backup_medias": "Backup Media Files (.zip)",
+  "@backup_medias": {
+    "description": "Localized text for the backup_medias message."
+  },
+  "backup_all": "Backup All (.zip)",
+  "@backup_all": {
+    "description": "Localized text for the backup_all message."
+  },
+  "restore_config": "Restore Configuration",
+  "@restore_config": {
+    "description": "Localized text for the restore_config message."
+  },
+  "restore_database": "Restore Database",
+  "@restore_database": {
+    "description": "Localized text for the restore_database message."
+  },
+  "restore_medias": "Restore Media Files",
+  "@restore_medias": {
+    "description": "Localized text for the restore_medias message."
+  },
+  "restore_all": "Restore All",
+  "@restore_all": {
+    "description": "Localized text for the restore_all message."
+  },
+  "backup_preparing": "Preparing backup...",
+  "@backup_preparing": {
+    "description": "Localized text for the backup_preparing message."
+  },
+  "backup_processing_file": "Processing: {fileName}",
+  "@backup_processing_file": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    },
+    "description": "Localized text for the backup_processing_file message."
+  },
+  "backup_collecting_files": "Collecting files...",
+  "@backup_collecting_files": {
+    "description": "Localized text for the backup_collecting_files message."
+  },
+  "backup_progress": "{completed} / {total}",
+  "@backup_progress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    },
+    "description": "Localized text for the backup_progress message."
+  },
+  "backup_cancelling": "Cancelling backup...",
+  "@backup_cancelling": {
+    "description": "Localized text for the backup_cancelling message."
+  },
+  "backup_cancelled": "Backup cancelled",
+  "@backup_cancelled": {
+    "description": "Localized text for the backup_cancelled message."
+  },
+  "restored_account_cookie_required": "This restored account needs a Cookie before it can be used.",
+  "@restored_account_cookie_required": {
+    "description": "Localized text for the restored_account_cookie_required message."
+  },
+  "restore_preparing": "Preparing restore…",
+  "@restore_preparing": {
+    "description": "Status shown before restore work starts."
+  },
+  "restore_extracting_file": "Extracting: {fileName}",
+  "@restore_extracting_file": {
+    "description": "Status shown while a backup archive entry is extracted.",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "restore_progress": "{completed} / {total}",
+  "@restore_progress": {
+    "description": "Completed and total archive entries during restore.",
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "restore_validating_database": "Validating database…",
+  "@restore_validating_database": {
+    "description": "Status shown while validating the backup database."
+  },
+  "restore_importing_database": "Importing database…",
+  "@restore_importing_database": {
+    "description": "Status shown while importing backup database records."
+  },
+  "restore_replacing_media": "Restoring media files…",
+  "@restore_replacing_media": {
+    "description": "Status shown while replacing stored media files."
+  },
+  "sync_overall_progress": "Overall progress",
+  "@sync_overall_progress": {
+    "description": "Label for the sync progress across all stages."
+  },
+  "sync_step_progress": "Current step",
+  "@sync_step_progress": {
+    "description": "Label for progress within the currently active sync stage."
+  },
+  "sync_show_logs": "Show diagnostic logs",
+  "@sync_show_logs": {
+    "description": "Title for the expandable diagnostic log panel during sync."
+  },
+  "sync_logs_empty": "No diagnostic logs yet",
+  "@sync_logs_empty": {
+    "description": "Shown when the expanded sync log contains no entries."
+  },
+  "sync_stage_preparing": "Preparing sync",
+  "@sync_stage_preparing": {"description": "Name of the sync preparation stage."},
+  "sync_stage_refreshing_profile": "Refreshing profile",
+  "@sync_stage_refreshing_profile": {"description": "Name of the profile refresh sync stage."},
+  "sync_stage_initializing_services": "Initializing services",
+  "@sync_stage_initializing_services": {"description": "Name of the service initialization sync stage."},
+  "sync_stage_loading_existing_data": "Loading existing data",
+  "@sync_stage_loading_existing_data": {"description": "Name of the existing data loading sync stage."},
+  "sync_stage_fetching_network": "Fetching network data",
+  "@sync_stage_fetching_network": {"description": "Name of the follower network fetch stage."},
+  "sync_stage_analyzing_changes": "Analyzing changes",
+  "@sync_stage_analyzing_changes": {"description": "Name of the relationship analysis stage."},
+  "sync_stage_downloading_media": "Downloading media",
+  "@sync_stage_downloading_media": {"description": "Name of the media download stage."},
+  "sync_stage_saving_results": "Saving results",
+  "@sync_stage_saving_results": {"description": "Name of the database save sync stage."},
+  "sync_stage_finalizing": "Finalizing sync",
+  "@sync_stage_finalizing": {"description": "Name of the sync finalization stage."},
+  "sync_stage_completed": "Sync complete",
+  "@sync_stage_completed": {"description": "Name displayed when sync completed."},
+  "sync_stage_failed": "Sync failed",
+  "@sync_stage_failed": {"description": "Name displayed when sync failed."},
+  "sync_stage_stopped": "Sync stopped",
+  "@sync_stage_stopped": {"description": "Name displayed when sync was stopped."},
+  "sync_accounts_processed": "{count} accounts · page {page}",
+  "@sync_accounts_processed": {"description": "Account count collected so far and the current API page.", "placeholders": {"count": {"type": "int"}, "page": {"type": "int"}}},
+  "sync_step_generating_run_id": "Creating sync identifier",
+  "@sync_step_generating_run_id": {"description": "Concrete sync operation."},
+  "sync_step_refreshing_owner_profile": "Updating account profile",
+  "@sync_step_refreshing_owner_profile": {"description": "Concrete sync operation."},
+  "sync_step_initializing_transaction_id": "Preparing request authentication",
+  "@sync_step_initializing_transaction_id": {"description": "Concrete sync operation."},
+  "sync_step_loading_query_ids": "Loading request definitions",
+  "@sync_step_loading_query_ids": {"description": "Concrete sync operation."},
+  "sync_step_loading_existing_relations": "Reading saved relationships",
+  "@sync_step_loading_existing_relations": {"description": "Concrete sync operation."},
+  "sync_step_fetching_followers": "Fetching followers",
+  "@sync_step_fetching_followers": {"description": "Concrete sync operation."},
+  "sync_step_fetching_following": "Fetching following",
+  "@sync_step_fetching_following": {"description": "Concrete sync operation."},
+  "sync_step_enriching_profiles": "Loading profile details",
+  "@sync_step_enriching_profiles": {"description": "Concrete sync operation."},
+  "sync_step_checking_removed_relations": "Checking removed relationships",
+  "@sync_step_checking_removed_relations": {"description": "Concrete sync operation."},
+  "sync_step_comparing_profiles": "Comparing saved profiles",
+  "@sync_step_comparing_profiles": {"description": "Concrete sync operation."},
+  "sync_step_checking_media": "Checking saved media",
+  "@sync_step_checking_media": {"description": "Concrete sync operation."},
+  "sync_step_downloading_media": "Downloading media files",
+  "@sync_step_downloading_media": {"description": "Concrete sync operation."},
+  "sync_step_preparing_database_changes": "Preparing database changes",
+  "@sync_step_preparing_database_changes": {"description": "Concrete sync operation."},
+  "sync_step_writing_database_changes": "Writing database changes",
+  "@sync_step_writing_database_changes": {"description": "Concrete sync operation."},
+  "sync_step_recording_sync_log": "Recording sync result",
+  "@sync_step_recording_sync_log": {"description": "Concrete sync operation."},
+  "sync_rate_limit_waiting": "Rate limited. Retrying at {time} ({remaining} remaining).",
+  "@sync_rate_limit_waiting": {"description": "Shown while a GraphQL request waits for the API rate-limit reset.", "placeholders": {"time": {"type": "String"}, "remaining": {"type": "String"}}},
+  "sync_rate_limit_ready": "Rate limit reset. Resume sync when ready.",
+  "@sync_rate_limit_ready": {"description": "Shown when the reset time has passed while sync remains paused."},
+  "sync_mode_title": "Sync mode",
+  "sync_mode_fast": "Fast",
+  "sync_mode_fast_description": "Followers via V1; following via GraphQL.",
+  "sync_mode_expert": "Expert",
+  "sync_mode_expert_description": "Both lists via V1, then load complete profiles.",
+  "sync_mode_fastest": "Fastest",
+  "sync_mode_fastest_description": "Both lists via V1 without profile enrichment.",
+  "sync_mode_requires_curl_cffi": "Requires curl_cffi in API request settings.",
+  "chart_chronological": "Oldest to latest",
+  "chart_time_all": "All",
+  "chart_time_7d": "7D",
+  "chart_time_30d": "30D",
+  "chart_time_90d": "90D",
+  "chart_time_1y": "1Y",
+  "chart_start": "Start",
+  "chart_latest": "Latest",
+  "chart_change": "Change",
+  "chart_data_points": "{count} observations",
+  "@chart_data_points": {"placeholders": {"count": {"type": "int"}}}
 }

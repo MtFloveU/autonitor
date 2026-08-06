@@ -3,7 +3,12 @@ import 'package:flutter/material.dart';
 
 enum AvatarQuality { low, high }
 
+enum MediaSaveScope { all, followingOnly, mutualOnly }
+
 enum HistoryStrategy { saveAll, saveLatest, saveLastN }
+
+/// The data collection plan selected immediately before a sync.
+enum SyncFetchMode { fast, expert, fastest }
 
 // [已更新] 包含所有 Material 3 基础色系
 enum ThemeColor {
@@ -50,7 +55,8 @@ class AppSettings {
   final String fastApiApiKey;
   final bool saveAvatarHistory;
   final bool saveBannerHistory;
-  final bool enableDataFetchingStrategy;
+  final MediaSaveScope mediaSaveScope;
+  final SyncFetchMode syncFetchMode;
   final AvatarQuality avatarQuality;
   final HistoryStrategy historyStrategy;
   final int historyLimitN;
@@ -62,7 +68,8 @@ class AppSettings {
     this.themeMode = ThemeMode.system,
     this.saveAvatarHistory = true,
     this.saveBannerHistory = false,
-    this.enableDataFetchingStrategy = false,
+    this.mediaSaveScope = MediaSaveScope.all,
+    this.syncFetchMode = SyncFetchMode.fast,
     this.avatarQuality = AvatarQuality.low,
     this.historyStrategy = HistoryStrategy.saveAll,
     this.historyLimitN = 5,
@@ -80,7 +87,8 @@ class AppSettings {
     ThemeColor? theme,
     bool? saveAvatarHistory,
     bool? saveBannerHistory,
-    bool? enableDataFetchingStrategy,
+    MediaSaveScope? mediaSaveScope,
+    SyncFetchMode? syncFetchMode,
     AvatarQuality? avatarQuality,
     HistoryStrategy? historyStrategy,
     int? historyLimitN,
@@ -98,8 +106,8 @@ class AppSettings {
       theme: theme ?? this.theme,
       saveAvatarHistory: saveAvatarHistory ?? this.saveAvatarHistory,
       saveBannerHistory: saveBannerHistory ?? this.saveBannerHistory,
-      enableDataFetchingStrategy:
-          enableDataFetchingStrategy ?? this.enableDataFetchingStrategy,
+      mediaSaveScope: mediaSaveScope ?? this.mediaSaveScope,
+      syncFetchMode: syncFetchMode ?? this.syncFetchMode,
       avatarQuality: avatarQuality ?? this.avatarQuality,
       historyStrategy: historyStrategy ?? this.historyStrategy,
       historyLimitN: historyLimitN ?? this.historyLimitN,
@@ -118,7 +126,8 @@ class AppSettings {
     'theme': theme.name,
     'saveAvatarHistory': saveAvatarHistory,
     'saveBannerHistory': saveBannerHistory,
-    'enableDataFetchingStrategy': enableDataFetchingStrategy,
+    'mediaSaveScope': mediaSaveScope.name,
+    'syncFetchMode': syncFetchMode.name,
     'avatarQuality': avatarQuality.toString().split('.').last,
     'historyStrategy': historyStrategy.toString().split('.').last,
     'historyLimitN': historyLimitN,
@@ -157,9 +166,14 @@ class AppSettings {
       saveBannerHistory:
           json['saveBannerHistory'] as bool? ??
           defaultSettings.saveBannerHistory,
-      enableDataFetchingStrategy:
-          json['enableDataFetchingStrategy'] as bool? ??
-          defaultSettings.enableDataFetchingStrategy,
+      mediaSaveScope: (json['mediaSaveScope'] as String?).toEnum(
+        MediaSaveScope.values,
+        defaultSettings.mediaSaveScope,
+      ),
+      syncFetchMode: (json['syncFetchMode'] as String?).toEnum(
+        SyncFetchMode.values,
+        defaultSettings.syncFetchMode,
+      ),
       avatarQuality: (json['avatarQuality'] as String?).toEnum(
         AvatarQuality.values,
         defaultSettings.avatarQuality,
@@ -178,9 +192,19 @@ class AppSettings {
       apiRequestMode:
           json['apiRequestMode'] as String? ?? defaultSettings.apiRequestMode,
       remoteFastApiUrl:
-          json['remoteFastApiUrl'] as String? ?? defaultSettings.remoteFastApiUrl,
+          json['remoteFastApiUrl'] as String? ??
+          defaultSettings.remoteFastApiUrl,
       fastApiApiKey:
           json['fastApiApiKey'] as String? ?? defaultSettings.fastApiApiKey,
     );
+  }
+
+  /// Expert and Fastest are proxy-backed curl_cffi plans.  A remembered plan
+  /// becomes Fast as soon as the current HTTP setting can no longer run it.
+  SyncFetchMode get effectiveSyncFetchMode {
+    if (syncFetchMode != SyncFetchMode.fast && apiRequestMode != 'curl_cffi') {
+      return SyncFetchMode.fast;
+    }
+    return syncFetchMode;
   }
 }

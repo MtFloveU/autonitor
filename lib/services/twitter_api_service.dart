@@ -5,6 +5,21 @@ import 'log_service.dart';
 
 final twitterApiServiceProvider = Provider((ref) => TwitterApiService());
 
+/// Preserves the reset time returned by X instead of losing it in a generic
+/// networking exception. The value is the Unix timestamp from
+/// `x-rate-limit-reset`.
+class GraphQlRateLimitException implements Exception {
+  GraphQlRateLimitException({required this.endpoint, this.resetAt});
+
+  final String endpoint;
+  final DateTime? resetAt;
+
+  @override
+  String toString() => resetAt == null
+      ? 'GraphQL rate limit reached for $endpoint (reset header unavailable)'
+      : 'GraphQL rate limit reached for $endpoint until $resetAt';
+}
+
 class UserListResultGql {
   final List<Map<String, dynamic>> users;
   final String? nextCursor;
@@ -43,13 +58,22 @@ class TwitterApiService {
     String? cffiApiKey,
   }) async {
     if (apiRequestMode == 'curl_cffi') {
-      if (cffiUrl == null || cffiApiKey == null || cffiUrl.isEmpty || cffiApiKey.isEmpty) {
-        throw Exception("cffiUrl and cffiApiKey must be provided when using curl_cffi mode");
+      if (cffiUrl == null ||
+          cffiApiKey == null ||
+          cffiUrl.isEmpty ||
+          cffiApiKey.isEmpty) {
+        throw Exception(
+          "cffiUrl and cffiApiKey must be provided when using curl_cffi mode",
+        );
       }
 
       // 保证所有的 value 都是字符串以避免 Uri.replace 抛出异常
-      final safeQueryParams = queryParameters.map((k, v) => MapEntry(k, v.toString()));
-      final targetUrl = Uri.parse(endpoint).replace(queryParameters: safeQueryParams).toString();
+      final safeQueryParams = queryParameters.map(
+        (k, v) => MapEntry(k, v.toString()),
+      );
+      final targetUrl = Uri.parse(
+        endpoint,
+      ).replace(queryParameters: safeQueryParams).toString();
 
       final proxyQueryParams = {
         'target_url': targetUrl,
@@ -57,7 +81,10 @@ class TwitterApiService {
         'apikey': cffiApiKey,
       };
 
-      final response = await _dio.get(cffiUrl, queryParameters: proxyQueryParams);
+      final response = await _dio.get(
+        cffiUrl,
+        queryParameters: proxyQueryParams,
+      );
 
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data;
@@ -73,24 +100,66 @@ class TwitterApiService {
             responseData = decodedStr;
           }
 
+          final targetStatusCode = data['target_status_code'] as int?;
+          if (targetStatusCode == 429) {
+            // The proxy protocol supplies the target status but not target
+            // headers. Read the reset timestamp from the same GQL endpoint;
+            // this is only used to obtain x-rate-limit-reset and never as a
+            // fallback request path.
+            DateTime? resetAt;
+            try {
+              final rateLimitResponse = await _dio.get(
+                endpoint,
+                queryParameters: queryParameters,
+                options: Options(headers: headers, validateStatus: (_) => true),
+              );
+              final rawReset = rateLimitResponse.headers.value(
+                'x-rate-limit-reset',
+              );
+              final resetSeconds = int.tryParse(rawReset ?? '');
+              if (resetSeconds != null) {
+                resetAt = DateTime.fromMillisecondsSinceEpoch(
+                  resetSeconds * 1000,
+                );
+              }
+            } catch (_) {}
+            throw GraphQlRateLimitException(
+              endpoint: endpoint,
+              resetAt: resetAt,
+            );
+          }
+
           return Response(
             requestOptions: RequestOptions(path: endpoint),
-            statusCode: data['target_status_code'],
+            statusCode: targetStatusCode,
             data: responseData,
           );
         } else {
           throw Exception("FastAPI Proxy returned error: ${data['detail']}");
         }
       } else {
-        throw Exception("Failed to connect to FastAPI proxy. Status: ${response.statusCode}");
+        throw Exception(
+          "Failed to connect to FastAPI proxy. Status: ${response.statusCode}",
+        );
       }
     } else {
       // Dio default logic
-      return await _dio.get(
+      final response = await _dio.get(
         endpoint,
         queryParameters: queryParameters,
-        options: Options(headers: headers),
+        options: Options(headers: headers, validateStatus: (_) => true),
       );
+      if (response.statusCode == 429) {
+        final rawReset = response.headers.value('x-rate-limit-reset');
+        final resetSeconds = int.tryParse(rawReset ?? '');
+        throw GraphQlRateLimitException(
+          endpoint: endpoint,
+          resetAt: resetSeconds == null
+              ? null
+              : DateTime.fromMillisecondsSinceEpoch(resetSeconds * 1000),
+        );
+      }
+      return response;
     }
   }
 
@@ -175,6 +244,8 @@ class TwitterApiService {
           'Failed to fetch user information: Status ${response.statusCode}',
         );
       }
+    } on GraphQlRateLimitException {
+      rethrow;
     } on DioException catch (e, s) {
       logger.e(
         "Dio Error on getUserByRestId: ${e.response?.data}",
@@ -192,7 +263,7 @@ class TwitterApiService {
     List<String> userIds,
     String cookie,
     String queryId,
-    String transactionId, {
+    String? transactionId, {
     String apiRequestMode = 'dio',
     String? cffiUrl,
     String? cffiApiKey,
@@ -218,7 +289,8 @@ class TwitterApiService {
       "responsive_web_twitter_article_notes_tab_enabled": true,
       "subscriptions_feature_can_gift_premium": true,
       "creator_subscriptions_tweet_preview_api_enabled": true,
-      "responsive_web_graphql_skip_user_profile_image_extensions_enabled": false,
+      "responsive_web_graphql_skip_user_profile_image_extensions_enabled":
+          false,
       "responsive_web_graphql_timeline_navigation_enabled": true,
       "responsive_web_grok_annotations_enabled": false,
       "post_ctas_fetch_enabled": false,
@@ -243,11 +315,13 @@ class TwitterApiService {
       'x-twitter-active-user': 'yes',
       'x-twitter-auth-type': 'OAuth2Session',
       'x-twitter-client-language': 'en',
-      'x-client-transaction-id': transactionId,
       'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
       'Referer': 'https://api.x.com/',
     };
+    if (transactionId != null && transactionId.isNotEmpty) {
+      headers['x-client-transaction-id'] = transactionId;
+    }
 
     final String url = 'https://api.x.com/graphql/$queryId/UsersByRestIds';
 
@@ -269,6 +343,8 @@ class TwitterApiService {
           'Failed to fetch user information: Status ${response.statusCode}',
         );
       }
+    } on GraphQlRateLimitException {
+      rethrow;
     } on DioException catch (e, s) {
       logger.e(
         "Dio Error on getUsersByRestIds: ${e.response?.data}",
@@ -286,7 +362,7 @@ class TwitterApiService {
     List<String> screenNames,
     String cookie,
     String queryId,
-    String transactionId, {
+    String? transactionId, {
     String apiRequestMode = 'curl_cffi',
     String? cffiUrl,
     String? cffiApiKey,
@@ -304,13 +380,12 @@ class TwitterApiService {
     final features = {
       "responsive_web_graphql_exclude_directive_enabled": true,
       "verified_phone_label_enabled": false,
-      "responsive_web_graphql_skip_user_profile_image_extensions_enabled": false,
+      "responsive_web_graphql_skip_user_profile_image_extensions_enabled":
+          false,
       "responsive_web_graphql_timeline_navigation_enabled": true,
     };
 
-    final fieldToggles = {
-      "withAuxiliaryUserLabels": false,
-    };
+    final fieldToggles = {"withAuxiliaryUserLabels": false};
 
     final queryParameters = {
       'variables': jsonEncode(variables),
@@ -326,11 +401,13 @@ class TwitterApiService {
       'x-twitter-active-user': 'yes',
       'x-twitter-auth-type': 'OAuth2Session',
       'x-twitter-client-language': 'en',
-      'x-client-transaction-id': transactionId,
       'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
       'Referer': 'https://api.x.com/',
     };
+    if (transactionId != null && transactionId.isNotEmpty) {
+      headers['x-client-transaction-id'] = transactionId;
+    }
 
     final String url = 'https://api.x.com/graphql/$queryId/UsersByScreenNames';
 
@@ -353,6 +430,8 @@ class TwitterApiService {
           'response: ${response.data}',
         );
       }
+    } on GraphQlRateLimitException {
+      rethrow;
     } on DioException catch (e, s) {
       logger.e(
         "Dio Error on getUsersByScreenNames: ${e.response?.data}",
@@ -361,7 +440,11 @@ class TwitterApiService {
       );
       throw Exception('Network request failed: ${e.message}');
     } catch (e, s) {
-      logger.e("Unknown error on getUsersByScreenNames", error: e, stackTrace: s);
+      logger.e(
+        "Unknown error on getUsersByScreenNames",
+        error: e,
+        stackTrace: s,
+      );
       rethrow;
     }
   }
@@ -369,7 +452,7 @@ class TwitterApiService {
   Future<Map<String, dynamic>> getFollowers(
     String userId,
     String cookie,
-    String transactionId,
+    String? transactionId,
     String cursor,
     String queryId, {
     String apiRequestMode = 'dio',
@@ -395,7 +478,8 @@ class TwitterApiService {
       "verified_phone_label_enabled": false,
       "highlights_tweets_tab_ui_enabled": true,
       "creator_subscriptions_tweet_preview_api_enabled": true,
-      "responsive_web_graphql_skip_user_profile_image_extensions_enabled": false,
+      "responsive_web_graphql_skip_user_profile_image_extensions_enabled":
+          false,
       "responsive_web_graphql_timeline_navigation_enabled": true,
       "rweb_tipjar_consumption_enabled": false,
       "subscriptions_feature_can_gift_premium": false,
@@ -420,11 +504,13 @@ class TwitterApiService {
       'x-twitter-active-user': 'yes',
       'x-twitter-auth-type': 'OAuth2Session',
       'x-twitter-client-language': 'en',
-      'x-client-transaction-id': transactionId,
       'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
       'Referer': 'https://api.x.com/',
     };
+    if (transactionId != null && transactionId.isNotEmpty) {
+      headers['x-client-transaction-id'] = transactionId;
+    }
 
     final String url = 'https://api.x.com/graphql/$queryId/Followers';
 
@@ -446,6 +532,8 @@ class TwitterApiService {
           'Failed to fetch user information: Status ${response.statusCode}',
         );
       }
+    } on GraphQlRateLimitException {
+      rethrow;
     } on DioException catch (e, s) {
       logger.e(
         "Dio Error on getFollowers: ${e.response?.data}",
@@ -462,7 +550,7 @@ class TwitterApiService {
   Future<UserListResultGql> getFollowing(
     String userId,
     String cookie,
-    String transactionId,
+    String? transactionId,
     String cursor,
     String queryId, {
     String apiRequestMode = 'dio',
@@ -503,7 +591,8 @@ class TwitterApiService {
       "responsive_web_grok_community_note_auto_translation_is_enabled": true,
       "responsive_web_edit_tweet_api_enabled": true,
       "tweet_awards_web_tipping_enabled": true,
-      "tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled": true,
+      "tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":
+          true,
       "responsive_web_grok_share_attachment_enabled": true,
       "responsive_web_grok_analyze_button_fetch_trends_enabled": true,
       "premium_content_api_read_enabled": true,
@@ -540,11 +629,13 @@ class TwitterApiService {
       'x-twitter-active-user': 'yes',
       'x-twitter-auth-type': 'OAuth2Session',
       'x-twitter-client-language': 'en',
-      'x-client-transaction-id': transactionId,
       'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
       'Referer': 'https://api.x.com/',
     };
+    if (transactionId != null && transactionId.isNotEmpty) {
+      headers['x-client-transaction-id'] = transactionId;
+    }
 
     final String url = 'https://api.x.com/graphql/$queryId/Following';
 
@@ -561,6 +652,19 @@ class TwitterApiService {
       if (response.statusCode == 200 && response.data != null) {
         logger.d("Response data: ${response.data}");
         final Map<String, dynamic> data = response.data;
+
+        // X may return a direct list instead of the historical timeline
+        // instructions response shape.
+        final directUsers = data['data']?['users'];
+        if (directUsers is List) {
+          final users = directUsers
+              .whereType<Map>()
+              .where((user) => user['result'] is Map)
+              .map((user) => Map<String, dynamic>.from(user))
+              .toList();
+          logger.d('getFollowing: Parsed ${users.length} direct users.');
+          return UserListResultGql(users: users, nextCursor: null);
+        }
 
         final List<dynamic>? instructions =
             data['data']?['user']?['result']?['timeline']?['timeline']?['instructions']
@@ -631,6 +735,8 @@ class TwitterApiService {
           'Failed to fetch user information: Status ${response.statusCode}, Data: ${response.data}',
         );
       }
+    } on GraphQlRateLimitException {
+      rethrow;
     } on DioException catch (e, s) {
       logger.e(
         "Dio Error on getFollowing: ${e.response?.data}",

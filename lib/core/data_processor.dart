@@ -15,10 +15,13 @@ import '../services/image_history_service.dart';
 import '../repositories/account_repository.dart';
 import '../providers/x_client_transaction_provider.dart';
 import '../providers/graphql_queryid_provider.dart';
+import '../services/x_client_transaction_service.dart';
+import '../models/sync_progress.dart';
 
 typedef LogCallback = void Function(String message);
 // 回调定义保持不变
 typedef CheckPauseCallback = Future<void> Function();
+typedef WaitForRateLimitCallback = Future<void> Function(DateTime resetAt);
 
 class DataProcessor {
   final Ref _ref;
@@ -27,12 +30,17 @@ class DataProcessor {
   final TwitterApiV1Service _apiServiceV1;
   final String _ownerId;
   final String _ownerCookie;
+  final int _ownerFollowersCount;
+  final int _ownerFollowingCount;
   final AccountRepository _accountRepository;
   final LogCallback _log;
   final AppSettings _settings;
+  final SyncFetchMode _syncFetchMode;
   final ImageHistoryService _imageService;
 
   final CheckPauseCallback _checkPauseCallback;
+  final SyncProgressCallback _onProgress;
+  final WaitForRateLimitCallback _waitForRateLimit;
 
   late final NetworkDataFetcher _networkFetcher;
   late final new_network.NewNetworkDataFetcher _newNetworkFetcher;
@@ -48,9 +56,12 @@ class DataProcessor {
     required AccountRepository accountRepository,
     required Account ownerAccount,
     required AppSettings settings,
+    required SyncFetchMode syncFetchMode,
     required ImageHistoryService imageService,
     required LogCallback logCallback,
     required CheckPauseCallback checkPauseCallback,
+    required SyncProgressCallback onProgress,
+    required WaitForRateLimitCallback waitForRateLimit,
   }) : _ref = ref,
        _database = database,
        _apiServiceGql = apiServiceGql,
@@ -58,10 +69,15 @@ class DataProcessor {
        _accountRepository = accountRepository,
        _ownerId = ownerAccount.id,
        _ownerCookie = ownerAccount.cookie,
+       _ownerFollowersCount = ownerAccount.followersCount,
+       _ownerFollowingCount = ownerAccount.followingCount,
        _log = logCallback,
        _settings = settings,
+       _syncFetchMode = syncFetchMode,
        _imageService = imageService,
-       _checkPauseCallback = checkPauseCallback {
+       _checkPauseCallback = checkPauseCallback,
+       _onProgress = onProgress,
+       _waitForRateLimit = waitForRateLimit {
     _networkFetcher = NetworkDataFetcher(
       apiServiceGql: _apiServiceGql,
       apiServiceV1: _apiServiceV1,
@@ -70,6 +86,8 @@ class DataProcessor {
       ownerCookie: _ownerCookie,
       log: _log,
       checkPauseCallback: _checkPauseCallback,
+      onProgress: _onProgress,
+      waitForRateLimit: _waitForRateLimit,
       apiRequestMode: _settings.apiRequestMode,
       cffiUrl: _settings.remoteFastApiUrl,
       cffiApiKey: _settings.fastApiApiKey,
@@ -83,6 +101,8 @@ class DataProcessor {
       ownerCookie: _ownerCookie,
       log: _log,
       checkPauseCallback: _checkPauseCallback,
+      onProgress: _onProgress,
+      waitForRateLimit: _waitForRateLimit,
       apiRequestMode: _settings.apiRequestMode,
       cffiUrl: _settings.remoteFastApiUrl,
       cffiApiKey: _settings.fastApiApiKey,
@@ -94,6 +114,7 @@ class DataProcessor {
       ownerId: _ownerId,
       log: _log,
       checkPauseCallback: _checkPauseCallback,
+      onProgress: _onProgress,
     );
 
     _databaseUpdater = DatabaseUpdater(database: _database);
@@ -101,13 +122,14 @@ class DataProcessor {
 
   Future<void> _initializeRelationshipAnalyzer() async {
     // [Fix] 现在将回调注入分析器，解决分析阶段卡顿无法暂停的问题
-    final xctServiceAsyncValue = _ref.read(xctServiceProvider);
-    final xctService = await xctServiceAsyncValue.when(
-      data: (service) => Future.value(service),
-      loading: () =>
-          throw Exception('XClientTransactionService is still loading'),
-      error: (error, stackTrace) => throw error,
-    );
+    XClientTransactionService? xctService;
+    try {
+      xctService = await _ref.read(xctServiceProvider.future);
+    } catch (error) {
+      _log(
+        'WARNING: X transaction ID is unavailable ($error). Continuing without the optional header.',
+      );
+    }
 
     _relationshipAnalyzer = RelationshipAnalyzer(
       apiServiceGql: _apiServiceGql,
@@ -120,19 +142,24 @@ class DataProcessor {
       apiRequestMode: _settings.apiRequestMode,
       cffiUrl: _settings.remoteFastApiUrl,
       cffiApiKey: _settings.fastApiApiKey,
+      onProgress: _onProgress,
     );
   }
 
-  Future<void> _refreshOwnerProfile() async {
+  Future<Account?> _refreshOwnerProfile() async {
     _log("Refreshing owner account profile ($_ownerId)...");
     try {
       final ownerAccount = Account(id: _ownerId, cookie: _ownerCookie);
-      await _accountRepository.refreshAccountProfile(ownerAccount);
+      final refreshedAccount = await _accountRepository.refreshAccountProfile(
+        ownerAccount,
+      );
       _log("Owner account profile refresh successful.");
+      return refreshedAccount;
     } catch (e) {
       _log(
         "!!! WARNING: Failed to refresh owner account profile: $e. Continuing...",
       );
+      return null;
     }
   }
 
@@ -145,6 +172,12 @@ class DataProcessor {
         "!!! CRITICAL ERROR: Failed to initialize XClientTransactionID generator: $e",
       );
     }
+    _onProgress(
+      const SyncProgress(
+        stage: SyncStage.initializingServices,
+        step: SyncStep.loadingQueryIds,
+      ),
+    );
     _log("Loading GQL Query IDs...");
     try {
       _ref
@@ -156,6 +189,12 @@ class DataProcessor {
   }
 
   Future<void> runFullProcess() async {
+    _onProgress(
+      const SyncProgress(
+        stage: SyncStage.preparing,
+        step: SyncStep.generatingRunId,
+      ),
+    );
     _log("Starting analysis process for account ID: $_ownerId...");
     final runIdService = _ref.read(runIdProvider);
     final currentRunId = await runIdService.generateUniqueRunId();
@@ -164,14 +203,32 @@ class DataProcessor {
     try {
       await _checkPauseCallback();
 
-      await _refreshOwnerProfile();
+      _onProgress(
+        const SyncProgress(
+          stage: SyncStage.refreshingProfile,
+          step: SyncStep.refreshingOwnerProfile,
+        ),
+      );
+      final refreshedOwner = await _refreshOwnerProfile();
       await _checkPauseCallback();
 
+      _onProgress(
+        const SyncProgress(
+          stage: SyncStage.initializingServices,
+          step: SyncStep.initializingTransactionId,
+        ),
+      );
       await _initializeRelationshipAnalyzer();
       await _checkPauseCallback();
 
       await _initDependencies();
 
+      _onProgress(
+        const SyncProgress(
+          stage: SyncStage.loadingExistingData,
+          step: SyncStep.loadingExistingRelations,
+        ),
+      );
       _log("Fetching old relationships from database...");
       final oldRelationsList = await _database.getNetworkRelationships(
         _ownerId,
@@ -182,18 +239,39 @@ class DataProcessor {
       _log("Found ${oldRelationsMap.length} existing relationships.");
 
       await _checkPauseCallback();
+      _onProgress(const SyncProgress(stage: SyncStage.fetchingNetwork));
       late final NetworkFetchResult networkData;
-      if (_settings.apiRequestMode == 'curl_cffi' &&
-          _settings.remoteFastApiUrl.isNotEmpty &&
-          _settings.enableDataFetchingStrategy) {
-        final fetchedData = await _newNetworkFetcher.fetchAllNetworkData();
-        networkData = NetworkFetchResult(
-          uniqueUsers: fetchedData.uniqueUsers,
-          followerIds: fetchedData.followerIds,
-          followingIds: fetchedData.followingIds,
-        );
-      } else {
-        networkData = await _networkFetcher.fetchAllNetworkData();
+      final followersTotal =
+          refreshedOwner?.followersCount ?? _ownerFollowersCount;
+      final followingTotal =
+          refreshedOwner?.followingCount ?? _ownerFollowingCount;
+      switch (_syncFetchMode) {
+        case SyncFetchMode.fast:
+          networkData = await _networkFetcher.fetchAllNetworkData(
+            followersTotal: followersTotal,
+            followingTotal: followingTotal,
+          );
+        case SyncFetchMode.expert:
+          final fetchedData = await _newNetworkFetcher.fetchAllNetworkData(
+            followersTotal: followersTotal,
+            followingTotal: followingTotal,
+          );
+          networkData = NetworkFetchResult(
+            uniqueUsers: fetchedData.uniqueUsers,
+            followerIds: fetchedData.followerIds,
+            followingIds: fetchedData.followingIds,
+          );
+        case SyncFetchMode.fastest:
+          final fetchedData = await _newNetworkFetcher.fetchAllNetworkData(
+            followersTotal: followersTotal,
+            followingTotal: followingTotal,
+            enrichProfiles: false,
+          );
+          networkData = NetworkFetchResult(
+            uniqueUsers: fetchedData.uniqueUsers,
+            followerIds: fetchedData.followerIds,
+            followingIds: fetchedData.followingIds,
+          );
       }
       _log(
         "Finished fetching. Total unique users: ${networkData.uniqueUsers.length}",
@@ -201,6 +279,7 @@ class DataProcessor {
 
       await _checkPauseCallback();
 
+      _onProgress(const SyncProgress(stage: SyncStage.analyzingChanges));
       final analysisResult = await _relationshipAnalyzer.analyze(
         oldRelationsMap: oldRelationsMap,
         networkData: networkData,
@@ -211,15 +290,30 @@ class DataProcessor {
 
       await _checkPauseCallback();
 
+      _onProgress(const SyncProgress(stage: SyncStage.downloadingMedia));
       final mediaResult = await _mediaProcessor.processMedia(
         newUsers: networkData.uniqueUsers,
         oldRelations: oldRelationsMap,
+        followerIds: networkData.followerIds,
+        followingIds: networkData.followingIds,
       );
       _log("Finished downloading ${mediaResult.newDownloadCount} images.");
 
       await _checkPauseCallback();
 
+      _onProgress(
+        const SyncProgress(
+          stage: SyncStage.savingResults,
+          step: SyncStep.preparingDatabaseChanges,
+        ),
+      );
       _log("Writing changes to database...");
+      _onProgress(
+        const SyncProgress(
+          stage: SyncStage.savingResults,
+          step: SyncStep.writingDatabaseChanges,
+        ),
+      );
       await _databaseUpdater.saveChanges(
         ownerId: _ownerId,
         networkData: networkData,
@@ -227,8 +321,15 @@ class DataProcessor {
         mediaResult: mediaResult,
         oldRelationsMap: oldRelationsMap,
         currentRunId: currentRunId,
+        syncFetchMode: _syncFetchMode,
       );
 
+      _onProgress(
+        const SyncProgress(
+          stage: SyncStage.finalizing,
+          step: SyncStep.recordingSyncLog,
+        ),
+      );
       _log("Recording sync log...");
       await _databaseUpdater.insertSyncLog(
         runId: currentRunId,
@@ -240,6 +341,7 @@ class DataProcessor {
       _log(
         "Analysis process completed successfully for account ID: $_ownerId.",
       );
+      _onProgress(const SyncProgress(stage: SyncStage.completed));
     } catch (e, s) {
       _log("!!! CRITICAL ERROR: $e");
       _log("Stacktrace: $s");

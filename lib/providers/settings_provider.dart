@@ -27,12 +27,27 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
   Future<void> _load() async {
     state = const AsyncValue.loading();
     try {
-      final settings = await _settingsService.loadSettings();
+      final loaded = await _settingsService.loadSettings();
+      final settings = loaded.copyWith(
+        syncFetchMode: loaded.effectiveSyncFetchMode,
+      );
       state = AsyncValue.data(settings);
+      if (settings.syncFetchMode != loaded.syncFetchMode) {
+        await _settingsService.saveSettings(settings);
+      }
     } catch (e, s) {
       state = AsyncValue.error(e, s);
       _log.e('Loading settings failed', error: e, stackTrace: s);
     }
+  }
+
+  /// Applies settings parsed from a backup file and persists them immediately.
+  Future<void> restoreSettings(AppSettings settings) async {
+    final normalized = settings.copyWith(
+      syncFetchMode: settings.effectiveSyncFetchMode,
+    );
+    state = AsyncValue.data(normalized);
+    await _settingsService.saveSettings(normalized);
   }
 
   Future<void> updateCustomGqlQueryId(
@@ -104,14 +119,22 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
     await _settingsService.saveSettings(newState);
   }
 
-  Future<void> updateEnableDataFetchingStrategy(bool enabled) async {
+  Future<void> updateMediaSaveScope(MediaSaveScope scope) async {
     final currentState = state;
-    if (currentState is! AsyncData<AppSettings>) {
-      return;
-    }
+    if (currentState is! AsyncData<AppSettings>) return;
+
+    final newState = currentState.value.copyWith(mediaSaveScope: scope);
+    state = AsyncValue.data(newState);
+    await _settingsService.saveSettings(newState);
+  }
+
+  Future<void> updateSyncFetchMode(SyncFetchMode mode) async {
+    final currentState = state;
+    if (currentState is! AsyncData<AppSettings>) return;
     final currentSettings = currentState.value;
-    final newState = currentSettings.copyWith(
-      enableDataFetchingStrategy: enabled,
+    final requested = currentSettings.copyWith(syncFetchMode: mode);
+    final newState = requested.copyWith(
+      syncFetchMode: requested.effectiveSyncFetchMode,
     );
     state = AsyncValue.data(newState);
     await _settingsService.saveSettings(newState);
@@ -169,7 +192,10 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
     if (currentState is! AsyncData<AppSettings>) return;
 
     final currentSettings = currentState.value;
-    final newState = currentSettings.copyWith(apiRequestMode: newMode);
+    final requested = currentSettings.copyWith(apiRequestMode: newMode);
+    final newState = requested.copyWith(
+      syncFetchMode: requested.effectiveSyncFetchMode,
+    );
     state = AsyncValue.data(newState);
     await _settingsService.saveSettings(newState);
   }

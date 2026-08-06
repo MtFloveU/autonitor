@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:isolate';
 import 'package:dio/dio.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,13 +12,7 @@ import 'log_service.dart';
 
 final imageHistoryServiceProvider = Provider<ImageHistoryService>((ref) {
   final db = ref.watch(databaseProvider);
-  final dio = Dio(
-    BaseOptions(
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 30),
-    ),
-  );
-  return ImageHistoryService(db, dio);
+  return ImageHistoryService(db);
 });
 
 enum MediaType { avatar, banner }
@@ -26,10 +21,9 @@ const String _kMediaHistoryDirName = 'media_history';
 
 class ImageHistoryService {
   final AppDatabase _db;
-  final Dio _dio;
   String? _basePath;
 
-  ImageHistoryService(this._db, this._dio);
+  ImageHistoryService(this._db);
 
   Future<String?> saveMediaIfNotExists({
     required String remoteUrl,
@@ -96,8 +90,9 @@ class ImageHistoryService {
 
   Future<bool> _downloadImage(String url, String savePath) async {
     try {
-      await _dio.download(url, savePath, options: Options());
-      return true;
+      // HTTP transfer and file writes can be expensive when many profile
+      // images finish together. Keep them out of the analysis/UI isolate.
+      return await Isolate.run(() => _downloadImageInBackground(url, savePath));
     } on DioException catch (e) {
       logger.e("Image download failed for $url: ${e.message}", error: e);
       try {
@@ -320,5 +315,29 @@ class ImageHistoryService {
     }
 
     return relativePath;
+  }
+}
+
+/// Top-level so it can run in a background isolate. It intentionally has no
+/// database or Flutter dependencies; the caller persists successful downloads
+/// on the main isolate afterwards.
+Future<bool> _downloadImageInBackground(String url, String savePath) async {
+  final dio = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 30),
+    ),
+  );
+  try {
+    await dio.download(url, savePath, options: Options());
+    return true;
+  } catch (_) {
+    final file = File(savePath);
+    if (await file.exists()) {
+      await file.delete();
+    }
+    return false;
+  } finally {
+    dio.close(force: true);
   }
 }

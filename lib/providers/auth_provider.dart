@@ -171,6 +171,22 @@ class AccountsNotifier extends StateNotifier<List<Account>> {
     }
   }
 
+  Future<void> updateAccountCookie(String id, String cookie) async {
+    if (cookie.trim().isEmpty) {
+      throw ArgumentError.value(cookie, 'cookie', 'Cookie cannot be empty.');
+    }
+    await _accountRepository.updateAccountCookie(id, cookie.trim());
+    await loadAccounts();
+  }
+
+  /// Reloads restored account profiles while preserving credentials already
+  /// stored on this device. Backups never include cookies, so an existing
+  /// cookie is the only valid credential for a restored account.
+  Future<void> reloadAccountsAfterRestore() async {
+    await _storageService.deleteActiveAccountId();
+    await loadAccounts();
+  }
+
   Future<void> removeAccount(String id) async {
     try {
       await _accountRepository.removeAccount(id);

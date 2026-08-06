@@ -1,8 +1,6 @@
 // lib/repositories/account_repository.dart
 import 'dart:async';
 import 'package:autonitor/models/twitter_user.dart';
-import 'package:autonitor/providers/x_client_transaction_provider.dart';
-import 'package:autonitor/services/x_client_transaction_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart';
 import 'dart:convert';
@@ -72,9 +70,23 @@ class AccountRepository {
     if (id == null) {
       throw Exception('Unable to parse ID from Cookie');
     }
+    final account = await _fetchAndSaveAccountProfile(id, cookie);
     await _secureStorage.saveCookie(id, cookie);
     logger.i("addAccount: Saved cookie to SecureStorage for ID: $id");
-    return await _fetchAndSaveAccountProfile(id, cookie);
+    return account;
+  }
+
+  /// Prevents replacing an account's credential with a cookie for another
+  /// account. The account ID is the profile `rest_id` persisted by the app.
+  Future<void> updateAccountCookie(String accountId, String cookie) async {
+    final cookieAccountId = _parseidFromCookie(cookie);
+    if (cookieAccountId == null) {
+      throw Exception('Unable to parse ID from Cookie');
+    }
+    if (cookieAccountId != accountId) {
+      throw Exception('Cookie twid does not match the target account rest_id.');
+    }
+    await _secureStorage.saveCookie(accountId, cookie);
   }
 
   Future<void> removeAccount(String id) async {
@@ -128,36 +140,37 @@ class AccountRepository {
       final List<Account> loadedAccounts = [];
       for (final profile in profiles) {
         final cookie = cookies[profile.id];
-        if (cookie != null) {
-          loadedAccounts.add(
-            Account(
-              id: profile.id,
-              cookie: cookie,
-              name: profile.name,
-              screenName: profile.screenName,
-              avatarUrl: profile.avatarUrl,
-              bannerUrl: profile.bannerUrl,
-              // [修复 1] 映射本地路径字段
-              avatarLocalPath: profile.avatarLocalPath,
-              bannerLocalPath: profile.bannerLocalPath,
-              bio: profile.bio,
-              location: profile.location,
-              link: profile.link,
-              joinTime: profile.joinTime,
-              followersCount: profile.followersCount,
-              followingCount: profile.followingCount,
-              statusesCount: profile.statusesCount,
-              mediaCount: profile.mediaCount,
-              favouritesCount: profile.favouritesCount,
-              listedCount: profile.listedCount,
-              latestRawJson: profile.latestRawJson,
-              isVerified: profile.isVerified ?? false,
-              isProtected: profile.isProtected ?? false,
-            ),
-          );
-        } else {
+        loadedAccounts.add(
+          Account(
+            id: profile.id,
+            // Database backups intentionally contain no cookies. Keep the
+            // profile visible after restore so the user can enter a new one.
+            cookie: cookie ?? '',
+            name: profile.name,
+            screenName: profile.screenName,
+            avatarUrl: profile.avatarUrl,
+            bannerUrl: profile.bannerUrl,
+            // [修复 1] 映射本地路径字段
+            avatarLocalPath: profile.avatarLocalPath,
+            bannerLocalPath: profile.bannerLocalPath,
+            bio: profile.bio,
+            location: profile.location,
+            link: profile.link,
+            joinTime: profile.joinTime,
+            followersCount: profile.followersCount,
+            followingCount: profile.followingCount,
+            statusesCount: profile.statusesCount,
+            mediaCount: profile.mediaCount,
+            favouritesCount: profile.favouritesCount,
+            listedCount: profile.listedCount,
+            latestRawJson: profile.latestRawJson,
+            isVerified: profile.isVerified ?? false,
+            isProtected: profile.isProtected ?? false,
+          ),
+        );
+        if (cookie == null) {
           logger.w(
-            "AccountRepository: Profile found for ID ${profile.id} but no cookie in SecureStorage. Skipping.",
+            "AccountRepository: Profile found for ID ${profile.id} but no cookie in SecureStorage.",
           );
         }
       }
@@ -200,13 +213,6 @@ class AccountRepository {
       final queryId = _ref
           .read(gqlQueryIdProvider.notifier)
           .getCurrentQueryIdForDisplay('UserByRestId');
-      final XClientTransactionService service = await _ref.read(
-        xctServiceProvider.future,
-      );
-      service.generateTransactionId(
-        method: "GET",
-        url: 'https://api.x.com/graphql/$queryId/UserByRestId',
-      );
       final settings = _ref.read(settingsProvider).valueOrNull ?? AppSettings();
 
       // 1. 获取原始 API 数据
@@ -226,6 +232,15 @@ class AccountRepository {
       // [核心修复] 2. 使用新工厂方法进行标准化解析
       // 这会自动处理：深层嵌套剥离、生日解析、BioLinks 提取
       final twitterUser = TwitterUser.fromUsersByRestIds(userData);
+
+      // The authenticated account identified by twid must be the profile
+      // returned for that ID. Do this before writing either credentials or
+      // profile rows, so a mismatched cookie cannot be persisted.
+      if (twitterUser.restId != id) {
+        throw Exception(
+          'Cookie twid does not match the returned profile rest_id.',
+        );
+      }
 
       // [核心修复] 3. 将标准化后的对象序列化为 JSON
       // 现在存入数据库的是扁平结构，HistoryWorker 可以识别了！

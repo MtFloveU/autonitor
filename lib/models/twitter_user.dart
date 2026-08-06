@@ -70,6 +70,8 @@ class TwitterUser {
   });
 
   factory TwitterUser.fromJson(Map<String, dynamic> json) {
+    int getInt(String key) => int.tryParse(json[key]?.toString() ?? '') ?? 0;
+
     return TwitterUser(
       restId: json['rest_id'] as String? ?? '',
       name: json['name'] as String?,
@@ -91,12 +93,12 @@ class TwitterUser {
       link: json['link'] as String?,
       isVerified: json['is_verified'] as bool? ?? false,
       isProtected: json['is_protected'] as bool? ?? false,
-      followersCount: json['followers_count'] as int? ?? 0,
-      followingCount: json['following_count'] as int? ?? 0,
-      statusesCount: json['statuses_count'] as int? ?? 0,
-      listedCount: json['listed_count'] as int? ?? 0,
-      favouritesCount: json['favourites_count'] as int? ?? 0,
-      mediaCount: json['media_count'] as int? ?? 0,
+      followersCount: getInt('followers_count'),
+      followingCount: getInt('following_count'),
+      statusesCount: getInt('statuses_count'),
+      listedCount: getInt('listed_count'),
+      favouritesCount: getInt('favourites_count'),
+      mediaCount: getInt('media_count'),
       isFollowing: json['is_following'] as bool? ?? false,
       isFollower: json['is_follower'] as bool? ?? false,
       canDm: json['can_dm'] as bool? ?? false,
@@ -191,14 +193,17 @@ class TwitterUser {
 
   // [修改] 增强版 fromGraphQL：集成了 bioLinks 和 生日解析
   factory TwitterUser.fromGraphQL(Map<String, dynamic> raw, String runId) {
-    // 兼容逻辑：如果 raw 本身就是 result 层，则直接使用；否则尝试查找 result 字段
-    final result = raw['result'] ?? raw;
+    final result = _unwrapGraphQLUser(raw);
 
-    final legacy = (result['legacy'] ?? {});
-    final core = (result['core'] ?? {});
-    final relationship = (result['relationship_perspectives'] ?? {});
-    final dm = (result['dm_permissions'] ?? {});
-    final media = (result['media_permissions'] ?? {});
+    final legacy = _asStringKeyedMap(result['legacy']);
+    final core = _asStringKeyedMap(result['core']);
+    final relationship = _asStringKeyedMap(result['relationship_perspectives']);
+    final dm = _asStringKeyedMap(result['dm_permissions']);
+    final media = _asStringKeyedMap(result['media_permissions']);
+    final relationshipCounts = _asStringKeyedMap(result['relationship_counts']);
+    final tweetCounts = _asStringKeyedMap(result['tweet_counts']);
+    final actionCounts = _asStringKeyedMap(result['action_counts']);
+    final profileBio = _asStringKeyedMap(result['profile_bio']);
 
     String? professionalCategory;
     final professionalCategories = result['professional']?['category'];
@@ -215,7 +220,15 @@ class TwitterUser {
       }
     }
 
-    int getInt(String key) => int.tryParse(legacy[key]?.toString() ?? '0') ?? 0;
+    int getInt(
+      String legacyKey, {
+      Map<String, dynamic>? fallback,
+      String? fallbackKey,
+    }) {
+      final value = legacy[legacyKey] ?? fallback?[fallbackKey ?? legacyKey];
+      return int.tryParse(value?.toString() ?? '0') ?? 0;
+    }
+
     String? getString(String key) => legacy[key] as String?;
 
     // --- 1. 生日解析 (Birthdate) [新增] ---
@@ -234,17 +247,22 @@ class TwitterUser {
 
     // --- 2. 简介 (Bio) 和 链接提取 (BioLinks) ---
     String? description = legacy['description'] as String?;
-    description ??=
-        (result['profile_bio']?['description'] as String?) ?? description;
+    description ??= profileBio['description'] as String?;
 
     // 2.1 统一获取 URL 列表
-    final List descUrlList =
-        (legacy['entities']?['description']?['urls'] as List?) ?? [];
+    final legacyEntities = _asStringKeyedMap(legacy['entities']);
+    final profileBioEntities = _asStringKeyedMap(profileBio['entities']);
+    final entities = legacyEntities.isNotEmpty
+        ? legacyEntities
+        : profileBioEntities;
+    final descriptionEntities = _asStringKeyedMap(entities['description']);
+    final List descUrlList = _asList(descriptionEntities['urls']);
 
     // 2.2 提取 bioLinks (优先提取，保持数据纯净)
     final List<Map<String, String>> extractedLinks = [];
     if (descUrlList.isNotEmpty) {
       for (final entry in descUrlList) {
+        if (entry is! Map) continue;
         final String? expanded = entry['expanded_url']?.toString();
         if (expanded != null && expanded.isNotEmpty) {
           extractedLinks.add({'expanded_url': expanded});
@@ -253,33 +271,21 @@ class TwitterUser {
     }
 
     // 2.3 替换简介文本中的 t.co 链接
-    if (description != null && descUrlList.isNotEmpty) {
-      for (final urlEntry in descUrlList) {
-        final String? shortUrl = urlEntry['url'] as String?;
-        final String? expanded =
-            urlEntry['expanded_url'] as String? ??
-            urlEntry['display_url'] as String?;
-        if (shortUrl != null && expanded != null && shortUrl != expanded) {
-          description = description?.replaceAll(shortUrl, expanded);
-        }
-      }
-      description = description?.trim();
-    }
+    description = _expandBioUrls(description, descUrlList);
 
     // --- 3. 其他字段解析 ---
     String? link;
-    final List urlEntities =
-        (legacy['entities']?['url']?['urls'] as List?) ?? [];
-    if (urlEntities.isNotEmpty) {
-      final first = urlEntities.firstWhere(
-        (e) => e is Map && e['expanded_url'] != null,
-        orElse: () => null,
-      );
-      if (first != null && first is Map) {
-        link = first['expanded_url'] as String?;
+    final urlEntities = _asList(_asStringKeyedMap(entities['url'])['urls']);
+    for (final entity in urlEntities) {
+      if (entity is! Map) continue;
+      final expandedUrl = entity['expanded_url']?.toString();
+      if (expandedUrl != null && expandedUrl.isNotEmpty) {
+        link = expandedUrl;
+        break;
       }
     }
     link = link ?? getString('url');
+    link = link ?? _asStringKeyedMap(result['website'])['url']?.toString();
 
     return TwitterUser(
       restId: result['rest_id']?.toString() ?? '',
@@ -287,7 +293,9 @@ class TwitterUser {
       screenName: core['screen_name'] as String?,
       avatarUrl: result['avatar']?['image_url'] as String?,
       avatarLocalPath: null,
-      bannerUrl: legacy['profile_banner_url'] as String?,
+      bannerUrl:
+          legacy['profile_banner_url'] as String? ??
+          _asStringKeyedMap(result['banner'])['image_url'] as String?,
       bannerLocalPath: null,
       bio: description,
       bioLinks: extractedLinks, // 传入提取的链接
@@ -296,7 +304,9 @@ class TwitterUser {
       pinnedTweetIdStr:
           (legacy['pinned_tweet_ids_str'] as List?)?.isNotEmpty == true
           ? (legacy['pinned_tweet_ids_str'] as List).first?.toString()
-          : null,
+          : _asList(
+              _asStringKeyedMap(result['pinned_items'])['tweet_ids_str'],
+            ).firstOrNull?.toString(),
       // 传入解析的生日信息
       birthdateYear: bYear,
       birthdateMonth: bMonth,
@@ -310,12 +320,32 @@ class TwitterUser {
       isProtected:
           (result['privacy']?['protected'] == true) ||
           (legacy['protected'] == true),
-      followersCount: getInt('followers_count'),
-      followingCount: getInt('friends_count'),
-      statusesCount: getInt('statuses_count'),
+      followersCount: getInt(
+        'followers_count',
+        fallback: relationshipCounts,
+        fallbackKey: 'followers',
+      ),
+      followingCount: getInt(
+        'friends_count',
+        fallback: relationshipCounts,
+        fallbackKey: 'following',
+      ),
+      statusesCount: getInt(
+        'statuses_count',
+        fallback: tweetCounts,
+        fallbackKey: 'tweets',
+      ),
       listedCount: getInt('listed_count'),
-      favouritesCount: getInt('favourites_count'),
-      mediaCount: getInt('media_count'),
+      favouritesCount: getInt(
+        'favourites_count',
+        fallback: actionCounts,
+        fallbackKey: 'favorites_count',
+      ),
+      mediaCount: getInt(
+        'media_count',
+        fallback: tweetCounts,
+        fallbackKey: 'media_tweets',
+      ),
       isFollowing: relationship['following'] == true,
       isFollower: relationship['followed_by'] == true,
       canDm: dm['can_dm'] == true,
@@ -355,21 +385,10 @@ class TwitterUser {
     }
 
     // [逻辑保持] 4. 简介文本替换逻辑 (用于显示 expanded_url)
-    if (description != null && descUrlList.isNotEmpty) {
-      for (final urlEntry in descUrlList) {
-        final String? shortUrl = urlEntry['url'] as String?;
-        final String? expanded =
-            urlEntry['expanded_url'] as String? ??
-            urlEntry['display_url'] as String?;
-        if (shortUrl != null && expanded != null && shortUrl != expanded) {
-          description = description?.replaceAll(shortUrl, expanded);
-        }
-      }
-      description = description?.trim();
-    }
+    description = _expandBioUrls(description, descUrlList);
 
     return TwitterUser(
-      restId: getString('id_str') ?? '',
+      restId: getString('id_str') ?? raw['id']?.toString() ?? '',
       name: getString('name'),
       screenName: getString('screen_name'),
       avatarUrl: getString('profile_image_url_https'),
@@ -398,6 +417,74 @@ class TwitterUser {
       canDm: getBool('can_dm') == true,
       canMediaTag: getBool('can_media_tag') == true,
     );
+  }
+
+  /// Unwraps the distinct GraphQL user containers until it reaches the node
+  /// that actually owns `legacy`.  Reading a wrapper's missing `legacy` was
+  /// the reason valid profile counters were serialized as zero.
+  static Map<String, dynamic> _unwrapGraphQLUser(Map<String, dynamic> raw) {
+    Map<String, dynamic> current = raw;
+    for (var depth = 0; depth < 8; depth++) {
+      if (current['legacy'] is Map) return current;
+
+      final directResult = current['result'];
+      final userResults = current['user_results'];
+      final data = current['data'];
+      final user = data is Map ? data['user'] : null;
+      final next = directResult is Map
+          ? directResult
+          : userResults is Map
+          ? userResults
+          : user is Map
+          ? user
+          : null;
+      if (next is! Map) break;
+      current = Map<String, dynamic>.from(next);
+    }
+    return current;
+  }
+
+  static Map<String, dynamic> _asStringKeyedMap(dynamic value) {
+    return value is Map ? Map<String, dynamic>.from(value) : const {};
+  }
+
+  static List _asList(dynamic value) => value is List ? value : const [];
+
+  /// X sometimes returns a t.co URL in `description` that is not byte-for-
+  /// byte identical to its URL entity.  First use exact entity pairs, then
+  /// replace any remaining t.co URLs in entity order.
+  static String? _expandBioUrls(String? description, List urlEntities) {
+    if (description == null || urlEntities.isEmpty) return description;
+
+    var expandedDescription = description;
+    final unmatchedExpansions = <String>[];
+    for (final entity in urlEntities) {
+      if (entity is! Map) continue;
+      final shortUrl = entity['url']?.toString();
+      final expandedUrl =
+          entity['expanded_url']?.toString() ??
+          entity['display_url']?.toString();
+      if (expandedUrl == null || expandedUrl.isEmpty) continue;
+
+      if (shortUrl != null &&
+          shortUrl.isNotEmpty &&
+          expandedDescription.contains(shortUrl)) {
+        expandedDescription = expandedDescription.replaceAll(
+          shortUrl,
+          expandedUrl,
+        );
+      } else {
+        unmatchedExpansions.add(expandedUrl);
+      }
+    }
+
+    expandedDescription = expandedDescription.replaceAllMapped(
+      RegExp(r'https?://t\.co/[A-Za-z0-9]+'),
+      (match) => unmatchedExpansions.isEmpty
+          ? match.group(0)!
+          : unmatchedExpansions.removeAt(0),
+    );
+    return expandedDescription.trim();
   }
 
   Map<String, dynamic> toJson() {
@@ -436,6 +523,28 @@ class TwitterUser {
       'can_dm': canDm,
       'can_media_tag': canMediaTag,
     };
+  }
+
+  /// Keeps metadata which lower-fidelity fetch plans do not reliably return.
+  /// Expert syncs bypass this method so a real removal is persisted.
+  TwitterUser retainUnavailableExpertFieldsFrom(TwitterUser previous) {
+    var merged = this;
+    if (merged.professionalCategory == null &&
+        previous.professionalCategory != null) {
+      merged = merged.copyWith(
+        professionalCategory: previous.professionalCategory,
+      );
+    }
+    if (merged.birthdateYear == null && previous.birthdateYear != null) {
+      merged = merged.copyWith(birthdateYear: previous.birthdateYear);
+    }
+    if (merged.birthdateMonth == null && previous.birthdateMonth != null) {
+      merged = merged.copyWith(birthdateMonth: previous.birthdateMonth);
+    }
+    if (merged.birthdateDay == null && previous.birthdateDay != null) {
+      merged = merged.copyWith(birthdateDay: previous.birthdateDay);
+    }
+    return merged;
   }
 
   TwitterUser copyWith({

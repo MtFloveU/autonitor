@@ -41,8 +41,8 @@ class HistoryRepository {
         _db.loggedAccounts,
       )..where((tbl) => tbl.id.equals(ownerId))).getSingleOrNull();
       latestRawJson = account?.latestRawJson;
-      // 登录账户目前没有 RunID 概念，暂时使用当前时间
-      currentStateTs = DateTime.now().millisecondsSinceEpoch;
+      // 当前资料快照对应最近一次同步，而不是用户打开图表的时间。
+      currentStateTs = await _getLatestSyncTimestamp(ownerId);
 
       if (latestRawJson != null) {
         final historyEntries =
@@ -81,7 +81,7 @@ class HistoryRepository {
 
         currentStateTs =
             currentRunLog?.timestamp.millisecondsSinceEpoch ??
-            DateTime.now().millisecondsSinceEpoch;
+            await _getLatestSyncTimestamp(ownerId);
 
         // [修复] 联表查询：获取历史记录及其对应的业务时间戳
         final query =
@@ -337,7 +337,7 @@ class HistoryRepository {
                 .getSingleOrNull();
         currentStateTs =
             currentRunLog?.timestamp.millisecondsSinceEpoch ??
-            DateTime.now().millisecondsSinceEpoch;
+            await _getLatestSyncTimestamp(ownerId);
 
         // [修复] 联表查询：提取 RunID 和 Log Timestamp
         final query =
@@ -473,5 +473,25 @@ class HistoryRepository {
     }
 
     return HistoryPagedResult(snapshots: snapshots, totalCount: totalCount);
+  }
+
+  /// Returns the persisted business time for the newest completed sync.
+  ///
+  /// A profile row does not store its own update timestamp.  Using the wall
+  /// clock here made its newest chart point move to "now" every time the
+  /// chart was opened, even though the data was collected earlier.
+  Future<int?> _getLatestSyncTimestamp(String ownerId) async {
+    final latestLog =
+        await (_db.select(_db.syncLogs)
+              ..where((tbl) => tbl.ownerId.equals(ownerId))
+              ..orderBy([
+                (tbl) => OrderingTerm(
+                  expression: tbl.timestamp,
+                  mode: OrderingMode.desc,
+                ),
+              ])
+              ..limit(1))
+            .getSingleOrNull();
+    return latestLog?.timestamp.millisecondsSinceEpoch;
   }
 }

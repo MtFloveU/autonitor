@@ -9,7 +9,6 @@ Widget _buildNetworkSection(
   AppSettings settings,
   TextEditingController remoteFastApiUrlController,
   TextEditingController fastApiApiKeyController,
-  VoidCallback onAdvancedModeTap,
 ) {
   final colorScheme = Theme.of(context).colorScheme;
   final textTheme = Theme.of(context).textTheme;
@@ -141,18 +140,6 @@ Widget _buildNetworkSection(
                         .read(settingsProvider.notifier)
                         .updateFastApiApiKey(value.trim());
                   },
-                ),
-                const SizedBox(height: 8),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(
-                    Icons.tune_outlined,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                  title: Text(l10n.advanced_mode),
-                  subtitle: Text(l10n.advanced_mode_description),
-                  trailing: Icon(Icons.chevron_right),
-                  onTap: onAdvancedModeTap,
                 ),
               ],
             ),

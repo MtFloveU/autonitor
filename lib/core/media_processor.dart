@@ -1,15 +1,14 @@
 import 'package:async/async.dart';
 import 'package:async_locks/async_locks.dart';
 import '../models/app_settings.dart';
-import '../services/database.dart'; // 为了 FollowUser (如果还用到)
+import '../services/database.dart';
 import '../services/image_history_service.dart';
-import '../models/twitter_user.dart'; // [新增]
+import '../models/sync_progress.dart';
+import '../models/twitter_user.dart';
 
 typedef LogCallback = void Function(String message);
 
-// 数据类，保存处理结果
 class MediaProcessingResult {
-  // 包含所有用户的媒体路径（无论是新下载的还是数据库已有的）
   final Map<String, Map<MediaType, String>> downloadedPaths;
   final int newDownloadCount;
 
@@ -19,7 +18,6 @@ class MediaProcessingResult {
   });
 }
 
-// 内部辅助类：下载候选任务
 class _MediaCandidate {
   final String userId;
   final String remoteUrl;
@@ -38,32 +36,45 @@ class MediaProcessor {
   final ImageHistoryService _imageService;
   final AppSettings _settings;
   final LogCallback _log;
-  // [新增] 暂停回调
   final Future<void> Function() _checkPauseCallback;
+  final SyncProgressCallback? _onProgress;
+
+  // 每提交多少个 Future 后向事件循环让一次宏任务时间片。
+  // await _checkPauseCallback() 是微任务让步（不触发 vsync），
+  // Future.delayed(Duration.zero) 是宏任务让步（允许 Flutter 处理帧/输入）。
+  static const int _submitBatchSize = 50;
 
   MediaProcessor({
     required ImageHistoryService imageService,
     required AppSettings settings,
     required String ownerId,
     required LogCallback log,
-    required Future<void> Function() checkPauseCallback, // [Init]
+    required Future<void> Function() checkPauseCallback,
+    SyncProgressCallback? onProgress,
   }) : _imageService = imageService,
        _settings = settings,
        _log = log,
-       _checkPauseCallback = checkPauseCallback;
+       _checkPauseCallback = checkPauseCallback,
+       _onProgress = onProgress;
 
   Future<MediaProcessingResult> processMedia({
-    // [修改] 适配 TwitterUser
     required Map<String, TwitterUser> newUsers,
     required Map<String, FollowUser> oldRelations,
+    required Set<String> followerIds,
+    required Set<String> followingIds,
   }) async {
     final List<_MediaCandidate> candidates = [];
 
-    // 1. 收集所有潜在的媒体任务
     for (final userId in newUsers.keys) {
       final user = newUsers[userId]!;
+      final shouldSaveMedia = switch (_settings.mediaSaveScope) {
+        MediaSaveScope.all => true,
+        MediaSaveScope.followingOnly => followingIds.contains(userId),
+        MediaSaveScope.mutualOnly =>
+          followerIds.contains(userId) && followingIds.contains(userId),
+      };
+      if (!shouldSaveMedia) continue;
 
-      // --- Avatar ---
       if (user.avatarUrl != null &&
           user.avatarUrl!.isNotEmpty &&
           _settings.saveAvatarHistory) {
@@ -77,7 +88,6 @@ class MediaProcessor {
         );
       }
 
-      // --- Banner ---
       if (user.bannerUrl != null &&
           user.bannerUrl!.isNotEmpty &&
           _settings.saveBannerHistory) {
@@ -86,32 +96,40 @@ class MediaProcessor {
             userId: userId,
             remoteUrl: user.bannerUrl!,
             mediaType: MediaType.banner,
-            isHighQuality: true, // 横幅默认高质量
+            isHighQuality: true,
           ),
         );
       }
     }
 
-    // 2. 执行筛选和下载
     return _processCandidates(candidates);
   }
 
   Future<MediaProcessingResult> _processCandidates(
     List<_MediaCandidate> candidates,
   ) async {
-    _log("Checking status for media items...");
+    _log("Checking status for ${candidates.length} media items...");
+    _onProgress?.call(
+      SyncProgress(
+        stage: SyncStage.downloadingMedia,
+        step: SyncStep.checkingMedia,
+        completedItems: 0,
+        totalItems: candidates.length,
+      ),
+    );
 
     final Map<String, Map<MediaType, String>> finalPaths = {};
     final List<_MediaCandidate> toDownload = [];
+    var checked = 0;
 
-    // --- 阶段 A: 并发检查数据库 (Filter Phase) ---
-    final checkSemaphore = Semaphore(50); // 限制并发查库数
+    // ── 阶段 A：并发 DB 检查 ──────────────────────────────────────────────
+    final checkSemaphore = Semaphore(50);
     final checkGroup = FutureGroup<void>();
 
-    for (final candidate in candidates) {
-      // [Check] 提交任务前检查暂停
+    for (int i = 0; i < candidates.length; i++) {
       await _checkPauseCallback();
 
+      final candidate = candidates[i];
       checkGroup.add(
         Future(() async {
           await checkSemaphore.acquire();
@@ -119,38 +137,55 @@ class MediaProcessor {
             final existing = await _imageService.getMediaRecord(
               candidate.remoteUrl,
             );
-            bool needsDownload = true;
-
-            if (existing != null) {
-              // 如果已存在，检查是否需要升级画质
-              if (!existing.isHighQuality && candidate.isHighQuality) {
-                needsDownload = true; // 需要升级 -> 加入下载队列
-              } else {
-                needsDownload = false; // 不需要下载 -> 直接使用现有路径
-                _addPathToResult(
-                  finalPaths,
-                  candidate.userId,
-                  candidate.mediaType,
-                  existing.localFilePath,
-                );
-              }
-            }
-
-            if (needsDownload) {
+            if (existing != null &&
+                (existing.isHighQuality || !candidate.isHighQuality)) {
+              // 已有且无需升级画质，直接复用
+              _addPathToResult(
+                finalPaths,
+                candidate.userId,
+                candidate.mediaType,
+                existing.localFilePath,
+              );
+            } else {
               toDownload.add(candidate);
             }
+            checked++;
+            _onProgress?.call(
+              SyncProgress(
+                stage: SyncStage.downloadingMedia,
+                step: SyncStep.checkingMedia,
+                completedItems: checked,
+                totalItems: candidates.length,
+              ),
+            );
           } finally {
             checkSemaphore.release();
           }
         }),
       );
+
+      // 修复 1：每提交 _submitBatchSize 个 Future 后 yield 一次宏任务时间片。
+      // Future.delayed(Duration.zero) 经 Timer 调度，优先级低于微任务队列，
+      // 能让 Flutter 引擎处理 vsync / 触摸事件，彻底解决 UI 无响应问题。
+      // 对照：await _checkPauseCallback() 仅让步微任务，不能触发 vsync。
+      if ((i + 1) % _submitBatchSize == 0) {
+        await Future.delayed(Duration.zero);
+      }
     }
 
     checkGroup.close();
     await checkGroup.future;
 
-    // --- 阶段 B: 执行下载 (Download Phase) ---
+    // ── 阶段 B：并发下载 ──────────────────────────────────────────────────
     _log("Found ${toDownload.length} new media items to download.");
+    _onProgress?.call(
+      SyncProgress(
+        stage: SyncStage.downloadingMedia,
+        step: SyncStep.downloadingMedia,
+        completedItems: 0,
+        totalItems: toDownload.length,
+      ),
+    );
 
     if (toDownload.isEmpty) {
       return MediaProcessingResult(
@@ -159,26 +194,29 @@ class MediaProcessor {
       );
     }
 
-    final downloadSemaphore = Semaphore(20); // 限制并发下载数
+    final downloadSemaphore = Semaphore(20);
     final downloadGroup = FutureGroup<void>();
-    int completed = 0;
-    final counterLock = Semaphore(1); // 简单的计数锁
 
-    for (final task in toDownload) {
-      // [Check] 提交下载任务前检查暂停
+    // 修复 2：移除 counterLock（Semaphore(1)）。
+    // Dart 是单线程的，两个 await 之间的代码段天然是原子的。
+    // completed++ 和 _log() 都发生在同步窗口内，其他协程无法插入，
+    // 完全不需要互斥锁，白加两次异步状态机跳转（acquire + release）。
+    int completed = 0;
+    int finishedDownloads = 0;
+
+    for (int i = 0; i < toDownload.length; i++) {
       await _checkPauseCallback();
 
+      final task = toDownload[i];
       downloadGroup.add(
         Future(() async {
           await downloadSemaphore.acquire();
           try {
-            // 执行实际下载逻辑
             final localPath = await _imageService.downloadAndSave(
               remoteUrl: task.remoteUrl,
               mediaType: task.mediaType,
               isHighQuality: task.isHighQuality,
             );
-
             if (localPath != null) {
               _addPathToResult(
                 finalPaths,
@@ -186,21 +224,37 @@ class MediaProcessor {
                 task.mediaType,
                 localPath,
               );
-
-              // 更新进度日志
-              await counterLock.acquire();
+              // 安全：同步递增，await downloadAndSave() 已返回，
+              // 当前执行到此处时无其他协程可抢占
               completed++;
               _log("Download progress: $completed / ${toDownload.length}");
-
-              counterLock.release();
             }
           } catch (e) {
             _log("Failed to download media for ${task.userId}: $e");
           } finally {
+            finishedDownloads++;
+            _onProgress?.call(
+              SyncProgress(
+                stage: SyncStage.downloadingMedia,
+                step: SyncStep.downloadingMedia,
+                completedItems: finishedDownloads,
+                totalItems: toDownload.length,
+                currentItemName: _displayName(task.remoteUrl),
+              ),
+            );
             downloadSemaphore.release();
+            // A completed download can trigger many more queued callbacks at
+            // once. Yield a macrotask after each progress update so Flutter
+            // can process a frame and user input before this worker continues.
+            await Future<void>.delayed(Duration.zero);
           }
         }),
       );
+
+      // 同阶段 A，每批提交后 yield 一次宏任务时间片
+      if ((i + 1) % _submitBatchSize == 0) {
+        await Future.delayed(Duration.zero);
+      }
     }
 
     downloadGroup.close();
@@ -213,7 +267,6 @@ class MediaProcessor {
     );
   }
 
-  // 线程安全的 Map 写入辅助方法（在 Dart 单线程模型下，非 await 间隙是安全的）
   void _addPathToResult(
     Map<String, Map<MediaType, String>> paths,
     String userId,
@@ -222,5 +275,11 @@ class MediaProcessor {
   ) {
     paths.putIfAbsent(userId, () => {});
     paths[userId]![type] = path;
+  }
+
+  String _displayName(String remoteUrl) {
+    final uri = Uri.tryParse(remoteUrl);
+    final segments = uri?.pathSegments;
+    return segments != null && segments.isNotEmpty ? segments.last : remoteUrl;
   }
 }

@@ -59,13 +59,22 @@ class TwitterApiV1Service {
     String? cffiApiKey,
   }) async {
     if (apiRequestMode == 'curl_cffi') {
-      if (cffiUrl == null || cffiApiKey == null || cffiUrl.isEmpty || cffiApiKey.isEmpty) {
-        throw Exception("cffiUrl and cffiApiKey must be provided when using curl_cffi mode");
+      if (cffiUrl == null ||
+          cffiApiKey == null ||
+          cffiUrl.isEmpty ||
+          cffiApiKey.isEmpty) {
+        throw Exception(
+          "cffiUrl and cffiApiKey must be provided when using curl_cffi mode",
+        );
       }
 
       // 将 endpoint 和 query 组合成完整的目标 URL
-      final safeQueryParams = queryParameters.map((k, v) => MapEntry(k, v.toString()));
-      final targetUrl = Uri.parse(endpoint).replace(queryParameters: safeQueryParams).toString();
+      final safeQueryParams = queryParameters.map(
+        (k, v) => MapEntry(k, v.toString()),
+      );
+      final targetUrl = Uri.parse(
+        endpoint,
+      ).replace(queryParameters: safeQueryParams).toString();
 
       // 构建发给 FastAPI 后端的查询参数
       final proxyQueryParams = {
@@ -75,7 +84,10 @@ class TwitterApiV1Service {
       };
 
       // 通过普通 Dio 请求我们的本地/远程 Python 后端
-      final response = await _dio.get(cffiUrl, queryParameters: proxyQueryParams);
+      final response = await _dio.get(
+        cffiUrl,
+        queryParameters: proxyQueryParams,
+      );
 
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data;
@@ -104,7 +116,9 @@ class TwitterApiV1Service {
           throw Exception("FastAPI Proxy returned error: ${data['detail']}");
         }
       } else {
-        throw Exception("Failed to connect to FastAPI proxy. Status: ${response.statusCode}");
+        throw Exception(
+          "Failed to connect to FastAPI proxy. Status: ${response.statusCode}",
+        );
       }
     } else {
       // 默认模式：走普通 Dio 请求
@@ -128,15 +142,22 @@ class TwitterApiV1Service {
     String? cffiApiKey,
   ) async {
     final Map<String, dynamic> queryParameters = {
-      'include_profile_interstitial_type': 1, 'include_blocking': 0,
-      'include_blocked_by': 0, 'include_followed_by': 1,
-      'include_want_retweets': 0, 'include_mute_edge': 0,
-      'include_can_dm': 1, 'include_can_media_tag': 1,
-      'include_ext_is_blue_verified': 1, 'include_ext_verified_type': 1,
-      'include_ext_profile_image_shape': 0, 'skip_status': 1,
-      'user_id': userId, 'count': count,
+      'include_profile_interstitial_type': 1,
+      'include_blocking': 0,
+      'include_blocked_by': 0,
+      'include_followed_by': 1,
+      'include_want_retweets': 0,
+      'include_mute_edge': 0,
+      'include_can_dm': 1,
+      'include_can_media_tag': 1,
+      'include_ext_is_blue_verified': 1,
+      'include_ext_verified_type': 1,
+      'include_ext_profile_image_shape': 0,
+      'skip_status': 1,
+      'user_id': userId,
+      'count': count,
     };
-    
+
     if (cursor != null && cursor != '0') {
       queryParameters['cursor'] = cursor;
     } else if (cursor == null) {
@@ -364,5 +385,55 @@ class TwitterApiV1Service {
       cffiUrl,
       cffiApiKey,
     );
+  }
+
+  /// Fetches full profiles for a batch of screen names using the V1 lookup
+  /// endpoint. Twitter accepts at most 100 names per request.
+  Future<List<Map<String, dynamic>>> getUsersByScreenNames(
+    List<String> screenNames,
+    String cookie, {
+    String apiRequestMode = 'dio',
+    String? cffiUrl,
+    String? cffiApiKey,
+  }) async {
+    if (screenNames.isEmpty) return const [];
+    final csrfToken = _parseCsrfToken(cookie);
+    if (csrfToken == null) {
+      throw Exception('Cannot get ct0 token from cookie (x-csrf-token).');
+    }
+
+    final response = await _executeRequest(
+      endpoint: 'https://api.x.com/1.1/users/lookup.json',
+      queryParameters: {
+        'screen_name': screenNames.join(','),
+        'include_entities': true,
+      },
+      headers: {
+        'authorization':
+            'Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA',
+        'Cookie': cookie,
+        'x-csrf-token': csrfToken,
+        'x-twitter-active-user': 'yes',
+        'x-twitter-auth-type': 'OAuth2Session',
+        'x-twitter-client-language': 'en',
+        'User-Agent':
+            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+        'Referer': 'https://x.com/',
+      },
+      apiRequestMode: apiRequestMode,
+      cffiUrl: cffiUrl,
+      cffiApiKey: cffiApiKey,
+    );
+
+    if (response.statusCode != 200 || response.data is! List) {
+      throw Exception(
+        'V1 users/lookup failed: status ${response.statusCode}; '
+        'response: ${response.data}',
+      );
+    }
+    return (response.data as List)
+        .whereType<Map>()
+        .map((user) => Map<String, dynamic>.from(user))
+        .toList();
   }
 }

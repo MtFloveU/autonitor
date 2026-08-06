@@ -308,12 +308,7 @@ class AnalysisReportRepository {
             logger.e(
               "Error constructing ProfileSnapshotUser for ${p.userId}: $e",
             );
-            parsedUsers.add(
-              ProfileSnapshotUser(
-                original: TwitterUser(restId: p.userId, screenName: 'Error'),
-                jsonSnapshot: '{}',
-              ),
-            );
+            rethrow;
           }
         }
       } else {
@@ -337,10 +332,11 @@ class AnalysisReportRepository {
             parsedUsers.add(TwitterUser.fromJson(parsedMaps[i]));
           }
         } catch (e) {
-          logger.w("Worker parsing failed: $e");
-          parsedUsers = paramsList
-              .map((p) => parseFollowUserToTwitterUser(p))
-              .toList();
+          logger.e(
+            'Worker parsing failed; aborting user-list loading.',
+            error: e,
+          );
+          rethrow;
         }
       }
 
@@ -381,34 +377,4 @@ class ParseParams {
     this.dbBio,
     this.jsonString,
   });
-}
-
-TwitterUser parseFollowUserToTwitterUser(ParseParams params) {
-  if (params.jsonString != null && params.jsonString!.isNotEmpty) {
-    try {
-      final Map<String, dynamic> jsonMap = jsonDecode(params.jsonString!);
-      if (params.dbAvatarLocalPath != null) {
-        jsonMap['avatar_local_path'] = params.dbAvatarLocalPath;
-      }
-      if (params.dbBannerLocalPath != null) {
-        jsonMap['banner_local_path'] = params.dbBannerLocalPath;
-      }
-      return TwitterUser.fromJson(jsonMap);
-    } catch (e, s) {
-      logger.e(
-        "AnalysisReportRepository (fallback): Error parsing JSON for user ${params.userId}",
-        error: e,
-        stackTrace: s,
-      );
-    }
-  }
-  return TwitterUser(
-    restId: params.userId,
-    screenName: params.dbScreenName,
-    name: params.dbName,
-    avatarUrl: params.dbAvatarUrl,
-    avatarLocalPath: params.dbAvatarLocalPath,
-    bannerLocalPath: params.dbBannerLocalPath,
-    bio: params.dbBio,
-  );
 }

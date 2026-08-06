@@ -6,121 +6,7 @@ extension _UserDetailPageStatWidgets on _UserDetailPageState {
     _StatItemData item,
     StatChartViewState viewState,
   ) {
-    final theme = Theme.of(context);
-
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.6,
-        minHeight: 300,
-      ),
-      padding: const EdgeInsets.fromLTRB(16, 0, 24, 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(item.label, style: theme.textTheme.titleMedium),
-          const SizedBox(height: 24),
-          Expanded(
-            child: LineChart(
-              LineChartData(
-                lineTouchData: LineTouchData(
-                  touchTooltipData: LineTouchTooltipData(
-                    fitInsideHorizontally: true,
-                    getTooltipColor: (spot) =>
-                        theme.colorScheme.surfaceContainerHighest,
-                    getTooltipItems: (touchedSpots) => touchedSpots.map((spot) {
-                      final date = DateTime.fromMillisecondsSinceEpoch(
-                        spot.x.toInt(),
-                      );
-                      return LineTooltipItem(
-                        '${DateFormat.yMd().add_Hms().format(date)}\n${spot.y.toInt()}',
-                        TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontSize: 12,
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  getDrawingHorizontalLine: (v) => FlLine(
-                    color: theme.dividerColor.withAlpha(50),
-                    strokeWidth: 1,
-                  ),
-                ),
-                titlesData: FlTitlesData(
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      interval: viewState.xInterval,
-                      getTitlesWidget: (xValue, titleMeta) {
-                        if (xValue == titleMeta.min ||
-                            xValue == titleMeta.max) {
-                          return const SizedBox.shrink();
-                        }
-                        final date = DateTime.fromMillisecondsSinceEpoch(
-                          xValue.toInt(),
-                        );
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text(
-                            DateFormat.Md().format(date),
-                            style: const TextStyle(fontSize: 10),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 48,
-                      interval: viewState.yInterval,
-                      getTitlesWidget: (yValue, titleMeta) {
-                        if (yValue == titleMeta.min ||
-                            yValue == titleMeta.max) {
-                          return const SizedBox.shrink();
-                        }
-                        return Text(
-                          yValue.toInt().toString(),
-                          style: const TextStyle(fontSize: 10),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                borderData: FlBorderData(show: false),
-                minX: viewState.minX,
-                maxX: viewState.maxX,
-                minY: viewState.minY,
-                maxY: viewState.maxY,
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: viewState.spots,
-                    isCurved: false,
-                    preventCurveOverShooting: true,
-                    color: theme.colorScheme.primary,
-                    barWidth: 2,
-                    dotData: const FlDotData(show: false),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      color: theme.colorScheme.primary.withAlpha(20),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    return _HistoryChartSheet(item: item, viewState: viewState);
   }
 
   Widget _buildFlexibleStatGrid(BuildContext context) {
@@ -286,6 +172,269 @@ extension _UserDetailPageStatWidgets on _UserDetailPageState {
           },
         );
       },
+    );
+  }
+}
+
+enum _ChartRange { all, week, month, quarter, year }
+
+class _HistoryChartSheet extends StatefulWidget {
+  const _HistoryChartSheet({required this.item, required this.viewState});
+
+  final _StatItemData item;
+  final StatChartViewState viewState;
+
+  @override
+  State<_HistoryChartSheet> createState() => _HistoryChartSheetState();
+}
+
+class _HistoryChartSheetState extends State<_HistoryChartSheet> {
+  _ChartRange _range = _ChartRange.all;
+
+  Duration? get _duration => switch (_range) {
+    _ChartRange.all => null,
+    _ChartRange.week => const Duration(days: 7),
+    _ChartRange.month => const Duration(days: 30),
+    _ChartRange.quarter => const Duration(days: 90),
+    _ChartRange.year => const Duration(days: 365),
+  };
+
+  String _rangeLabel(AppLocalizations l10n, _ChartRange range) {
+    return switch (range) {
+      _ChartRange.all => l10n.chart_time_all,
+      _ChartRange.week => l10n.chart_time_7d,
+      _ChartRange.month => l10n.chart_time_30d,
+      _ChartRange.quarter => l10n.chart_time_90d,
+      _ChartRange.year => l10n.chart_time_1y,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final viewState = widget.viewState.forRecent(_duration);
+    final first = viewState.spots.first;
+    final last = viewState.spots.last;
+    final delta = last.y - first.y;
+    final valueFormat = NumberFormat.compact();
+
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.76,
+        minHeight: 420,
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 0, 24, 24),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  widget.item.label,
+                  style: theme.textTheme.titleMedium,
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_outlined,
+                size: 16,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                l10n.chart_chronological,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: _ChartRange.values.map((range) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(_rangeLabel(l10n, range)),
+                    selected: _range == range,
+                    onSelected: (_) => setState(() => _range = range),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _ChartSummary(
+                label: l10n.chart_start,
+                value: valueFormat.format(first.y),
+              ),
+              _ChartSummary(
+                label: l10n.chart_latest,
+                value: valueFormat.format(last.y),
+              ),
+              _ChartSummary(
+                label: l10n.chart_change,
+                value: '${delta >= 0 ? '+' : ''}${valueFormat.format(delta)}',
+                valueColor: delta == 0
+                    ? null
+                    : delta > 0
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.error,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              l10n.chart_data_points(viewState.spots.length),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(child: _buildChart(theme, viewState)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChart(ThemeData theme, StatChartViewState viewState) {
+    return LineChart(
+      LineChartData(
+        lineTouchData: LineTouchData(
+          touchTooltipData: LineTouchTooltipData(
+            fitInsideHorizontally: true,
+            getTooltipColor: (_) => theme.colorScheme.surfaceContainerHighest,
+            getTooltipItems: (touchedSpots) => touchedSpots.map((spot) {
+              final date = DateTime.fromMillisecondsSinceEpoch(spot.x.toInt());
+              return LineTooltipItem(
+                '${DateFormat.yMd().add_Hms().format(date)}\n${NumberFormat.decimalPattern().format(spot.y)}',
+                TextStyle(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontSize: 12,
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          getDrawingHorizontalLine: (_) =>
+              FlLine(color: theme.dividerColor.withAlpha(50), strokeWidth: 1),
+        ),
+        titlesData: FlTitlesData(
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              interval: viewState.xInterval,
+              getTitlesWidget: (xValue, meta) {
+                if (xValue == meta.min || xValue == meta.max) {
+                  return const SizedBox.shrink();
+                }
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    DateFormat.Md().format(
+                      DateTime.fromMillisecondsSinceEpoch(xValue.toInt()),
+                    ),
+                    style: const TextStyle(fontSize: 10),
+                  ),
+                );
+              },
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 48,
+              interval: viewState.yInterval,
+              getTitlesWidget: (yValue, meta) {
+                if (yValue == meta.min || yValue == meta.max) {
+                  return const SizedBox.shrink();
+                }
+                return Text(
+                  NumberFormat.compact().format(yValue),
+                  style: const TextStyle(fontSize: 10),
+                );
+              },
+            ),
+          ),
+        ),
+        borderData: FlBorderData(show: false),
+        minX: viewState.minX,
+        maxX: viewState.maxX,
+        minY: viewState.minY,
+        maxY: viewState.maxY,
+        lineBarsData: [
+          LineChartBarData(
+            spots: viewState.spots,
+            isCurved: false,
+            preventCurveOverShooting: true,
+            color: theme.colorScheme.primary,
+            barWidth: 2,
+            dotData: FlDotData(show: viewState.spots.length == 1),
+            belowBarData: BarAreaData(
+              show: true,
+              color: theme.colorScheme.primary.withAlpha(20),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChartSummary extends StatelessWidget {
+  const _ChartSummary({
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.only(right: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: valueColor,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

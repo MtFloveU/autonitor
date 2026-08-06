@@ -62,6 +62,27 @@ class SecureStorageService {
     }
   }
 
+  /// Cookies are deliberately excluded from backups. Clear them before loading
+  /// restored account profiles so every restored account requires fresh login
+  /// credentials.
+  Future<void> deleteAllCookies() async {
+    try {
+      final allValues = await _storage.readAll();
+      for (final key in allValues.keys.where(
+        (key) => key.startsWith('cookie_'),
+      )) {
+        await _storage.delete(key: key);
+      }
+    } catch (e, s) {
+      logger.e(
+        'Error deleting restored-account cookies',
+        error: e,
+        stackTrace: s,
+      );
+      rethrow;
+    }
+  }
+
   Future<String?> readActiveAccountId() async {
     try {
       return await _storage.read(key: _activeAccountIdKey);

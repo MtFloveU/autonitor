@@ -49,6 +49,54 @@ class StatChartViewState {
     required this.xInterval,
     required this.yInterval,
   });
+
+  factory StatChartViewState.fromSpots(List<FlSpot> spots) {
+    assert(spots.isNotEmpty);
+    final minX = spots.first.x;
+    final rawMaxX = spots.last.x;
+    // fl_chart needs a non-zero drawing domain for a single observation.
+    final maxX = rawMaxX == minX ? minX + Duration.millisecondsPerDay : rawMaxX;
+    final timeRange = maxX - minX;
+    final xInterval = (timeRange / 5).clamp(
+      Duration.millisecondsPerDay.toDouble(),
+      double.infinity,
+    );
+
+    final values = spots.map((spot) => spot.y);
+    final minValue = values.reduce((a, b) => a < b ? a : b);
+    final maxValue = values.reduce((a, b) => a > b ? a : b);
+    final padding = (maxValue - minValue).abs() < 0.000001
+        ? (maxValue == 0 ? 1.0 : maxValue.abs() * 0.1)
+        : (maxValue - minValue) * 0.1;
+    final minY = minValue == 0
+        ? 0.0
+        : (minValue > 0
+                  ? (minValue - padding).clamp(0.0, minValue)
+                  : minValue - padding)
+              .toDouble();
+    final maxY = maxValue + padding;
+    final yInterval = ((maxY - minY) / 4).clamp(1.0, double.infinity);
+
+    return StatChartViewState(
+      spots: spots,
+      minX: minX,
+      maxX: maxX,
+      minY: minY,
+      maxY: maxY,
+      xInterval: xInterval,
+      yInterval: yInterval,
+    );
+  }
+
+  /// Filters relative to the most recent observation and retains one point
+  /// immediately before the range so the visible trend starts continuously.
+  StatChartViewState forRecent(Duration? range) {
+    if (range == null || spots.length < 2) return this;
+    final cutoff = spots.last.x - range.inMilliseconds;
+    final firstInRange = spots.indexWhere((spot) => spot.x >= cutoff);
+    if (firstInRange <= 0) return this;
+    return StatChartViewState.fromSpots(spots.sublist(firstInRange - 1));
+  }
 }
 
 @immutable
@@ -170,60 +218,7 @@ class StatChartNotifier
         )
         .toList();
 
-    // ... (Transfer the coordinate calculation logic from UI to here) ...
-    // Calculate minX, maxX, xInterval, yInterval based on user's original logic
-    validData.map((entry) {
-      return FlSpot(
-        (entry['timestamp'] as int).toDouble(),
-        (entry['value'] as num).toDouble(),
-      );
-    }).toList();
-
-    final double minX = spots.first.x;
-    final double maxX = spots.last.x;
-    final double timeRange = maxX - minX;
-
-    // Calculate X Axis Interval
-    double xInterval = timeRange / 5;
-    if (xInterval < 86400000) {
-      xInterval = 86400000; // Minimum 1 day interval
-    }
-
-    // Calculate Y Axis Range and Padding
-    final Iterable<double> yIterable = spots.map((s) => s.y);
-    double minYValue = yIterable.reduce((a, b) => a < b ? a : b);
-    double maxYValue = yIterable.reduce((a, b) => a > b ? a : b);
-
-    double paddingY;
-    if ((maxYValue - minYValue).abs() < 0.000001) {
-      paddingY = maxYValue == 0 ? 1.0 : maxYValue.abs() * 0.1;
-    } else {
-      paddingY = (maxYValue - minYValue) * 0.1;
-    }
-
-    // Minimalist change:
-    // If the minimum value is non-negative, force the axis to start exactly at 0.
-    // This ensures the line touches the bottom when the value is 0.
-    final double chartMinY = minYValue == 0
-        ? 0.0
-        : (minYValue > 0
-              ? (minYValue - paddingY).clamp(0.0, minYValue)
-              : minYValue - paddingY);
-
-    final double chartMaxY = maxYValue + paddingY;
-
-    // Recalculate interval based on the dynamic range
-    double leftInterval = (chartMaxY - chartMinY) / 4;
-    if (leftInterval <= 0) leftInterval = 1;
-    return StatChartViewState(
-      spots: spots,
-      minX: minX,
-      maxX: maxX,
-      minY: chartMinY,
-      maxY: chartMaxY,
-      xInterval: xInterval,
-      yInterval: leftInterval,
-    );
+    return StatChartViewState.fromSpots(spots);
   }
 }
 

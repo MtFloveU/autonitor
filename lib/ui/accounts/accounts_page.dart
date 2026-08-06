@@ -391,62 +391,60 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
   }
 
   void _showCookieDialog(Account account) {
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
+    final controller = TextEditingController(text: account.cookie);
 
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(l10n.cookie),
-        content: Container(
-          width: double.maxFinite,
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.5,
-          ),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(12.0),
-            child: SelectableText(
-              account.cookie,
-              style: TextStyle(
-                fontFamily: 'monospace',
-                fontSize: 12,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
+        content: TextField(
+          controller: controller,
+          minLines: 4,
+          maxLines: 8,
+          style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+          decoration: InputDecoration(
+            border: const OutlineInputBorder(),
+            hintText: 'auth_token=...; twid=u%3D...',
+            helperText: account.cookie.isEmpty
+                ? l10n.restored_account_cookie_required
+                : null,
           ),
         ),
         actions: [
-          TextButton.icon(
-            icon: const Icon(Icons.copy, size: 18),
-            label: Text(l10n.copy),
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: account.cookie));
-              Navigator.pop(dialogContext);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    l10n.copied_to_clipboard,
-                    style: TextStyle(
-                      color: theme.colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                  backgroundColor: theme.colorScheme.primaryContainer,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
+          if (account.cookie.isNotEmpty)
+            TextButton.icon(
+              icon: const Icon(Icons.copy, size: 18),
+              label: Text(l10n.copy),
+              onPressed: () =>
+                  Clipboard.setData(ClipboardData(text: controller.text)),
+            ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(dialogContext),
+            onPressed: () async {
+              final cookie = controller.text.trim();
+              if (cookie.isEmpty) return;
+              try {
+                await ref
+                    .read(accountsProvider.notifier)
+                    .updateAccountCookie(account.id, cookie);
+                if (dialogContext.mounted) Navigator.pop(dialogContext);
+              } catch (error) {
+                if (mounted) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('$error')));
+                }
+              }
+            },
             child: Text(l10n.ok),
           ),
         ],
       ),
-    );
+    ).whenComplete(controller.dispose);
   }
 }
 
@@ -540,9 +538,9 @@ class _AccountCard extends StatelessWidget {
                 children: [
                   IconButton.filledTonal(
                     onPressed: onViewCookie,
-                    tooltip: l10n.view_cookie,
+                    tooltip: l10n.cookie,
                     iconSize: 20,
-                    icon: const Icon(Icons.cookie_outlined),
+                    icon: const Icon(Icons.edit_outlined),
                   ),
                   const SizedBox(width: 8),
                   IconButton.filledTonal(

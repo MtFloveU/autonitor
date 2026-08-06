@@ -132,10 +132,9 @@ List<Map<String, dynamic>> _extractFieldHistory(Map<String, dynamic> context) {
   final String latestRawJson = context['latestRawJson'];
   final List<dynamic> historyEntries = context['historyEntries'];
   final String targetKey = context['targetKey'];
-  // [修复] 使用 Repository 注入的业务时间作为当前锚点
-  final int currentTs =
-      context['currentStateTimestampMs'] ??
-      DateTime.now().millisecondsSinceEpoch;
+  // Use only a persisted business timestamp.  A missing timestamp must not be
+  // replaced with the time at which a user happened to open the chart.
+  final int? currentTs = context['currentStateTimestampMs'] as int?;
 
   List<Map<String, dynamic>> series = [];
   Map<String, dynamic> stateCursor;
@@ -145,11 +144,13 @@ List<Map<String, dynamic>> _extractFieldHistory(Map<String, dynamic> context) {
     return [];
   }
 
-  series.add({
-    'timestamp': currentTs,
-    'value':
-        (double.tryParse(stateCursor[targetKey]?.toString() ?? '0') ?? 0.0),
-  });
+  if (currentTs != null && currentTs > 0) {
+    series.add({
+      'timestamp': currentTs,
+      'value':
+          (double.tryParse(stateCursor[targetKey]?.toString() ?? '0') ?? 0.0),
+    });
+  }
 
   for (var entry in historyEntries) {
     final Map<String, dynamic> entryMap = entry as Map<String, dynamic>;
